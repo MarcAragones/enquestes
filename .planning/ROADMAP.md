@@ -7,6 +7,7 @@ The journey runs from a deployed, empty shell to a fully interactive survey expl
 ## Phases
 
 **Phase Numbering:**
+
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
@@ -19,47 +20,64 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Phase Details
 
 ### Phase 1: Foundation & Survey Listing
+
 **Goal**: Users can visit the live, deployed site and browse a catalog of available surveys with quick KPI previews, before any interactive exploration exists
 **Mode:** mvp
 **Depends on**: Nothing (first phase)
 **Requirements**: HOME-01, HOME-02, HOME-03, HOME-04, DEPLOY-01, DEPLOY-02
 **Success Criteria** (what must be TRUE):
+
   1. User can visit the live GitHub Pages URL and see a grid of survey cards (title, date, description, participant count)
   2. User sees a clear error message instead of a blank screen if `enquestes_index.json` fails to load
   3. User can click a survey card and see a quick KPI summary (e.g. average age, satisfaction) loaded from `[id]_meta.json` before entering the full explorer
   4. User can click "Explorar dades interactives" from the summary to navigate toward the explorer route
   5. Every push to `main` automatically redeploys the site to GitHub Pages with the correct `base` path
+
 **Plans**: 3 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 01-01-PLAN.md — Walking Skeleton: Node 22 toolchain, Vite/React/TS/Tailwind scaffold, end-to-end tracer slice, and the GitHub Actions → GitHub Pages deploy (DEPLOY-01, DEPLOY-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 01-02-PLAN.md — Survey catalog: text-only card grid plus distinct loading, failure-with-retry, and empty-catalog states (HOME-01, HOME-02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 01-03-PLAN.md — Quick KPI summary modal with sample-size disclosure, and the hand-off to the explorer route (HOME-03, HOME-04)
 
 **UI hint**: yes
 
 ### Phase 2: Offline Data Pipeline
+
 **Goal**: Real and mock survey data can be safely and correctly converted into the Parquet/JSON artifacts the app consumes
 **Mode:** mvp
 **Depends on**: Nothing (independent of Phase 1; can run in parallel)
 **Requirements**: DATA-01, DATA-02, DATA-03
 **Success Criteria** (what must be TRUE):
+
   1. Running the conversion script on a raw CSV/Excel export produces `[id]_respostes.parquet` and `[id]_meta.json`, and upserts the corresponding entry into `enquestes_index.json`
   2. Running `generate_mock_parquet.py` produces a valid example Parquet dataset without needing any real survey data
   3. Before real data is published, the conversion process surfaces a privacy checklist that flags potential quasi-identifiers, not just name/email columns
+
 **Plans**: TBD
 
 ### Phase 3: Interactive Explorer
+
 **Goal**: Users can interactively explore any survey's real data in the browser via drag-and-drop chart building, powered by SQL over Parquet — the app's core value
 **Mode:** mvp
 **Depends on**: Phase 1, Phase 2
 **Requirements**: EXPL-01, EXPL-02, EXPL-03, EXPL-04, EXPL-05, EXPL-06, EXPL-07, EXPL-08, EXPL-09, EXPL-10, EXPL-11
 **Success Criteria** (what must be TRUE):
+
   1. User sees a progress indicator while DuckDB-Wasm initializes and the Parquet file downloads/loads, and a clear error message if initialization or querying fails
   2. User can drag variables onto X/Y/Color/Size/Filter to build charts, choosing among multiple chart types (bars, lines, area, scatter), with fields correctly typed as dimension or measure
   3. The explorer stays visually usable and responsive on small/medium screens, lets the user navigate back to the survey list, and a direct link to `/enquesta/:id` works on load and on refresh without a 404
   4. User can view field descriptions (data dictionary) from `meta.json` inside the explorer, and export the current chart as an image (PNG/SVG)
   5. User can generate and copy a link that reproduces the exact current visualization (fields and active filters) via query params
+
 **Plans**: TBD
 **UI hint**: yes
 
