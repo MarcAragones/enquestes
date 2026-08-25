@@ -65,32 +65,32 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HOME-01 | TBD | Pending |
-| HOME-02 | TBD | Pending |
-| HOME-03 | TBD | Pending |
-| HOME-04 | TBD | Pending |
-| EXPL-01 | TBD | Pending |
-| EXPL-02 | TBD | Pending |
-| EXPL-03 | TBD | Pending |
-| EXPL-04 | TBD | Pending |
-| EXPL-05 | TBD | Pending |
-| EXPL-06 | TBD | Pending |
-| EXPL-07 | TBD | Pending |
-| EXPL-08 | TBD | Pending |
-| EXPL-09 | TBD | Pending |
-| EXPL-10 | TBD | Pending |
-| EXPL-11 | TBD | Pending |
-| DATA-01 | TBD | Pending |
-| DATA-02 | TBD | Pending |
-| DATA-03 | TBD | Pending |
-| DEPLOY-01 | TBD | Pending |
-| DEPLOY-02 | TBD | Pending |
+| HOME-01 | Phase 1 | Pending |
+| HOME-02 | Phase 1 | Pending |
+| HOME-03 | Phase 1 | Pending |
+| HOME-04 | Phase 1 | Pending |
+| EXPL-01 | Phase 3 | Pending |
+| EXPL-02 | Phase 3 | Pending |
+| EXPL-03 | Phase 3 | Pending |
+| EXPL-04 | Phase 3 | Pending |
+| EXPL-05 | Phase 3 | Pending |
+| EXPL-06 | Phase 3 | Pending |
+| EXPL-07 | Phase 3 | Pending |
+| EXPL-08 | Phase 3 | Pending |
+| EXPL-09 | Phase 3 | Pending |
+| EXPL-10 | Phase 3 | Pending |
+| EXPL-11 | Phase 3 | Pending |
+| DATA-01 | Phase 2 | Pending |
+| DATA-02 | Phase 2 | Pending |
+| DATA-03 | Phase 2 | Pending |
+| DEPLOY-01 | Phase 1 | Pending |
+| DEPLOY-02 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20 ⚠️ (pending roadmap creation)
+- Mapped to phases: 20
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-25*
-*Last updated: 2026-08-25 after initial definition*
+*Last updated: 2026-08-25 after roadmap creation*
