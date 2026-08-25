@@ -29,7 +29,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can click a survey card and see a quick KPI summary (e.g. average age, satisfaction) loaded from `[id]_meta.json` before entering the full explorer
   4. User can click "Explorar dades interactives" from the summary to navigate toward the explorer route
   5. Every push to `main` automatically redeploys the site to GitHub Pages with the correct `base` path
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Walking Skeleton: Node 22 toolchain, Vite/React/TS/Tailwind scaffold, end-to-end tracer slice, and the GitHub Actions → GitHub Pages deploy (DEPLOY-01, DEPLOY-02)
+- [ ] 01-02-PLAN.md — Survey catalog: text-only card grid plus distinct loading, failure-with-retry, and empty-catalog states (HOME-01, HOME-02)
+- [ ] 01-03-PLAN.md — Quick KPI summary modal with sample-size disclosure, and the hand-off to the explorer route (HOME-03, HOME-04)
+
 **UI hint**: yes
 
 ### Phase 2: Offline Data Pipeline
@@ -64,6 +70,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Survey Listing | 0/TBD | Not started | - |
+| 1. Foundation & Survey Listing | 0/3 | Planned | - |
 | 2. Offline Data Pipeline | 0/TBD | Not started | - |
 | 3. Interactive Explorer | 0/TBD | Not started | - |
