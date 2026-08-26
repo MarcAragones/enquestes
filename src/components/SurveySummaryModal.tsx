@@ -113,7 +113,7 @@ export function SurveySummaryModal({ enquestaId, onClose }: SurveySummaryModalPr
           </div>
           <p className="text-sm text-zinc-700 dark:text-zinc-300">{state.data.description}</p>
           <p className="text-sm tabular-nums text-zinc-500 dark:text-zinc-400">
-            {formatCount(state.data.n)} participants
+            {formatCount(state.data.n)} {state.data.n === 1 ? 'participant' : 'participants'}
           </p>
 
           {state.data.kpis.length === 0 ? (

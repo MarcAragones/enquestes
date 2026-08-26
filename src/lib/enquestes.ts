@@ -70,9 +70,14 @@ export function formatDate(iso: string): string {
   if (Number.isNaN(d.getTime())) {
     return iso
   }
-  return new Intl.DateTimeFormat('ca-ES', { day: 'numeric', month: 'long', year: 'numeric' }).format(
-    d,
-  )
+  // A date-only ISO string (no time component) parses as UTC midnight; format
+  // it back in UTC so a visitor west of UTC doesn't see the previous day.
+  return new Intl.DateTimeFormat('ca-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(d)
 }
 
 /** Catalan-locale thousands grouping for participant counts. */
@@ -128,8 +133,12 @@ export function parseEnquestaMeta(input: unknown): EnquestaMeta {
       if (typeof field !== 'object' || field === null) {
         throw new Error('Format inesperat')
       }
-      const { name, type } = field as Record<string, unknown>
+      const { name, label, description, type } = field as Record<string, unknown>
       if (typeof name !== 'string') throw new Error('Format inesperat')
+      if (label !== undefined && typeof label !== 'string') throw new Error('Format inesperat')
+      if (description !== undefined && typeof description !== 'string') {
+        throw new Error('Format inesperat')
+      }
       if (type !== 'dimension' && type !== 'measure') throw new Error('Format inesperat')
     }
   }
