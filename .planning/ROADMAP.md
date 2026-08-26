@@ -88,7 +88,21 @@ Plans:
   4. User can view field descriptions (data dictionary) from `meta.json` inside the explorer, and export the current chart as an image (PNG/SVG)
   5. User can generate and copy a link that reproduces the exact current visualization (fields and active filters) via query params
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Tracer slice: DuckDB-Wasm singleton over the committed Parquet, verbatim meta.json field typing, two-phase loading with two distinct error states, GraphicWalker mounted full-width, plus a production-build proof that the wasm/worker assets and the Parquet are served under `/enquestes/` (EXPL-01, EXPL-02, EXPL-03, EXPL-04, EXPL-05, EXPL-08)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — App-shell explorer header (title + back-link + dark-mode toggle) and the collapsed-by-default data dictionary sourced from `meta.json` (EXPL-06, EXPL-07, EXPL-09)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-03-PLAN.md — Chart image export plus the versioned, UTF-8-safe shareable link with its silent D-07 fallback on malformed, stale or oversized params (EXPL-10, EXPL-11)
+
 **UI hint**: yes
 
 ## Progress
@@ -100,4 +114,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Foundation & Survey Listing | 3/3 | Complete    | 2026-08-26 |
 | 2. Offline Data Pipeline | 3/3 | Complete    | 2026-08-26 |
-| 3. Interactive Explorer | 0/TBD | Not started | - |
+| 3. Interactive Explorer | 0/3 | Not started | - |
