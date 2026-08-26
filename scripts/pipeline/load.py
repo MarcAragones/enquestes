@@ -3,6 +3,12 @@
 D-04 stays honoured here: the .xlsx branch is a file-extension branch on one
 export shape, not a multi-vendor abstraction layer -- no per-vendor header
 mapping, no multi-sheet merging, no pre-aggregated-sheet handling.
+
+.csv delimiter detection: some export tools (notably Spanish/Catalan-locale
+spreadsheet software) write ';' as the field delimiter instead of ','. The
+header line is sniffed to pick whichever of ',' / ';' occurs more often, so
+these exports load without the caller having to know or pass a flag. This is
+never silent -- picking ';' over the default ',' always produces a warning.
 """
 from __future__ import annotations
 
@@ -17,15 +23,19 @@ def load_table(path: "Path", sheet: str | None = None) -> tuple:
     """Loads path into a DataFrame. Returns (df, warnings).
 
     Branches on the lowercase file suffix: .csv/.tsv go to pd.read_csv
-    (tab separator for .tsv), .xlsx goes to pd.read_excel(engine="openpyxl").
-    Any other suffix raises ValueError naming the accepted suffixes.
+    (tab separator for .tsv; sniffed ',' vs ';' for .csv), .xlsx goes to
+    pd.read_excel(engine="openpyxl"). Any other suffix raises ValueError
+    naming the accepted suffixes.
     """
     path = Path(path)
     suffix = path.suffix.lower()
     warnings: list = []
 
     if suffix == ".csv":
-        df, encoding_warning = _read_csv_with_fallback(path, sep=",")
+        sep, sniff_warning = _detect_csv_delimiter(path)
+        if sniff_warning:
+            warnings.append(sniff_warning)
+        df, encoding_warning = _read_csv_with_fallback(path, sep=sep)
     elif suffix == ".tsv":
         df, encoding_warning = _read_csv_with_fallback(path, sep="\t")
     elif suffix == ".xlsx":
@@ -44,23 +54,74 @@ def load_table(path: "Path", sheet: str | None = None) -> tuple:
     return df, warnings
 
 
+def _detect_csv_delimiter(path: "Path") -> tuple:
+    """Sniffs ',' vs ';' from the header line of a .csv file.
+
+    Returns (delimiter, warning_or_None). Counts occurrences of each
+    candidate in the header line and picks whichever occurs more often;
+    ties (including 0-vs-0) default to ','. Reads the header with the same
+    utf-8-then-cp1252 fallback as the real load, since a non-UTF-8 file's
+    header would otherwise fail to decode here first.
+
+    Only sniffs ',' vs ';' -- not a general-purpose dialect detector -- per
+    D-04 (this pipeline targets one known export convention, not arbitrary
+    third-party CSV dialects).
+    """
+    try:
+        with open(path, "r", encoding="utf-8", newline="") as handle:
+            header_line = handle.readline()
+    except UnicodeDecodeError:
+        with open(path, "r", encoding="cp1252", newline="") as handle:
+            header_line = handle.readline()
+
+    comma_count = header_line.count(",")
+    semicolon_count = header_line.count(";")
+    if semicolon_count > comma_count:
+        warning = (
+            "El fitxer sembla delimitat per ';' en lloc de ',' (convenció "
+            "habitual d'exportació de fulls de càlcul en català/castellà); "
+            "s'ha detectat i usat ';' automàticament com a separador de camps."
+        )
+        return ";", warning
+    return ",", None
+
+
 def _read_csv_with_fallback(path: "Path", sep: str) -> tuple:
     """Attempts utf-8 first; on UnicodeDecodeError retries with cp1252.
 
     Returns (df, warning_or_None). The fallback is never silent -- the
     caller always sees a warning string naming the non-UTF-8 fallback so
     accented Catalan characters can be spot-checked before being trusted.
+
+    A pd.errors.ParserError (row(s) with a field count that doesn't match
+    the header -- a genuinely ragged file, not an encoding issue) is
+    re-raised as a ValueError naming the exact pandas-reported line so the
+    caller gets an actionable message instead of a raw pandas traceback.
+    Nothing here attempts to guess/repair a ragged row's column alignment.
     """
     try:
-        return pd.read_csv(path, sep=sep, encoding="utf-8"), None
+        return _read_csv_or_raise(path, sep, encoding="utf-8"), None
     except UnicodeDecodeError:
-        df = pd.read_csv(path, sep=sep, encoding="cp1252")
+        df = _read_csv_or_raise(path, sep, encoding="cp1252")
         warning = (
             "El fitxer no és UTF-8 vàlid; s'ha llegit amb la codificació de "
             "pàgina de codis de Windows (cp1252) com a alternativa. "
             "Comprova els caràcters accentuats catalans abans de confiar-hi."
         )
         return df, warning
+
+
+def _read_csv_or_raise(path: "Path", sep: str, encoding: str) -> "pd.DataFrame":
+    try:
+        return pd.read_csv(path, sep=sep, encoding=encoding)
+    except pd.errors.ParserError as exc:
+        raise ValueError(
+            f"El fitxer CSV té almenys una fila amb un nombre de camps "
+            f"diferent del de la capçalera (separador '{sep}'): {exc}. "
+            "Sol ser un camp de text lliure amb el separador dins del valor "
+            "sense cometes. Revisa la línia indicada abans de tornar-ho a "
+            "provar."
+        ) from exc
 
 
 def _shape_warnings(df: "pd.DataFrame") -> list:

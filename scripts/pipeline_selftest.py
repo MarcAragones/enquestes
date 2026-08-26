@@ -318,6 +318,58 @@ class LoadTableTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             load_mod.load_table(Path("data.json"))
 
+    def test_semicolon_delimited_csv_is_detected_and_warned(self):
+        """G-02-3 regression: Spanish/Catalan-locale exports using ';'."""
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "semicolon.csv"
+            content = (
+                "segment;comentari\n"
+                'Particular;"Preu, servei i qualitat"\n'
+                "Empresa;Cap incidencia\n"
+            )
+            path.write_text(content, encoding="utf-8")
+            df, warnings = load_mod.load_table(path)
+            self.assertEqual(len(df), 2)
+            self.assertEqual(list(df.columns), ["segment", "comentari"])
+            self.assertEqual(df["comentari"].iloc[0], "Preu, servei i qualitat")
+            self.assertTrue(any("';'" in w for w in warnings))
+
+    def test_comma_delimited_csv_with_quoted_semicolon_stays_comma(self):
+        """A comma-delimited file whose text contains ';' must not flip sep."""
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "comma_with_semicolon_text.csv"
+            content = (
+                "segment,comentari\n"
+                'Particular,"Bo; pero car"\n'
+                "Empresa,Cap incidencia\n"
+            )
+            path.write_text(content, encoding="utf-8")
+            df, warnings = load_mod.load_table(path)
+            self.assertEqual(len(df), 2)
+            self.assertEqual(df["comentari"].iloc[0], "Bo; pero car")
+            self.assertFalse(any("delimitat" in w for w in warnings))
+
+    def test_tied_delimiter_counts_default_to_comma(self):
+        """Boundary: equal ',' and ';' counts in the header default to ','."""
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tied.csv"
+            content = "a;b,c\n1;2,3\n"
+            path.write_text(content, encoding="utf-8")
+            df, warnings = load_mod.load_table(path)
+            self.assertEqual(list(df.columns), ["a;b", "c"])
+            self.assertFalse(any("delimitat" in w for w in warnings))
+
+    def test_ragged_csv_raises_actionable_value_error(self):
+        """A row with more fields than the header must fail loudly, not
+        silently attempt to realign columns."""
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ragged.csv"
+            content = "segment,valor\nParticular,1\nEmpresa,2,extra\n"
+            path.write_text(content, encoding="utf-8")
+            with self.assertRaises(ValueError) as ctx:
+                load_mod.load_table(path)
+            self.assertIn("línia", str(ctx.exception))
+
 
 def _base_meta(**overrides) -> dict:
     meta = {
