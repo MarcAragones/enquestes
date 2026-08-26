@@ -1,21 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 01-foundation-survey-listing
 source: [01-VERIFICATION.md]
 started: 2026-08-26T09:20:00Z
-updated: 2026-08-26T09:20:00Z
+updated: 2026-08-26T09:40:00Z
 ---
 
 ## Current Test
 
-number: 1
-name: Live site + fixture-preview visual/responsive confirmation
-expected: |
-  Catalog renders three-up on desktop, two-up on tablet, one-up on mobile. Zero-participant
-  survey reads "0 participants", not blank. The title containing "<script>alert(1)</script>"
-  renders as literal text, never executes and never appears as bold/markup. Theme toggle flips
-  the whole page and the choice survives reload.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -29,7 +22,7 @@ expected: |
   one-up on mobile. Zero-participant survey reads "0 participants", not blank. The title
   containing "<script>alert(1)</script>" renders as literal text, never executes and never
   appears as bold/markup. Theme toggle flips the whole page and the choice survives reload.
-result: [pending]
+result: pass
 
 ### 2. Summary modal interaction (dialog focus, Back, Escape, CTA hand-off)
 expected: |
@@ -43,7 +36,7 @@ expected: |
   plain catalog (not a blank page). The CTA navigates to /enquestes/enquesta/demo-2024, landing
   on the "encara no està disponible" page with a working link back — never a blank page, and
   reloading that URL does not 404.
-result: [pending]
+result: pass
 
 ### 3. Sign-off on the 8 judgment-tier prohibitions
 expected: |
@@ -54,14 +47,14 @@ expected: |
   path). Each prohibition holds by code inspection (see "Prohibitions Verification" in
   01-VERIFICATION.md); a human sign-off closes out the status: unverified/flagged: true markers
   the planner left in each plan's frontmatter.
-result: [pending]
+result: pass
 
 ## Summary
 
 total: 3
-passed: 0
+passed: 3
 issues: 0
-pending: 3
+pending: 0
 skipped: 0
 blocked: 0
 
