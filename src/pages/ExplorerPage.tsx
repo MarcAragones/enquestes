@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { GraphicWalker } from '@kanaries/graphic-walker'
+import type { IChart, VizSpecStore } from '@kanaries/graphic-walker'
 import '@kanaries/graphic-walker/dist/style.css'
 import { isValidEnquestaId, metaUrl, parseEnquestaMeta } from '../lib/enquestes'
 import { toGraphicWalkerFields } from '../lib/graphicWalkerFields'
+import { SHARE_PARAM, decodeShareLink, encodeShareLink } from '../lib/shareLink'
 import { getDb, queryParquet } from '../services/duckdb'
 import { ErrorState } from '../components/ErrorState'
 import { ExplorerHeader } from '../components/ExplorerHeader'
@@ -35,10 +37,48 @@ export default function ExplorerPage() {
   const { id } = useParams<{ id: string }>()
   const valid = id !== undefined && isValidEnquestaId(id)
   const { theme } = useTheme()
+  const [searchParams] = useSearchParams()
 
   const [engineState, setEngineState] = useState<FetchState<true>>({ status: 'loading' })
   const [dataState, setDataState] = useState<FetchState<ExplorerData>>({ status: 'loading' })
   const [dataAttempt, setDataAttempt] = useState(0)
+
+  // storeRef, not a change-callback + useState: the current chart spec is
+  // read synchronously from this ref only inside the copy-link click
+  // handler (D-05's serialize-on-click model). Holding it in state instead
+  // would re-render (and risk remounting) the canvas on every chart edit.
+  const vizStoreRef = useRef<VizSpecStore | null>(null)
+
+  // The address bar is never synced to the chart's live state (D-05): this
+  // reads the ?chart= param present on mount/navigation only, and the
+  // decode below never calls a search-param setter or history API.
+  const rawChartParam = searchParams.get(SHARE_PARAM)
+
+  // Computed once per (raw param, loaded meta) pair, never per render — a
+  // fresh object reference on every render would make GraphicWalker treat
+  // the `chart` prop as having changed and remount the canvas mid-session.
+  // Gated on dataState so decode never runs against an empty known-field
+  // list while meta.json is still loading (schema-drift guard, D-07).
+  const decodedChart = useMemo(() => {
+    if (dataState.status !== 'success') return undefined
+    const knownFieldNames = dataState.data.meta.fields?.map((f) => f.name) ?? []
+    return decodeShareLink(rawChartParam, knownFieldNames) as IChart[] | undefined
+  }, [rawChartParam, dataState])
+
+  const onCopyLink = async () => {
+    const chart = vizStoreRef.current?.exportCode()
+    if (!chart) return
+    const encoded = encodeShareLink(chart)
+    if (encoded === null) return
+    const url = new URL(window.location.href)
+    url.searchParams.set(SHARE_PARAM, encoded)
+    try {
+      await navigator.clipboard.writeText(url.toString())
+    } catch {
+      // A clipboard-write failure (permissions, insecure context) is not
+      // surfaced to the visitor — same silent-fallback posture as D-07.
+    }
+  }
 
   // Phase 1: DuckDB-Wasm engine init. Failure here is not retry-recoverable
   // — a different browser/environment is needed, so there is no attempt
@@ -101,6 +141,7 @@ export default function ExplorerPage() {
   // string, never a disappearing/reappearing header), then the real title
   // takes over once the phase-2 load succeeds.
   let headerTitle = id ?? 'Enquesta'
+  let headerCopyLink: (() => Promise<void>) | undefined
   let content
   if (!valid) {
     content = <p className="text-zinc-700 dark:text-zinc-300">No s'ha trobat aquesta enquesta.</p>
@@ -120,6 +161,7 @@ export default function ExplorerPage() {
   } else {
     const { meta, rows } = dataState.data
     headerTitle = meta.title
+    headerCopyLink = onCopyLink
     content = (
       <>
         <DataDictionary fields={meta.fields} />
@@ -128,6 +170,8 @@ export default function ExplorerPage() {
             dataSource={rows}
             rawFields={toGraphicWalkerFields(meta.fields ?? [])}
             appearance={theme}
+            storeRef={vizStoreRef}
+            chart={decodedChart}
           />
         </div>
       </>
@@ -136,7 +180,7 @@ export default function ExplorerPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
-      <ExplorerHeader title={headerTitle} />
+      <ExplorerHeader title={headerTitle} onCopyLink={headerCopyLink} />
       {content}
     </div>
   )
