@@ -23,8 +23,8 @@
 - [x] **EXPL-07**: User pot tornar al llistat d'enquestes des de l'explorador
 - [x] **EXPL-08**: Un link directe a `/enquesta/:id` funciona correctament en carregar-lo o refrescar-lo (sense 404 a GitHub Pages)
 - [x] **EXPL-09**: User pot veure descripcions de camps (diccionari de dades) des de `[id]_meta.json` dins l'explorador
-- [ ] **EXPL-10**: User pot exportar el gràfic actual com a imatge (PNG/SVG)
-- [ ] **EXPL-11**: User pot generar/copiar un link que reprodueix exactament la visualització actual (encoding de camps + filtres actius) mitjançant query params
+- [x] **EXPL-10**: User pot exportar el gràfic actual com a imatge (PNG/SVG)
+- [x] **EXPL-11**: User pot generar/copiar un link que reprodueix exactament la visualització actual (encoding de camps + filtres actius) mitjançant query params
 
 ### Dades (Pipeline offline)
 
@@ -78,8 +78,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPL-07 | Phase 3 | Complete |
 | EXPL-08 | Phase 3 | Complete |
 | EXPL-09 | Phase 3 | Complete |
-| EXPL-10 | Phase 3 | Pending |
-| EXPL-11 | Phase 3 | Pending |
+| EXPL-10 | Phase 3 | Complete |
+| EXPL-11 | Phase 3 | Complete |
 | DATA-01 | Phase 2 | Complete |
 | DATA-02 | Phase 2 | Complete |
 | DATA-03 | Phase 2 | Complete |
