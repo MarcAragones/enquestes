@@ -3,7 +3,7 @@ status: complete
 phase: 02-offline-data-pipeline
 source: [02-VERIFICATION.md]
 started: 2026-08-26T14:10:00Z
-updated: 2026-08-26T16:05:00Z
+updated: 2026-08-26T16:25:00Z
 ---
 
 ## Current Test
@@ -30,15 +30,16 @@ expected: |
   UNIQUENESS_RATIO_THRESHOLD=0.9 (scripts/pipeline/privacy.py) flag sensibly on actual survey
   data, not just the synthetic fixtures. Either "thresholds fine" or updated threshold values
   reported by the developer.
-result: issue
-reported: "uv run scripts/convert_enquesta.py --list-columns /Users/marcaragones/Downloads/REO1167_microdades_anonimitzades.csv → ERROR: Error tokenizing data. C error: Expected 8 fields in line 4, saw 10"
-severity: major
+result: pass
+note: |
+  Retry (#2): both blocking bugs (G-02-2, G-02-3) confirmed fixed against the real export
+  (2000 rows x 320 columns) — commits c8edb19, 9e72826. --list-columns ran clean.
 
 ## Summary
 
 total: 2
-passed: 1
-issues: 1
+passed: 2
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
