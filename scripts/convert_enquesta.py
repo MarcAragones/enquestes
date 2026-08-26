@@ -107,7 +107,7 @@ def main(argv: list | None = None) -> int:
     #    shape-sanity warnings that never auto-correct anything.
     try:
         df, load_warnings = load_mod.load_table(args.input_csv, args.sheet)
-    except ValueError as exc:
+    except (ValueError, OSError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
@@ -140,6 +140,10 @@ def main(argv: list | None = None) -> int:
     if missing_columns:
         print(f"ERROR: columnes no trobades a l'export: {', '.join(missing_columns)}", file=sys.stderr)
         return 1
+    duplicate_columns = sorted({c for c in requested_columns if requested_columns.count(c) > 1})
+    if duplicate_columns:
+        print(f"ERROR: columnes duplicades a --columns: {', '.join(duplicate_columns)}", file=sys.stderr)
+        return 1
     df = df[requested_columns].copy()
 
     dropped_free_text = [c for c in df.columns if infer.is_free_text_column(df[c])]
@@ -149,6 +153,14 @@ def main(argv: list | None = None) -> int:
             + ", ".join(dropped_free_text)
         )
         df = df.drop(columns=dropped_free_text)
+
+    if df.shape[1] == 0:
+        print(
+            "ERROR: cap columna sobreviu després de descartar les de text lliure "
+            "(D-02); tria un --columns amb almenys una columna no-text-lliure.",
+            file=sys.stderr,
+        )
+        return 1
 
     # 6. Build fields first -- the small-group scan needs the dimension-typed
     #    column list, so field inference now runs before the checklist.
@@ -202,14 +214,19 @@ def main(argv: list | None = None) -> int:
     # 9. Structural validation before any write touches disk.
     schema.validate_meta(meta)
 
-    # 10. Write the three artifacts.
+    # 10. Compute and validate the upserted index BEFORE any write touches
+    #     disk -- a malformed existing sibling entry must never be persisted
+    #     as a "successful" partial write.
+    new_index = index_mod.compute_upserted_index(index_path, index_entry)
+    schema.validate_index(new_index)
+
+    # 11. Write the three artifacts.
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(parquet_path, engine="pyarrow", index=False)
     schema.write_json(meta_path, meta)
-    new_index = index_mod.upsert_index_entry(index_path, index_entry)
-    schema.validate_index(new_index)
+    schema.write_json(index_path, new_index)
 
-    # 11. Read the Parquet back and assert it matches the published contract.
+    # 12. Read the Parquet back and assert it matches the published contract.
     written_schema = pq.read_schema(parquet_path)
     field_names = {f["name"] for f in fields}
     if set(written_schema.names) != field_names:

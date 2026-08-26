@@ -46,7 +46,7 @@ class UpsertIndexEntryTests(unittest.TestCase):
                 "description": "Descripció actualitzada.",
                 "n": 300,
             }
-            result = index_mod.upsert_index_entry(index_path, new_entry)
+            result = index_mod.compute_upserted_index(index_path, new_entry)
 
             self.assertEqual(len(result), len(original))
             replaced = next(e for e in result if e["id"] == "demo-2024")
@@ -72,7 +72,7 @@ class UpsertIndexEntryTests(unittest.TestCase):
                 "description": "Nova.",
                 "n": 10,
             }
-            result = index_mod.upsert_index_entry(index_path, new_entry)
+            result = index_mod.compute_upserted_index(index_path, new_entry)
 
             self.assertEqual(len(result), len(original) + 1)
             for original_entry in original:
@@ -89,9 +89,11 @@ class UpsertIndexEntryTests(unittest.TestCase):
                 "description": "Sol.",
                 "n": 1,
             }
-            result = index_mod.upsert_index_entry(index_path, new_entry)
+            result = index_mod.compute_upserted_index(index_path, new_entry)
             self.assertEqual(result, [new_entry])
-            self.assertTrue(index_path.exists())
+            # compute_upserted_index is pure -- it never writes to disk itself;
+            # callers validate the result and write it explicitly.
+            self.assertFalse(index_path.exists())
 
 
 class WriteJsonTests(unittest.TestCase):

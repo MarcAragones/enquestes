@@ -110,6 +110,14 @@ def main(argv: list | None = None) -> int:
 
     fields = infer.build_fields(df)
     kpis = infer.build_kpis(df, fields)
+    for kpi in kpis:
+        kpi_n = kpi.get("n")
+        if kpi_n is not None and kpi_n < schema.MIN_KPI_SAMPLE:
+            print(
+                f"AVÍS: KPI '{kpi['label']}' té n={kpi_n}, per sota de "
+                f"MIN_KPI_SAMPLE={schema.MIN_KPI_SAMPLE}",
+                file=sys.stderr,
+            )
 
     n = len(df)
     meta = {
@@ -135,11 +143,13 @@ def main(argv: list | None = None) -> int:
 
     schema.validate_meta(meta)
 
+    new_index = index_mod.compute_upserted_index(index_path, index_entry)
+    schema.validate_index(new_index)
+
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(parquet_path, engine="pyarrow", index=False)
     schema.write_json(meta_path, meta)
-    new_index = index_mod.upsert_index_entry(index_path, index_entry)
-    schema.validate_index(new_index)
+    schema.write_json(index_path, new_index)
 
     written_schema = pq.read_schema(parquet_path)
     field_names = {f["name"] for f in fields}

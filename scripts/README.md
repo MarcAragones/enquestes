@@ -96,7 +96,7 @@ confirmació — no hi ha cap respondent real a protegir.
 | `--out-dir` | Directori de sortida (per defecte: `public/data`) |
 
 Reutilitza `pipeline.infer.build_fields`/`build_kpis` i
-`pipeline.index.upsert_index_entry`, així que la forma de la sortida sintètica
+`pipeline.index.compute_upserted_index`, així que la forma de la sortida sintètica
 és idèntica a la de la conversió real (mateixa regla D-03 de tipatge de
 columnes, mateix upsert d'índex).
 
