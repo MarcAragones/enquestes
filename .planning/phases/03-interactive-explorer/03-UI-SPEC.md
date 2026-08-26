@@ -27,6 +27,12 @@ created: 2026-08-26
 
 ---
 
+## Visual Hierarchy
+
+The GraphicWalker canvas is the primary focal point of the explorer page; the `ExplorerHeader` (back-link, survey title, dark-mode toggle, Copy-link button) is secondary chrome. The header stays compact (single row, `py-4`) so the canvas claims the dominant share of vertical viewport space; the data-dictionary panel is a collapsed-by-default, opt-in secondary surface that never competes with the canvas for default visual weight.
+
+---
+
 ## Spacing Scale
 
 Declared values (must be multiples of 4):
@@ -42,7 +48,7 @@ Declared values (must be multiples of 4):
 | 3xl | 64px | Page-level spacing (reserved, not yet used) |
 
 Exceptions:
-- **12px** (`gap-3`, `p-3`, `space-y-3`) — already established precedent for compact internal groupings (KPI card padding, dialog button gaps in `SurveySummaryModal.tsx`). Reuse for Phase 3's data-dictionary panel internals; do not introduce a *new* 12px usage pattern beyond matching this existing one.
+- **12px** (`gap-3`, `p-3`, `space-y-3`) — exists elsewhere in the codebase as legacy precedent (KPI card padding, dialog button gaps in `SurveySummaryModal.tsx`, both shipped in earlier phases). **Not part of the standard scale and not reused in Phase 3.** The data-dictionary panel's internal spacing (between field-name rows, icon-to-description gaps) uses **8px** (`gap-2`, `space-y-2`) instead, staying on the declared 4/8/16/24/32/48/64 scale; the panel's own outer padding is 16px (`p-4`, see below).
 - **20px** (`p-5`) — established `SurveyCard.tsx` card padding. Not reused this phase (Phase 3 introduces no new outer "card" surface at that scale — the data-dictionary panel is a secondary/nested surface, use 16px `p-4` for it instead, per Typography/Color sections below).
 - **Layout width, not padding:** `App.tsx`'s shared `<main>` wraps all routes in `mx-auto max-w-3xl px-6 py-8` (768px cap, sized for the card-grid homepage). `ExplorerPage.tsx` must render **outside** this width cap — `<GraphicWalker />` needs the full viewport width to function as a usable drag-and-drop canvas; a 768px-capped explorer would be unusable, not just cramped. Implement as a route-level full-width wrapper (e.g. the explorer route renders its own top-level container instead of relying on `App.tsx`'s shared `<main>`), keeping `px-6`/`py-8` outer breathing room but dropping `max-w-3xl` specifically for this route.
 
