@@ -6,7 +6,7 @@ import '@kanaries/graphic-walker/dist/style.css'
 import { isValidEnquestaId, metaUrl, parseEnquestaMeta } from '../lib/enquestes'
 import { toGraphicWalkerFields } from '../lib/graphicWalkerFields'
 import { SHARE_PARAM, decodeShareLink, encodeShareLink } from '../lib/shareLink'
-import { getDb, queryParquet } from '../services/duckdb'
+import { getDb, queryParquet, resetDb } from '../services/duckdb'
 import { ErrorState } from '../components/ErrorState'
 import { ChartErrorBoundary } from '../components/ChartErrorBoundary'
 import { ExplorerHeader } from '../components/ExplorerHeader'
@@ -43,6 +43,7 @@ export default function ExplorerPage() {
   const [engineState, setEngineState] = useState<FetchState<true>>({ status: 'loading' })
   const [dataState, setDataState] = useState<FetchState<ExplorerData>>({ status: 'loading' })
   const [dataAttempt, setDataAttempt] = useState(0)
+  const [engineAttempt, setEngineAttempt] = useState(0)
 
   // storeRef, not a change-callback + useState: the current chart spec is
   // read synchronously from this ref only inside the copy-link click
@@ -81,9 +82,11 @@ export default function ExplorerPage() {
     }
   }
 
-  // Phase 1: DuckDB-Wasm engine init. Failure here is not retry-recoverable
-  // — a different browser/environment is needed, so there is no attempt
-  // counter and no retry action for this phase.
+  // Phase 1: DuckDB-Wasm engine init. `initDb()`'s failure is not limited to
+  // an incompatible-browser cause — it also fetches/compiles a multi-MB wasm
+  // binary over the network, which can fail transiently (WR-03) — so this
+  // phase offers a retry the same way phase 2 does, resetting the cached
+  // engine promise via resetDb() before re-attempting.
   useEffect(() => {
     if (!valid) return
     let cancelled = false
@@ -93,13 +96,24 @@ export default function ExplorerPage() {
         if (!cancelled) setEngineState({ status: 'success', data: true })
       })
       .catch(() => {
-        if (!cancelled) setEngineState({ status: 'error', message: '' })
+        if (!cancelled) {
+          setEngineState({
+            status: 'error',
+            message: "No s'ha pogut inicialitzar el motor de consultes. Comprova la connexió i torna-ho a provar.",
+          })
+        }
       })
 
     return () => {
       cancelled = true
     }
-  }, [valid])
+  }, [valid, engineAttempt])
+
+  const onEngineRetry = () => {
+    resetDb()
+    setEngineState({ status: 'loading' })
+    setEngineAttempt((a) => a + 1)
+  }
 
   // Phase 2: meta.json + Parquet, only once phase 1 succeeded. Plausibly
   // transient (network blip), so this phase offers a retry.
@@ -152,7 +166,8 @@ export default function ExplorerPage() {
     content = (
       <ErrorState
         title="No s'ha pogut inicialitzar el motor de consultes."
-        message="Prova-ho amb un altre navegador; aquesta aplicació necessita compatibilitat amb WebAssembly."
+        message={engineState.message}
+        onRetry={onEngineRetry}
       />
     )
   } else if (dataState.status === 'loading') {

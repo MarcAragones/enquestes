@@ -43,6 +43,18 @@ export function getDb(): Promise<duckdb.AsyncDuckDB> {
   return dbPromise
 }
 
+/**
+ * Clears the cached engine-init promise so the next `getDb()` call attempts
+ * a fresh `initDb()` (WR-03). `initDb()`'s failure modes are not limited to
+ * "this browser lacks WASM support" — `db.instantiate()` fetches and
+ * compiles a multi-MB wasm binary over the network, which can fail
+ * transiently. Without this reset, a retry button would just re-return the
+ * same already-rejected cached promise forever.
+ */
+export function resetDb(): void {
+  dbPromise = null
+}
+
 // Guards against re-registering the same virtual filename twice (React
 // StrictMode's double-invoked effect, a revisit, or a retry), which would
 // otherwise throw on the second registerFileURL call for the same name.
