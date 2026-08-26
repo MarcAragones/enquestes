@@ -225,3 +225,7 @@ None — `uv` (0.9.16) was already present on this machine; no manual setup need
 ---
 *Phase: 02-offline-data-pipeline*
 *Completed: 2026-08-26*
+
+## Self-Check: PASSED
+
+All 9 created files verified present on disk; all 3 commit hashes (`0987dc2`, `02b4e03`, `e7a14cf`) verified present in git log.
