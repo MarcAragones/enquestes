@@ -7,8 +7,8 @@
 
 ### Llistat (Homepage)
 
-- [ ] **HOME-01**: User pot veure una graella de targetes de totes les enquestes disponibles, amb títol, data, descripció i nombre de participants
-- [ ] **HOME-02**: User veu un missatge d'error clar si `enquestes_index.json` no es pot carregar (en lloc de pantalla en blanc)
+- [x] **HOME-01**: User pot veure una graella de targetes de totes les enquestes disponibles, amb títol, data, descripció i nombre de participants
+- [x] **HOME-02**: User veu un missatge d'error clar si `enquestes_index.json` no es pot carregar (en lloc de pantalla en blanc)
 - [ ] **HOME-03**: User pot clicar una targeta i veure un resum ràpid de KPIs (ex. edat mitjana, satisfacció) carregat des de `[id]_meta.json`, abans d'entrar a l'explorador
 - [ ] **HOME-04**: User pot accedir a l'explorador complet des del resum ràpid amb un botó "Explorar dades interactives"
 
@@ -65,8 +65,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HOME-01 | Phase 1 | Pending |
-| HOME-02 | Phase 1 | Pending |
+| HOME-01 | Phase 1 | Complete |
+| HOME-02 | Phase 1 | Complete |
 | HOME-03 | Phase 1 | Pending |
 | HOME-04 | Phase 1 | Pending |
 | EXPL-01 | Phase 3 | Pending |

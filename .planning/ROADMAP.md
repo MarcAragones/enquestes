@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. User can click "Explorar dades interactives" from the summary to navigate toward the explorer route
   5. Every push to `main` automatically redeploys the site to GitHub Pages with the correct `base` path
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 
 Plans:
 **Wave 1**
@@ -42,7 +42,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02-PLAN.md — Survey catalog: text-only card grid plus distinct loading, failure-with-retry, and empty-catalog states (HOME-01, HOME-02)
+- [x] 01-02-PLAN.md — Survey catalog: text-only card grid plus distinct loading, failure-with-retry, and empty-catalog states (HOME-01, HOME-02)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -88,6 +88,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Survey Listing | 1/3 | In Progress|  |
+| 1. Foundation & Survey Listing | 2/3 | In Progress|  |
 | 2. Offline Data Pipeline | 0/TBD | Not started | - |
 | 3. Interactive Explorer | 0/TBD | Not started | - |
