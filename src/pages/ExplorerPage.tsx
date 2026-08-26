@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { GraphicWalker } from '@kanaries/graphic-walker'
 import '@kanaries/graphic-walker/dist/style.css'
 import { isValidEnquestaId, metaUrl, parseEnquestaMeta } from '../lib/enquestes'
 import { toGraphicWalkerFields } from '../lib/graphicWalkerFields'
 import { getDb, queryParquet } from '../services/duckdb'
 import { ErrorState } from '../components/ErrorState'
-import { ThemeToggle } from '../components/ThemeToggle'
+import { ExplorerHeader } from '../components/ExplorerHeader'
+import { useTheme } from '../hooks/useTheme'
 import type { EnquestaMeta, FetchState } from '../types/enquesta'
 
 interface ExplorerData {
@@ -32,6 +33,7 @@ function LoadingBlock({ text }: { text: string }) {
 export default function ExplorerPage() {
   const { id } = useParams<{ id: string }>()
   const valid = id !== undefined && isValidEnquestaId(id)
+  const { theme } = useTheme()
 
   const [engineState, setEngineState] = useState<FetchState<true>>({ status: 'loading' })
   const [dataState, setDataState] = useState<FetchState<ExplorerData>>({ status: 'loading' })
@@ -93,6 +95,11 @@ export default function ExplorerPage() {
     setDataAttempt((a) => a + 1)
   }
 
+  // The header always renders, in every page state (EXPL-07): the survey id
+  // stands in for the title until meta.json resolves (never an empty
+  // string, never a disappearing/reappearing header), then the real title
+  // takes over once the phase-2 load succeeds.
+  let headerTitle = id ?? 'Enquesta'
   let content
   if (!valid) {
     content = <p className="text-zinc-700 dark:text-zinc-300">No s'ha trobat aquesta enquesta.</p>
@@ -111,21 +118,21 @@ export default function ExplorerPage() {
     content = <ErrorState message={dataState.message} onRetry={onDataRetry} />
   } else {
     const { meta, rows } = dataState.data
+    headerTitle = meta.title
     content = (
       <div className="min-h-screen">
-        <GraphicWalker dataSource={rows} rawFields={toGraphicWalkerFields(meta.fields ?? [])} />
+        <GraphicWalker
+          dataSource={rows}
+          rawFields={toGraphicWalkerFields(meta.fields ?? [])}
+          appearance={theme}
+        />
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
-      <header className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-        <Link to="/" className="inline-block text-accent hover:text-accent-strong">
-          ← Torna al llistat d'enquestes
-        </Link>
-        <ThemeToggle />
-      </header>
+      <ExplorerHeader title={headerTitle} />
       {content}
     </div>
   )
