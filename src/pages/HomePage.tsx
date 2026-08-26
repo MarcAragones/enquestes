@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { dataUrl, parseEnquestesIndex } from '../lib/enquestes'
 import type { EnquestaIndexEntry, FetchState } from '../types/enquesta'
+import { LoadingSkeleton } from '../components/LoadingSkeleton'
+import { ErrorState } from '../components/ErrorState'
+import { EmptyState } from '../components/EmptyState'
+import { SurveyGrid } from '../components/SurveyGrid'
 
 export function HomePage() {
   const [state, setState] = useState<FetchState<EnquestaIndexEntry[]>>({ status: 'loading' })
+  const [attempt, setAttempt] = useState(0)
+  const navigate = useNavigate()
 
   useEffect(() => {
     let cancelled = false
@@ -29,45 +36,25 @@ export function HomePage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [attempt])
+
+  const onRetry = () => {
+    setState({ status: 'loading' })
+    setAttempt((a) => a + 1)
+  }
+  const onSelect = (id: string) => navigate(`/enquesta/${id}`)
 
   if (state.status === 'loading') {
-    return (
-      <p role="status" className="text-zinc-500 dark:text-zinc-400">
-        Carregant enquestes…
-      </p>
-    )
+    return <LoadingSkeleton />
   }
 
   if (state.status === 'error') {
-    return (
-      <p role="alert" className="text-red-600 dark:text-red-400">
-        {state.message}
-      </p>
-    )
+    return <ErrorState message={state.message} onRetry={onRetry} />
   }
 
   if (state.data.length === 0) {
-    return (
-      <p className="text-zinc-500 dark:text-zinc-400">
-        Encara no hi ha cap enquesta publicada.
-      </p>
-    )
+    return <EmptyState />
   }
 
-  return (
-    <ul className="space-y-3">
-      {state.data.map((enquesta) => (
-        <li
-          key={enquesta.id}
-          className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-        >
-          <p className="font-medium text-zinc-900 dark:text-zinc-100">{enquesta.title}</p>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">{enquesta.date}</p>
-          <p className="text-zinc-700 dark:text-zinc-300">{enquesta.description}</p>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">{enquesta.n} participants</p>
-        </li>
-      ))}
-    </ul>
-  )
+  return <SurveyGrid enquestes={state.data} onSelect={onSelect} />
 }
