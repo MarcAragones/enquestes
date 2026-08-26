@@ -204,6 +204,10 @@ None - no external service configuration required.
 - **Deferred to end-of-phase UAT** (`.planning/WINDOWS.md` id 2, `unrun-verify`): Task 3's `<human-check>` — two visible loading phases, correct field typing in GraphicWalker's own field list, drag-and-drop across bar/line/area/scatter mark types, full-width canvas with exactly one header row, refresh-safe deep link, and a console free of styled-components/apache-arrow/Worker-construction errors. All automatable proxies for these claims (build, lint, the six unit tests, `verify:pages`, `verify:explorer`, and direct source/structural inspection of `ExplorerPage.tsx`/`App.tsx`/`duckdb.ts`) passed in this run.
 - The zero-row-Parquet backstop and the small/medium-screen responsiveness backstop flagged in `03-UI-SPEC.md`'s UI Considerations remain unresolved held-out checks — not addressed by this plan, carried forward to end-of-phase UAT alongside the human-check above
 
+## Self-Check: PASSED
+
+All created files (`src/services/duckdb.ts`, `src/lib/graphicWalkerFields.ts`, `src/lib/graphicWalkerFields.test.ts`, `scripts/verify-explorer-assets.mjs`, this SUMMARY) exist on disk. All commits (`a756dfc`, `4d54bcc`, `934de43`, `61ee3ca`, `aa5b0f0`, `4d21902`) verified present in `git log --oneline --all`.
+
 ---
 *Phase: 03-interactive-explorer*
 *Completed: 2026-08-26*
