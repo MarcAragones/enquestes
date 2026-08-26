@@ -1,0 +1,23 @@
+[
+  {
+    "id": "satisfaccio-clients-2026",
+    "title": "Satisfacció de clients 2026",
+    "date": "2026-03-14",
+    "description": "Enquesta trimestral sobre satisfacció general dels clients amb el servei d'atenció i el producte.",
+    "n": 342
+  },
+  {
+    "id": "enquesta-pilot-buida",
+    "title": "Enquesta pilot (sense respostes)",
+    "date": "2026-06-01",
+    "description": "Prova pilot llançada abans de la campanya de difusió general; encara no ha rebut cap resposta.",
+    "n": 0
+  },
+  {
+    "id": "clima-laboral-2026",
+    "title": "Clima laboral <script>alert(1)</script>",
+    "date": "2026-07-22",
+    "description": "Enquesta anual de clima laboral que cobreix comunicació interna, càrrega de treball, reconeixement, oportunitats de creixement professional i equilibri entre vida personal i laboral. Inclou preguntes obertes i tancades distribuïdes en cinc blocs temàtics diferents per obtenir una visió completa de l'experiència de l'equip.",
+    "n": 128
+  }
+]

@@ -39,3 +39,23 @@ export function parseEnquestesIndex(input: unknown): EnquestaIndexEntry[] {
 
   return input as EnquestaIndexEntry[]
 }
+
+/**
+ * Catalan long-form date, e.g. "26 d'agost de 2026". Returns the input
+ * string unchanged when it does not parse into a valid Date — a malformed
+ * date field should still show something truthful, never "Invalid Date".
+ */
+export function formatDate(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) {
+    return iso
+  }
+  return new Intl.DateTimeFormat('ca-ES', { day: 'numeric', month: 'long', year: 'numeric' }).format(
+    d,
+  )
+}
+
+/** Catalan-locale thousands grouping for participant counts. */
+export function formatCount(n: number): string {
+  return new Intl.NumberFormat('ca-ES').format(n)
+}
