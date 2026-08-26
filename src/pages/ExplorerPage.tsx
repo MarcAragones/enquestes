@@ -7,6 +7,7 @@ import { toGraphicWalkerFields } from '../lib/graphicWalkerFields'
 import { getDb, queryParquet } from '../services/duckdb'
 import { ErrorState } from '../components/ErrorState'
 import { ExplorerHeader } from '../components/ExplorerHeader'
+import { DataDictionary } from '../components/DataDictionary'
 import { useTheme } from '../hooks/useTheme'
 import type { EnquestaMeta, FetchState } from '../types/enquesta'
 
@@ -120,13 +121,16 @@ export default function ExplorerPage() {
     const { meta, rows } = dataState.data
     headerTitle = meta.title
     content = (
-      <div className="min-h-screen">
-        <GraphicWalker
-          dataSource={rows}
-          rawFields={toGraphicWalkerFields(meta.fields ?? [])}
-          appearance={theme}
-        />
-      </div>
+      <>
+        <DataDictionary fields={meta.fields} />
+        <div className="min-h-screen">
+          <GraphicWalker
+            dataSource={rows}
+            rawFields={toGraphicWalkerFields(meta.fields ?? [])}
+            appearance={theme}
+          />
+        </div>
+      </>
     )
   }
 
