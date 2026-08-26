@@ -38,7 +38,7 @@ artefactes publicats.
 | `--description` | sí* | Descripció de l'enquesta |
 | `--date` | no | `YYYY-MM-DD` (per defecte: avui en UTC) |
 | `--out-dir` | no | Directori de sortida (per defecte: `public/data`) |
-| `--sheet` | no | Nom del full d'Excel (reservat; encara no consumit) |
+| `--sheet` | no | Nom del full a llegir en entrades `.xlsx` (per defecte: el primer full) |
 | `--list-columns` | no | Mode d'inspecció: només imprimeix columnes i surt |
 | `--confirm-privacy-review` | no | Requerit per escriure quan el checklist troba indicis |
 
