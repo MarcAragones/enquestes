@@ -62,7 +62,7 @@ Plans:
   2. Running `generate_mock_parquet.py` produces a valid example Parquet dataset without needing any real survey data
   3. Before real data is published, the conversion process surfaces a privacy checklist that flags potential quasi-identifiers, not just name/email columns
 
-**Plans**: 1/3 plans executed
+**Plans**: 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -71,8 +71,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion; 02-02 and 02-03 run in parallel)*
 
-- [ ] 02-02-PLAN.md — Full DATA-03 checklist (quasi-identifier name hints, small-group k-anonymity scan, honest reporting) plus real-export loading: `.xlsx`, encoding fallback, shape sanity (DATA-01, DATA-03)
-- [ ] 02-03-PLAN.md — Mock generator tracer, the committed synthetic demo dataset in `public/data/`, and the pipeline README (DATA-02)
+- [x] 02-02-PLAN.md — Full DATA-03 checklist (quasi-identifier name hints, small-group k-anonymity scan, honest reporting) plus real-export loading: `.xlsx`, encoding fallback, shape sanity (DATA-01, DATA-03)
+- [x] 02-03-PLAN.md — Mock generator tracer, the committed synthetic demo dataset in `public/data/`, and the pipeline README (DATA-02)
 
 ### Phase 3: Interactive Explorer
 
@@ -99,5 +99,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Survey Listing | 3/3 | Complete    | 2026-08-26 |
-| 2. Offline Data Pipeline | 1/3 | In Progress|  |
+| 2. Offline Data Pipeline | 3/3 | In Progress|  |
 | 3. Interactive Explorer | 0/TBD | Not started | - |
