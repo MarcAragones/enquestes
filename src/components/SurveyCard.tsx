@@ -18,6 +18,7 @@ export function SurveyCard({ enquesta, onSelect }: SurveyCardProps) {
     <button
       type="button"
       onClick={() => onSelect(enquesta.id)}
+      aria-haspopup="dialog"
       aria-label={`${enquesta.title} — ${formatCount(enquesta.n)} ${participantsLabel}`}
       className="w-full rounded-lg border border-zinc-200 bg-white p-5 text-left transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-accent-soft"
     >
