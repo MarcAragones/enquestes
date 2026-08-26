@@ -62,12 +62,12 @@ Plans:
   2. Running `generate_mock_parquet.py` produces a valid example Parquet dataset without needing any real survey data
   3. Before real data is published, the conversion process surfaces a privacy checklist that flags potential quasi-identifiers, not just name/email columns
 
-**Plans**: 3 plans
+**Plans**: 1/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Conversion spine: `scripts/pipeline/` modules plus a tracer that takes one raw CSV end-to-end to Parquet + meta.json + upserted index, with the privacy gate blocking by default, under a runnable self-test (DATA-01, DATA-03)
+- [x] 02-01-PLAN.md — Conversion spine: `scripts/pipeline/` modules plus a tracer that takes one raw CSV end-to-end to Parquet + meta.json + upserted index, with the privacy gate blocking by default, under a runnable self-test (DATA-01, DATA-03)
 
 **Wave 2** *(blocked on Wave 1 completion; 02-02 and 02-03 run in parallel)*
 
@@ -99,5 +99,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Survey Listing | 3/3 | Complete    | 2026-08-26 |
-| 2. Offline Data Pipeline | 0/3 | Planned | - |
+| 2. Offline Data Pipeline | 1/3 | In Progress|  |
 | 3. Interactive Explorer | 0/TBD | Not started | - |
