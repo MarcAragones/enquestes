@@ -1,0 +1,30 @@
+{
+  "id": "demo-2024",
+  "title": "Enquesta de demostració 2024",
+  "date": "2024-11-05",
+  "description": "Enquesta de mostra usada per exercir el resum ràpid de KPIs (plan 01-03): una KPI ordinària sense mostra pròpia, una amb mostra pròpia més petita que la de l'enquesta, i una per sota del llindar de supressió.",
+  "n": 250,
+  "kpis": [
+    {
+      "label": "Satisfacció mitjana",
+      "value": 8.4,
+      "unit": "/10"
+    },
+    {
+      "label": "Recomanaria el servei",
+      "value": 76,
+      "unit": "%",
+      "n": 180
+    },
+    {
+      "label": "Satisfacció (segment premium)",
+      "value": 9.1,
+      "unit": "/10",
+      "n": 6
+    }
+  ],
+  "fields": [
+    { "name": "satisfaccio", "label": "Satisfacció", "type": "measure" },
+    { "name": "segment", "label": "Segment", "type": "dimension" }
+  ]
+}

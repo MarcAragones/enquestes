@@ -19,5 +19,12 @@
     "date": "2026-07-22",
     "description": "Enquesta anual de clima laboral que cobreix comunicació interna, càrrega de treball, reconeixement, oportunitats de creixement professional i equilibri entre vida personal i laboral. Inclou preguntes obertes i tancades distribuïdes en cinc blocs temàtics diferents per obtenir una visió completa de l'experiència de l'equip.",
     "n": 128
+  },
+  {
+    "id": "demo-2024",
+    "title": "Enquesta de demostració 2024",
+    "date": "2024-11-05",
+    "description": "Enquesta de mostra usada per exercir el resum ràpid de KPIs (plan 01-03).",
+    "n": 250
   }
 ]
