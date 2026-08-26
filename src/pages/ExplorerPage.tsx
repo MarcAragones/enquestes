@@ -8,6 +8,7 @@ import { toGraphicWalkerFields } from '../lib/graphicWalkerFields'
 import { SHARE_PARAM, decodeShareLink, encodeShareLink } from '../lib/shareLink'
 import { getDb, queryParquet } from '../services/duckdb'
 import { ErrorState } from '../components/ErrorState'
+import { ChartErrorBoundary } from '../components/ChartErrorBoundary'
 import { ExplorerHeader } from '../components/ExplorerHeader'
 import { DataDictionary } from '../components/DataDictionary'
 import { useTheme } from '../hooks/useTheme'
@@ -166,13 +167,15 @@ export default function ExplorerPage() {
       <>
         <DataDictionary fields={meta.fields} />
         <div className="min-h-screen">
-          <GraphicWalker
-            dataSource={rows}
-            rawFields={toGraphicWalkerFields(meta.fields ?? [])}
-            appearance={theme}
-            storeRef={vizStoreRef}
-            chart={decodedChart}
-          />
+          <ChartErrorBoundary key={rawChartParam ?? 'no-chart'}>
+            <GraphicWalker
+              dataSource={rows}
+              rawFields={toGraphicWalkerFields(meta.fields ?? [])}
+              appearance={theme}
+              storeRef={vizStoreRef}
+              chart={decodedChart}
+            />
+          </ChartErrorBoundary>
         </div>
       </>
     )

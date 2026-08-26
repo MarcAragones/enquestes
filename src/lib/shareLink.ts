@@ -70,6 +70,23 @@ export function encodeShareLink(spec: unknown): string | null {
   }
 }
 
+/**
+ * Structural guard for a single GraphicWalker chart spec. Both `IChart` and
+ * the deprecated `IVisSpec` (the two variants `ISpecProps['chart']` accepts,
+ * confirmed against the installed @kanaries/graphic-walker@0.5.2 types —
+ * `dist/interfaces.d.ts`) require a non-optional `visId: string` and a
+ * non-optional `encodings: DraggableFieldState` object — checking both is
+ * enough to reject a decoded value that merely happens to parse as JSON
+ * (a bare number, string, boolean, array element, or an object missing the
+ * chart-spec shape entirely) without hardcoding a property name that isn't
+ * actually part of the confirmed contract.
+ */
+function isChartLike(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Record<string, unknown>
+  return typeof candidate.visId === 'string' && typeof candidate.encodings === 'object' && candidate.encodings !== null
+}
+
 /** Every string value found at a `fid` key inside a parsed chart-like structure. */
 function collectFieldReferences(value: unknown, out: Set<string>): void {
   if (Array.isArray(value)) {
@@ -163,7 +180,24 @@ export function decodeShareLink(raw: string | null, knownFieldNames: string[]): 
     }
   }
 
-  // 7. Return the parsed value verbatim — shaped exactly as the `chart`
+  // 7. Reject anything that doesn't look like a chart spec (or an array of
+  // them) before returning it — a bare JSON scalar (e.g. the number 42) or
+  // an object missing the chart-spec shape would otherwise pass every check
+  // above trivially (an empty field-reference set is vacuously a subset of
+  // knownFieldNames) and reach GraphicWalker's `chart` prop unchecked
+  // (CR-01). `ISpecProps.chart` accepts `IChart[] | IVisSpec[]` in
+  // production (always an array, since it's populated from
+  // `VizSpecStore.exportCode(): IChart[]`), so the array form is validated
+  // element-by-element; a bare single chart-shaped object is also accepted
+  // since this function's own round-trip tests exercise that shape too and
+  // nothing about the encode/decode mechanics requires top-level wrapping.
+  if (Array.isArray(parsed)) {
+    if (!parsed.every(isChartLike)) return undefined
+  } else if (!isChartLike(parsed)) {
+    return undefined
+  }
+
+  // 8. Return the parsed value verbatim — shaped exactly as the `chart`
   // prop expects.
   return parsed
 }
