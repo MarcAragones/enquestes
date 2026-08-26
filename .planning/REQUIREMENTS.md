@@ -28,9 +28,9 @@
 
 ### Dades (Pipeline offline)
 
-- [ ] **DATA-01**: Script Python converteix dades reals (CSV/Excel exportat) a `[id]_respostes.parquet` + `[id]_meta.json`, i afegeix l'entrada corresponent a `enquestes_index.json`
+- [x] **DATA-01**: Script Python converteix dades reals (CSV/Excel exportat) a `[id]_respostes.parquet` + `[id]_meta.json`, i afegeix l'entrada corresponent a `enquestes_index.json`
 - [ ] **DATA-02**: Script Python de mock (`generate_mock_parquet.py`) genera dades de prova sense necessitat de dades reals
-- [ ] **DATA-03**: El procés de conversió inclou una revisió/checklist de privacitat abans de publicar dades reals (detectar quasi-identificadors, no només noms/emails)
+- [x] **DATA-03**: El procés de conversió inclou una revisió/checklist de privacitat abans de publicar dades reals (detectar quasi-identificadors, no només noms/emails)
 
 ### Desplegament
 
@@ -80,9 +80,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPL-09 | Phase 3 | Pending |
 | EXPL-10 | Phase 3 | Pending |
 | EXPL-11 | Phase 3 | Pending |
-| DATA-01 | Phase 2 | Pending |
+| DATA-01 | Phase 2 | Complete |
 | DATA-02 | Phase 2 | Pending |
-| DATA-03 | Phase 2 | Pending |
+| DATA-03 | Phase 2 | Complete |
 | DEPLOY-01 | Phase 1 | Complete |
 | DEPLOY-02 | Phase 1 | Complete |
 
