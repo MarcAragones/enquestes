@@ -218,6 +218,68 @@ class UniquenessFlagsTests(unittest.TestCase):
         self.assertEqual(findings, [])
 
 
+class NameHintFlagsTests(unittest.TestCase):
+    def test_catches_known_quasi_identifier_names(self):
+        df = pd.DataFrame(
+            {
+                "Codi Postal": ["08001"] * 5,
+                "data_naixement": ["1990-01-01"] * 5,
+                "carrec": ["Director"] * 5,
+                "satisfaccio": [1, 2, 3, 4, 5],
+                "resposta": ["A", "B", "A", "B", "A"],
+            }
+        )
+        findings = privacy.name_hint_flags(df)
+        flagged = {f.subject for f in findings}
+        self.assertIn("Codi Postal", flagged)
+        self.assertIn("data_naixement", flagged)
+        self.assertIn("carrec", flagged)
+        self.assertNotIn("satisfaccio", flagged)
+        self.assertNotIn("resposta", flagged)
+
+    def test_short_hint_guard_does_not_flag_capacitat_on_cp(self):
+        df = pd.DataFrame({"capacitat": [1, 2, 3]})
+        findings = privacy.name_hint_flags(df)
+        self.assertEqual(findings, [])
+
+
+class SmallGroupFlagsTests(unittest.TestCase):
+    def test_flags_combination_containing_a_two_row_group(self):
+        df = pd.DataFrame(
+            {
+                "departament": ["A"] * 6 + ["A"] * 6 + ["B"] * 6 + ["B"] * 2,
+                "franja_edat": ["jove"] * 6 + ["gran"] * 6 + ["jove"] * 6 + ["gran"] * 2,
+            }
+        )
+        findings, unevaluated = privacy.small_group_flags(df, ["departament", "franja_edat"])
+        self.assertEqual(len(findings), 1)
+        self.assertIn("departament", findings[0].subject)
+        self.assertIn("franja_edat", findings[0].subject)
+
+    def test_no_finding_when_smallest_group_at_or_above_threshold(self):
+        df = pd.DataFrame(
+            {
+                "departament": ["A"] * 10 + ["B"] * 10,
+                "franja_edat": ["jove"] * 10 + ["gran"] * 10,
+            }
+        )
+        findings, unevaluated = privacy.small_group_flags(df, ["departament", "franja_edat"])
+        self.assertEqual(findings, [])
+
+    def test_single_dimension_frame_returns_empty_findings_and_unevaluated_record(self):
+        df = pd.DataFrame({"segment": ["A", "B"] * 5})
+        findings, unevaluated = privacy.small_group_flags(df, ["segment"])
+        self.assertEqual(findings, [])
+        self.assertEqual(len(unevaluated), 1)
+
+
+class FormatChecklistReportTests(unittest.TestCase):
+    def test_empty_findings_states_assessed_column_count(self):
+        report = privacy.format_checklist_report([], [], 5)
+        self.assertIn("5", report)
+        self.assertIn("Cap indici detectat", report)
+
+
 def _base_meta(**overrides) -> dict:
     meta = {
         "id": "x",

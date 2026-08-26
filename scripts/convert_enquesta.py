@@ -138,9 +138,18 @@ def main(argv: list | None = None) -> int:
         )
         df = df.drop(columns=dropped_free_text)
 
-    # 5. Privacy checklist -- always prints, blocks by default.
-    findings = privacy.run_privacy_checklist(df)
-    print(privacy.format_checklist_report(findings))
+    # 5. Build fields first -- the small-group scan needs the dimension-typed
+    #    column list, so field inference now runs before the checklist.
+    fields = infer.build_fields(df)
+    dimension_columns = [f["name"] for f in fields if f["type"] == "dimension"]
+
+    # 6. Privacy checklist -- always prints, blocks by default. The
+    #    acknowledgement is read only from the parsed CLI namespace on this
+    #    invocation: no os.environ lookup, no config file, no persisted
+    #    state can pre-satisfy the gate.
+    findings, unevaluated = privacy.run_privacy_checklist(df, dimension_columns)
+    assessed_count = len(df.columns) - len(privacy.unevaluated_columns(df))
+    print(privacy.format_checklist_report(findings, unevaluated, assessed_count))
     if findings and not args.confirm_privacy_review:
         print(
             "ERROR: el checklist de privacitat ha trobat indicis. Revisa'ls i torna a "
@@ -149,8 +158,7 @@ def main(argv: list | None = None) -> int:
         )
         return 2
 
-    # 6. Build fields/kpis, warn on small-sample KPIs, assemble the dicts.
-    fields = infer.build_fields(df)
+    # 7. Build kpis, warn on small-sample KPIs, assemble the dicts.
     kpis = infer.build_kpis(df, fields)
     for kpi in kpis:
         kpi_n = kpi.get("n")
@@ -179,17 +187,17 @@ def main(argv: list | None = None) -> int:
         "n": n,
     }
 
-    # 7. Structural validation before any write touches disk.
+    # 8. Structural validation before any write touches disk.
     schema.validate_meta(meta)
 
-    # 8. Write the three artifacts.
+    # 9. Write the three artifacts.
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(parquet_path, engine="pyarrow", index=False)
     schema.write_json(meta_path, meta)
     new_index = index_mod.upsert_index_entry(index_path, index_entry)
     schema.validate_index(new_index)
 
-    # 9. Read the Parquet back and assert it matches the published contract.
+    # 10. Read the Parquet back and assert it matches the published contract.
     written_schema = pq.read_schema(parquet_path)
     field_names = {f["name"] for f in fields}
     if set(written_schema.names) != field_names:
