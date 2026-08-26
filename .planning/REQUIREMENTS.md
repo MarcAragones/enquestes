@@ -34,8 +34,8 @@
 
 ### Desplegament
 
-- [ ] **DEPLOY-01**: L'aplicació es desplega automàticament a GitHub Pages via GitHub Actions a cada push a `main`
-- [ ] **DEPLOY-02**: El build es configura amb el `base` path correcte del repositori (`enquestes`) i amb fallback SPA (404.html o HashRouter) perquè els deep-links a `/enquesta/:id` funcionin
+- [x] **DEPLOY-01**: L'aplicació es desplega automàticament a GitHub Pages via GitHub Actions a cada push a `main`
+- [x] **DEPLOY-02**: El build es configura amb el `base` path correcte del repositori (`enquestes`) i amb fallback SPA (404.html o HashRouter) perquè els deep-links a `/enquesta/:id` funcionin
 
 ## v2 Requirements
 
@@ -83,10 +83,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-01 | Phase 2 | Pending |
 | DATA-02 | Phase 2 | Pending |
 | DATA-03 | Phase 2 | Pending |
-| DEPLOY-01 | Phase 1 | Pending |
-| DEPLOY-02 | Phase 1 | Pending |
+| DEPLOY-01 | Phase 1 | Complete |
+| DEPLOY-02 | Phase 1 | Complete |
 
 **Coverage:**
+
 - v1 requirements: 20 total
 - Mapped to phases: 20
 - Unmapped: 0 ✓

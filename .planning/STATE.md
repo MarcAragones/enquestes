@@ -1,18 +1,18 @@
 ---
 gsd_state_version: 1.0
-current_phase: 1
+current_phase: 01
 current_phase_name: Foundation & Survey Listing
 status: executing
-stopped_at: Phase 1 context gathered
-last_updated: "2026-08-25T20:50:12.203Z"
-last_activity: 2026-08-25
-last_activity_desc: Roadmap created, 20/20 v1 requirements mapped across 3 phases
-state_head: 2ef7b147a283d62d0fcd26b1ac783af611dbc0ca
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-08-26T05:50:27.878Z"
+last_activity: 2026-08-26
+last_activity_desc: Phase 01 execution started
+state_head: 64ad8f8e834d0c4043c7e116584e4bc0e2d26dc8
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 3
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-25)
 
 **Core value:** Qualsevol persona pot explorar interactivament (arrossegar X/Y/Color/Mida/Filtres i crear gràfics propis) les dades d'una enquesta directament al navegador, sense servidor ni cost.
-**Current focus:** Phase 1 - Foundation & Survey Listing
+**Current focus:** Phase 01 — Foundation & Survey Listing
 
 ## Current Position
 
-Phase: 1 (Foundation & Survey Listing) — READY TO EXECUTE
-Plan: 0 of TBD in current phase
+Phase: 01 (Foundation & Survey Listing) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-08-25 — Roadmap created, 20/20 v1 requirements mapped across 3 phases
+Last activity: 2026-08-26 — Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -54,6 +54,11 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: N/A
 
 *Updated after each plan completion*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 01 P01 | 22min | 4 tasks | 33 files |
 
 ## Accumulated Context
 
@@ -64,6 +69,7 @@ Recent decisions affecting current work:
 
 - Roadmap: DuckDB-Wasm service and GraphicWalker UI kept in one "Interactive Explorer" phase (coarse granularity) rather than split, since research's own risk-isolation split would have produced a thin phase
 - Roadmap: EXPL-09/10/11 (data dictionary, chart export, shareable chart-state link) confirmed as v1 scope per REQUIREMENTS.md and mapped into Phase 3, despite research SUMMARY.md/FEATURES.md describing them as v1.x
+- [Phase 01]: Routing strategy: BrowserRouter + 404.html redirect pair (Task 2 checkpoint, user-confirmed over HashRouter) — Clean shareable URLs (/enquestes/enquesta/id) preserve Phase 3's planned query-param chart-state links (EXPL-11); GitHub Pages' lack of custom headers made this a one-way door confirmed before any real links exist.
 
 ### Pending Todos
 
@@ -85,6 +91,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-25T20:07:32.179Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-foundation-survey-listing/01-CONTEXT.md
+Last session: 2026-08-26T05:50:15.278Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None
