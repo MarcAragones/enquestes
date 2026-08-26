@@ -37,7 +37,7 @@ def _parse_args(argv: list) -> argparse.Namespace:
         )
     )
     parser.add_argument("input_csv", type=Path, help="Camí a l'export CSV, TSV o Excel (.xlsx)")
-    parser.add_argument("--id", required=True, help="Identificador de l'enquesta")
+    parser.add_argument("--id", help="Identificador de l'enquesta")
     parser.add_argument("--columns", help="Llista de columnes permeses, separades per comes")
     parser.add_argument("--title", help="Títol de l'enquesta")
     parser.add_argument("--description", help="Descripció de l'enquesta")
@@ -63,6 +63,7 @@ def _parse_args(argv: list) -> argparse.Namespace:
         missing = [
             flag
             for flag, value in (
+                ("--id", args.id),
                 ("--columns", args.columns),
                 ("--title", args.title),
                 ("--description", args.description),
@@ -93,15 +94,19 @@ def _resolve_output_paths(out_dir: Path, survey_id: str) -> tuple:
 def main(argv: list | None = None) -> int:
     args = _parse_args(sys.argv[1:] if argv is None else argv)
 
-    # 1. Reject an invalid --id before composing any output path.
-    if not schema.is_valid_enquesta_id(args.id):
+    # 1. Reject an invalid --id before composing any output path. --id is
+    #    optional in --list-columns mode (a read-only inspection step that
+    #    writes nothing and doesn't need one yet); _parse_args already
+    #    enforces --id is present outside that mode.
+    if args.id is not None and not schema.is_valid_enquesta_id(args.id):
         print(
             f"ERROR: --id '{args.id}' no compleix el patró ^{schema.ENQUESTA_ID_PATTERN}$",
             file=sys.stderr,
         )
         return 1
 
-    parquet_path, meta_path, index_path = _resolve_output_paths(args.out_dir, args.id)
+    if not args.list_columns:
+        parquet_path, meta_path, index_path = _resolve_output_paths(args.out_dir, args.id)
 
     # 2. Load the raw export (CSV/TSV/Excel), with encoding fallback and
     #    shape-sanity warnings that never auto-correct anything.
