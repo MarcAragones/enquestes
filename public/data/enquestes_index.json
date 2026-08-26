@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": "mostra-sintetica",
+    "title": "Enquesta de mostra (dades sintètiques)",
+    "date": "2026-08-26",
+    "description": "Enquesta generada automàticament amb dades sintètiques: les respostes són aleatòries, no corresponen a cap persona real i existeixen només perquè es pugui desenvolupar i demostrar l'explorador interactiu.",
+    "n": 250
+  }
+]

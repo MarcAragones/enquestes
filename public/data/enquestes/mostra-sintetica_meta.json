@@ -1,0 +1,50 @@
+{
+  "id": "mostra-sintetica",
+  "title": "Enquesta de mostra (dades sintètiques)",
+  "date": "2026-08-26",
+  "description": "Enquesta generada automàticament amb dades sintètiques: les respostes són aleatòries, no corresponen a cap persona real i existeixen només perquè es pugui desenvolupar i demostrar l'explorador interactiu.",
+  "n": 250,
+  "kpis": [
+    {
+      "label": "edat",
+      "value": 46.12,
+      "n": 250
+    },
+    {
+      "label": "satisfaccio",
+      "value": 5.26,
+      "n": 250
+    },
+    {
+      "label": "recomanaria",
+      "value": 53.47,
+      "n": 250
+    }
+  ],
+  "fields": [
+    {
+      "name": "edat",
+      "type": "measure"
+    },
+    {
+      "name": "satisfaccio",
+      "type": "measure"
+    },
+    {
+      "name": "recomanaria",
+      "type": "measure"
+    },
+    {
+      "name": "segment",
+      "type": "dimension"
+    },
+    {
+      "name": "canal",
+      "type": "dimension"
+    },
+    {
+      "name": "territori",
+      "type": "dimension"
+    }
+  ]
+}
