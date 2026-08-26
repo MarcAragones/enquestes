@@ -1,36 +1,36 @@
 ---
 gsd_state_version: 1.0
-current_phase: 02
-current_phase_name: Offline Data Pipeline
-status: executing
-stopped_at: context exhaustion at 75% (2026-08-26)
-last_updated: "2026-08-26T13:22:37.726Z"
+current_phase: 3
+current_phase_name: Interactive Explorer
+status: planning
+stopped_at: Phase 02 complete, ready to plan Phase 3
+last_updated: "2026-08-26T16:56:08.404Z"
 last_activity: 2026-08-26
-last_activity_desc: Phase 02 execution started
-state_head: 1b328d8dde20defba6bbd6563ec975c9af56f311
+last_activity_desc: Phase 02 complete, transitioned to Phase 3
+state_head: edb8ed7b565a62066a2693e4c117e005ce2d9659
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
   completed_plans: 6
-  percent: 33
+  percent: 67
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-25)
+See: .planning/PROJECT.md (updated 2026-08-26)
 
 **Core value:** Qualsevol persona pot explorar interactivament (arrossegar X/Y/Color/Mida/Filtres i crear gràfics propis) les dades d'una enquesta directament al navegador, sense servidor ni cost.
-**Current focus:** Phase 02 — Offline Data Pipeline
+**Current focus:** Phase 03 — Interactive Explorer
 
 ## Current Position
 
-Phase: 02 (Offline Data Pipeline) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 02
-Last activity: 2026-08-26 — Phase 02 execution started
+Phase: 3 — Interactive Explorer
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-08-26 — Phase 02 complete, transitioned to Phase 3
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -38,7 +38,7 @@ Progress: [░░░░░░░░░░] 0%
 
 **Velocity:**
 
-- Total plans completed: 3
+- Total plans completed: 6
 - Average duration: N/A
 - Total execution time: 0 hours
 
@@ -47,6 +47,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 3 | - | - |
+| 02 | 3 | - | - |
 
 **Recent Trend:**
 
@@ -69,10 +70,10 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Roadmap: DuckDB-Wasm service and GraphicWalker UI kept in one "Interactive Explorer" phase (coarse granularity) rather than split, since research's own risk-isolation split would have produced a thin phase
-- Roadmap: EXPL-09/10/11 (data dictionary, chart export, shareable chart-state link) confirmed as v1 scope per REQUIREMENTS.md and mapped into Phase 3, despite research SUMMARY.md/FEATURES.md describing them as v1.x
+- [Phase 02]: `uv` + PEP 723 inline script metadata as the sole Python toolchain, always invoked via `uv run` — the system's default `python3` (3.6.10) cannot install pandas/pyarrow, and PEP 723 avoids a separate venv/requirements.txt.
+- [Phase 02]: Privacy thresholds `MIN_GROUP_SIZE=5` / `UNIQUENESS_RATIO_THRESHOLD=0.9` validated against the user's real export (2000 rows × 320 columns) with no negative feedback — kept unchanged rather than tuned.
+- [Phase 02]: CSV delimiter auto-detection (`,` vs `;`) added to `load_table` after a real bug (gap G-02-3): the user's real export used `;` (a Spanish/Catalan-locale spreadsheet convention), which crashed the comma-hardcoded parser.
 - [Phase 01]: Routing strategy: BrowserRouter + 404.html redirect pair (Task 2 checkpoint, user-confirmed over HashRouter) — Clean shareable URLs (/enquestes/enquesta/id) preserve Phase 3's planned query-param chart-state links (EXPL-11); GitHub Pages' lack of custom headers made this a one-way door confirmed before any real links exist.
-- [Phase 01]: lucide-react approved at the Task 1 blocking-human legitimacy checkpoint (official lucide-icons org, ~97M weekly downloads, publish history since 2020) and installed at 1.34.0 — The package name was carried as [ASSUMED] from prior research/training knowledge and the legitimacy heuristic independently flagged it, so RESEARCH.md gated the install on a human glance rather than auto-clearing it like the other ten phase-1 packages.
 - [Phase 01]: KPI suppression threshold MIN_KPI_SAMPLE=10 for the quick summary modal — A mean or count computed over a handful of respondents on a public dataset is a re-identification vector; withholding below 10 and stating why keeps the omission honest rather than looking like missing data.
 
 ### Pending Todos
@@ -82,7 +83,6 @@ None yet.
 ### Blockers/Concerns
 
 - Phase 3: Highest-risk integration in the project (GitHub Pages COOP/COEP header limits, Vite worker/wasm asset bundling, Parquet range-request reliability) — verify against a real production build (`vite build && vite preview --base=/enquestes/`), not just dev, per research/SUMMARY.md
-- Phase 2: Real-world Parquet file sizes for actual survey datasets are unverified — test the conversion pipeline against a realistically-sized dataset, not just the mock generator's small output
 
 ## Deferred Items
 
@@ -94,6 +94,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-26T13:22:37.623Z
-Stopped at: context exhaustion at 75% (2026-08-26)
-Resume file: .planning/phases/02-offline-data-pipeline/02-CONTEXT.md
+Last session: 2026-08-26T16:56:08.404Z
+Stopped at: Phase 02 complete, ready to plan Phase 3
+Resume file: None
