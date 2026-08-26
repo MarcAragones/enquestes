@@ -19,10 +19,10 @@
 - [x] **EXPL-03**: User pot arrossegar variables (X, Y, Color, Mida, Filtres) per crear gràfics personalitzats amb `<GraphicWalker />`
 - [x] **EXPL-04**: User pot triar entre múltiples tipus de gràfic (barres, línies, àrea, dispersió, etc.)
 - [x] **EXPL-05**: Els camps es tipen correctament com a dimensió o mesura, segons el que genera el script de conversió
-- [ ] **EXPL-06**: La interfície de l'explorador es manté usable (no visualment trencada) en mides de pantalla petites/mitjanes
-- [ ] **EXPL-07**: User pot tornar al llistat d'enquestes des de l'explorador
+- [x] **EXPL-06**: La interfície de l'explorador es manté usable (no visualment trencada) en mides de pantalla petites/mitjanes
+- [x] **EXPL-07**: User pot tornar al llistat d'enquestes des de l'explorador
 - [x] **EXPL-08**: Un link directe a `/enquesta/:id` funciona correctament en carregar-lo o refrescar-lo (sense 404 a GitHub Pages)
-- [ ] **EXPL-09**: User pot veure descripcions de camps (diccionari de dades) des de `[id]_meta.json` dins l'explorador
+- [x] **EXPL-09**: User pot veure descripcions de camps (diccionari de dades) des de `[id]_meta.json` dins l'explorador
 - [ ] **EXPL-10**: User pot exportar el gràfic actual com a imatge (PNG/SVG)
 - [ ] **EXPL-11**: User pot generar/copiar un link que reprodueix exactament la visualització actual (encoding de camps + filtres actius) mitjançant query params
 
@@ -74,10 +74,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPL-03 | Phase 3 | Complete |
 | EXPL-04 | Phase 3 | Complete |
 | EXPL-05 | Phase 3 | Complete |
-| EXPL-06 | Phase 3 | Pending |
-| EXPL-07 | Phase 3 | Pending |
+| EXPL-06 | Phase 3 | Complete |
+| EXPL-07 | Phase 3 | Complete |
 | EXPL-08 | Phase 3 | Complete |
-| EXPL-09 | Phase 3 | Pending |
+| EXPL-09 | Phase 3 | Complete |
 | EXPL-10 | Phase 3 | Pending |
 | EXPL-11 | Phase 3 | Pending |
 | DATA-01 | Phase 2 | Complete |
