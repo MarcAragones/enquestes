@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pandas", "pyarrow"]
+# dependencies = ["pandas", "pyarrow", "openpyxl"]
 # ///
 """Self-test suite over scripts/pipeline/* against the Phase 1 golden fixtures.
 
@@ -24,10 +24,12 @@ import pandas as pd
 
 from pipeline import index as index_mod
 from pipeline import infer, privacy, schema
+from pipeline import load as load_mod
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 GOLDEN_INDEX = FIXTURES_DIR / "enquestes_index.json"
 GOLDEN_META = FIXTURES_DIR / "enquestes" / "demo-2024_meta.json"
+RAW_TRACER_CSV = FIXTURES_DIR / "raw" / "mostra-tracer.csv"
 
 
 class UpsertIndexEntryTests(unittest.TestCase):
@@ -216,6 +218,103 @@ class UniquenessFlagsTests(unittest.TestCase):
         df = pd.DataFrame({"col": pd.Series([], dtype="float64")})
         findings = privacy.uniqueness_flags(df)
         self.assertEqual(findings, [])
+
+
+class NameHintFlagsTests(unittest.TestCase):
+    def test_catches_known_quasi_identifier_names(self):
+        df = pd.DataFrame(
+            {
+                "Codi Postal": ["08001"] * 5,
+                "data_naixement": ["1990-01-01"] * 5,
+                "carrec": ["Director"] * 5,
+                "satisfaccio": [1, 2, 3, 4, 5],
+                "resposta": ["A", "B", "A", "B", "A"],
+            }
+        )
+        findings = privacy.name_hint_flags(df)
+        flagged = {f.subject for f in findings}
+        self.assertIn("Codi Postal", flagged)
+        self.assertIn("data_naixement", flagged)
+        self.assertIn("carrec", flagged)
+        self.assertNotIn("satisfaccio", flagged)
+        self.assertNotIn("resposta", flagged)
+
+    def test_short_hint_guard_does_not_flag_capacitat_on_cp(self):
+        df = pd.DataFrame({"capacitat": [1, 2, 3]})
+        findings = privacy.name_hint_flags(df)
+        self.assertEqual(findings, [])
+
+
+class SmallGroupFlagsTests(unittest.TestCase):
+    def test_flags_combination_containing_a_two_row_group(self):
+        df = pd.DataFrame(
+            {
+                "departament": ["A"] * 6 + ["A"] * 6 + ["B"] * 6 + ["B"] * 2,
+                "franja_edat": ["jove"] * 6 + ["gran"] * 6 + ["jove"] * 6 + ["gran"] * 2,
+            }
+        )
+        findings, unevaluated = privacy.small_group_flags(df, ["departament", "franja_edat"])
+        self.assertEqual(len(findings), 1)
+        self.assertIn("departament", findings[0].subject)
+        self.assertIn("franja_edat", findings[0].subject)
+
+    def test_no_finding_when_smallest_group_at_or_above_threshold(self):
+        df = pd.DataFrame(
+            {
+                "departament": ["A"] * 10 + ["B"] * 10,
+                "franja_edat": ["jove"] * 10 + ["gran"] * 10,
+            }
+        )
+        findings, unevaluated = privacy.small_group_flags(df, ["departament", "franja_edat"])
+        self.assertEqual(findings, [])
+
+    def test_single_dimension_frame_returns_empty_findings_and_unevaluated_record(self):
+        df = pd.DataFrame({"segment": ["A", "B"] * 5})
+        findings, unevaluated = privacy.small_group_flags(df, ["segment"])
+        self.assertEqual(findings, [])
+        self.assertEqual(len(unevaluated), 1)
+
+
+class FormatChecklistReportTests(unittest.TestCase):
+    def test_empty_findings_states_assessed_column_count(self):
+        report = privacy.format_checklist_report([], [], 5)
+        self.assertIn("5", report)
+        self.assertIn("Cap indici detectat", report)
+
+
+class LoadTableTests(unittest.TestCase):
+    def test_reads_tracer_csv_with_no_warnings(self):
+        df, warnings = load_mod.load_table(RAW_TRACER_CSV)
+        self.assertEqual(len(df), 24)
+        self.assertEqual(warnings, [])
+
+    def test_cp1252_fallback_preserves_accents_and_warns_once(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cp1252.csv"
+            content = "segment,satisfaccio\nParticular,Satisfacció alta\n"
+            path.write_bytes(content.encode("cp1252"))
+            df, warnings = load_mod.load_table(path)
+            self.assertEqual(len(warnings), 1)
+            self.assertIn("Satisfacció", df["satisfaccio"].iloc[0])
+
+    def test_xlsx_matches_equivalent_csv_columns(self):
+        csv_df, _ = load_mod.load_table(RAW_TRACER_CSV)
+        with TemporaryDirectory() as tmp:
+            xlsx_path = Path(tmp) / "mostra.xlsx"
+            csv_df.to_excel(xlsx_path, index=False, engine="openpyxl")
+            xlsx_df, warnings = load_mod.load_table(xlsx_path)
+            self.assertEqual(list(xlsx_df.columns), list(csv_df.columns))
+
+    def test_blank_first_header_produces_unnamed_warning(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "blank_header.csv"
+            path.write_text(",segment\n1,Particular\n2,Empresa\n", encoding="utf-8")
+            df, warnings = load_mod.load_table(path)
+            self.assertTrue(any("Unnamed" in w for w in warnings))
+
+    def test_unsupported_suffix_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            load_mod.load_table(Path("data.json"))
 
 
 def _base_meta(**overrides) -> dict:
