@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "preview:pages": "node scripts/gh-pages-preview.mjs",
+    "verify:pages": "npm run build && node scripts/verify-pages.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
