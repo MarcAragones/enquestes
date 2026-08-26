@@ -46,7 +46,30 @@ export function getDb(): Promise<duckdb.AsyncDuckDB> {
 // Guards against re-registering the same virtual filename twice (React
 // StrictMode's double-invoked effect, a revisit, or a retry), which would
 // otherwise throw on the second registerFileURL call for the same name.
-const registeredFiles = new Set<string>()
+//
+// Caches the in-flight *promise* rather than a boolean flag: a boolean set
+// via check-then-act across an `await` is a TOCTOU race — under StrictMode's
+// double-invoked effect (or a fast double-click on the phase-2 retry
+// button), two concurrent callers can both observe "not yet registered"
+// before either finishes registering, and both call registerFileURL for the
+// same name. Caching the promise means the second caller awaits the first
+// caller's in-flight registration instead of racing it.
+const registrationPromises = new Map<string, Promise<void>>()
+
+async function ensureRegistered(db: duckdb.AsyncDuckDB, virtualName: string, url: string): Promise<void> {
+  let promise = registrationPromises.get(virtualName)
+  if (!promise) {
+    // On failure, evict the cache entry so a subsequent call (e.g. the
+    // visitor clicking "Torna-ho a provar") retries registration instead of
+    // permanently replaying the same cached rejection.
+    promise = db.registerFileURL(virtualName, url, duckdb.DuckDBDataProtocol.HTTP, false).catch((err) => {
+      registrationPromises.delete(virtualName)
+      throw err
+    })
+    registrationPromises.set(virtualName, promise)
+  }
+  await promise
+}
 
 /**
  * The only function in the codebase permitted to run read_parquet. `id`
@@ -64,10 +87,7 @@ export async function queryParquet(id: string): Promise<Record<string, unknown>[
 
   const db = await getDb()
 
-  if (!registeredFiles.has(virtualName)) {
-    await db.registerFileURL(virtualName, url, duckdb.DuckDBDataProtocol.HTTP, false)
-    registeredFiles.add(virtualName)
-  }
+  await ensureRegistered(db, virtualName, url)
 
   const conn = await db.connect()
   try {
