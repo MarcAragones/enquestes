@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "preview:pages": "node scripts/gh-pages-preview.mjs",
-    "verify:pages": "npm run build && node scripts/verify-pages.mjs"
+    "verify:pages": "npm run build && node scripts/verify-pages.mjs",
+    "verify:explorer": "npm run build && node scripts/verify-explorer-assets.mjs"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.32.0",

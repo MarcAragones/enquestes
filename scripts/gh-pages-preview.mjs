@@ -29,6 +29,8 @@ const CONTENT_TYPES = {
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
   '.map': 'application/json; charset=utf-8',
+  '.wasm': 'application/wasm',
+  '.parquet': 'application/octet-stream',
 }
 
 function contentTypeFor(filePath) {
