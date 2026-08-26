@@ -22,11 +22,11 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import pandas as pd
 import pyarrow.parquet as pq
 
 from pipeline import index as index_mod
 from pipeline import infer, privacy, schema
+from pipeline import load as load_mod
 
 
 def _parse_args(argv: list) -> argparse.Namespace:
@@ -36,7 +36,7 @@ def _parse_args(argv: list) -> argparse.Namespace:
             "<id>_meta.json i una entrada upsertada a enquestes_index.json."
         )
     )
-    parser.add_argument("input_csv", type=Path, help="Camí a l'export CSV")
+    parser.add_argument("input_csv", type=Path, help="Camí a l'export CSV, TSV o Excel (.xlsx)")
     parser.add_argument("--id", required=True, help="Identificador de l'enquesta")
     parser.add_argument("--columns", help="Llista de columnes permeses, separades per comes")
     parser.add_argument("--title", help="Títol de l'enquesta")
@@ -47,7 +47,7 @@ def _parse_args(argv: list) -> argparse.Namespace:
         help="Data en format YYYY-MM-DD (per defecte: avui en UTC)",
     )
     parser.add_argument("--out-dir", default=Path("public/data"), type=Path, help="Directori de sortida")
-    parser.add_argument("--sheet", help="Nom del full d'Excel (reservat per al pla 02-02)")
+    parser.add_argument("--sheet", help="Nom del full d'Excel (per defecte: el primer full)")
     parser.add_argument(
         "--list-columns",
         action="store_true",
@@ -103,12 +103,24 @@ def main(argv: list | None = None) -> int:
 
     parquet_path, meta_path, index_path = _resolve_output_paths(args.out_dir, args.id)
 
-    # 2. Load the raw CSV.
-    df = pd.read_csv(args.input_csv, encoding="utf-8")
-    print(f"Columnes detectades ({len(df.columns)}): {', '.join(df.columns)}")
+    # 2. Load the raw export (CSV/TSV/Excel), with encoding fallback and
+    #    shape-sanity warnings that never auto-correct anything.
+    try:
+        df, load_warnings = load_mod.load_table(args.input_csv, args.sheet)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+
+    # 3. Print the shape report and every warning before any other work, so
+    #    a shifted header or a stray title/total row is caught on sight
+    #    (RESEARCH Pitfall 5) before anything is written.
+    print(load_mod.format_shape_report(df, load_warnings))
+    for warning in load_warnings:
+        print(f"AVÍS: {warning}", file=sys.stderr)
+    print(f"Columnes detectades ({len(df.columns)}): {', '.join(str(c) for c in df.columns)}")
     print(f"Files detectades: {len(df)}")
 
-    # 3. --list-columns inspection mode: print and exit without writing.
+    # 4. --list-columns inspection mode: print and exit without writing.
     if args.list_columns:
         for col in df.columns:
             series = df[col]
@@ -122,7 +134,7 @@ def main(argv: list | None = None) -> int:
             )
         return 0
 
-    # 4. Reduce to the allow-list, then unconditionally drop free-text columns (D-02).
+    # 5. Reduce to the allow-list, then unconditionally drop free-text columns (D-02).
     requested_columns = [c.strip() for c in args.columns.split(",") if c.strip()]
     missing_columns = [c for c in requested_columns if c not in df.columns]
     if missing_columns:
@@ -138,12 +150,12 @@ def main(argv: list | None = None) -> int:
         )
         df = df.drop(columns=dropped_free_text)
 
-    # 5. Build fields first -- the small-group scan needs the dimension-typed
+    # 6. Build fields first -- the small-group scan needs the dimension-typed
     #    column list, so field inference now runs before the checklist.
     fields = infer.build_fields(df)
     dimension_columns = [f["name"] for f in fields if f["type"] == "dimension"]
 
-    # 6. Privacy checklist -- always prints, blocks by default. The
+    # 7. Privacy checklist -- always prints, blocks by default. The
     #    acknowledgement is read only from the parsed CLI namespace on this
     #    invocation: no os.environ lookup, no config file, no persisted
     #    state can pre-satisfy the gate.
@@ -158,7 +170,7 @@ def main(argv: list | None = None) -> int:
         )
         return 2
 
-    # 7. Build kpis, warn on small-sample KPIs, assemble the dicts.
+    # 8. Build kpis, warn on small-sample KPIs, assemble the dicts.
     kpis = infer.build_kpis(df, fields)
     for kpi in kpis:
         kpi_n = kpi.get("n")
@@ -187,17 +199,17 @@ def main(argv: list | None = None) -> int:
         "n": n,
     }
 
-    # 8. Structural validation before any write touches disk.
+    # 9. Structural validation before any write touches disk.
     schema.validate_meta(meta)
 
-    # 9. Write the three artifacts.
+    # 10. Write the three artifacts.
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(parquet_path, engine="pyarrow", index=False)
     schema.write_json(meta_path, meta)
     new_index = index_mod.upsert_index_entry(index_path, index_entry)
     schema.validate_index(new_index)
 
-    # 10. Read the Parquet back and assert it matches the published contract.
+    # 11. Read the Parquet back and assert it matches the published contract.
     written_schema = pq.read_schema(parquet_path)
     field_names = {f["name"] for f in fields}
     if set(written_schema.names) != field_names:

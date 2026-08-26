@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pandas", "pyarrow"]
+# dependencies = ["pandas", "pyarrow", "openpyxl"]
 # ///
 """Self-test suite over scripts/pipeline/* against the Phase 1 golden fixtures.
 
@@ -24,10 +24,12 @@ import pandas as pd
 
 from pipeline import index as index_mod
 from pipeline import infer, privacy, schema
+from pipeline import load as load_mod
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 GOLDEN_INDEX = FIXTURES_DIR / "enquestes_index.json"
 GOLDEN_META = FIXTURES_DIR / "enquestes" / "demo-2024_meta.json"
+RAW_TRACER_CSV = FIXTURES_DIR / "raw" / "mostra-tracer.csv"
 
 
 class UpsertIndexEntryTests(unittest.TestCase):
@@ -278,6 +280,41 @@ class FormatChecklistReportTests(unittest.TestCase):
         report = privacy.format_checklist_report([], [], 5)
         self.assertIn("5", report)
         self.assertIn("Cap indici detectat", report)
+
+
+class LoadTableTests(unittest.TestCase):
+    def test_reads_tracer_csv_with_no_warnings(self):
+        df, warnings = load_mod.load_table(RAW_TRACER_CSV)
+        self.assertEqual(len(df), 24)
+        self.assertEqual(warnings, [])
+
+    def test_cp1252_fallback_preserves_accents_and_warns_once(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cp1252.csv"
+            content = "segment,satisfaccio\nParticular,Satisfacció alta\n"
+            path.write_bytes(content.encode("cp1252"))
+            df, warnings = load_mod.load_table(path)
+            self.assertEqual(len(warnings), 1)
+            self.assertIn("Satisfacció", df["satisfaccio"].iloc[0])
+
+    def test_xlsx_matches_equivalent_csv_columns(self):
+        csv_df, _ = load_mod.load_table(RAW_TRACER_CSV)
+        with TemporaryDirectory() as tmp:
+            xlsx_path = Path(tmp) / "mostra.xlsx"
+            csv_df.to_excel(xlsx_path, index=False, engine="openpyxl")
+            xlsx_df, warnings = load_mod.load_table(xlsx_path)
+            self.assertEqual(list(xlsx_df.columns), list(csv_df.columns))
+
+    def test_blank_first_header_produces_unnamed_warning(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "blank_header.csv"
+            path.write_text(",segment\n1,Particular\n2,Empresa\n", encoding="utf-8")
+            df, warnings = load_mod.load_table(path)
+            self.assertTrue(any("Unnamed" in w for w in warnings))
+
+    def test_unsupported_suffix_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            load_mod.load_table(Path("data.json"))
 
 
 def _base_meta(**overrides) -> dict:
