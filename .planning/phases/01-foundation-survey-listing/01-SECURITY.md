@@ -63,6 +63,7 @@ created: 2026-08-26
 | Audit Date | Threats Total | Closed | Open | Run By |
 |------------|---------------|--------|------|--------|
 | 2026-08-26 | 10 | 10 | 0 | Claude (orchestrator, `/gsd-secure-phase`) — L1/ASVS-1 classification directly from the three plans' plan-time `<threat_model>` registers, cross-checked against `01-REVIEW.md` (code review, 0 critical/blocker findings) and `01-VERIFICATION.md` (13/13 must-haves verified, live-site probes). Per protocol, `threats_open: 0 AND register_authored_at_plan_time: true AND asvs_level == 1` short-circuits to L1 grep-depth classification without a separate auditor dispatch. |
+| 2026-08-26 | 10 | 10 | 0 | Claude (orchestrator, `/gsd-secure-phase 01`, re-run) — re-confirmation pass; no phase-01 implementation changes since the prior audit, register unchanged, short-circuit rule re-applied (`threats_open: 0 AND register_authored_at_plan_time: true AND asvs_level == 1`). |
 
 ---
 
