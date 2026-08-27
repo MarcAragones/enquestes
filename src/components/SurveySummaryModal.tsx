@@ -72,6 +72,14 @@ export function SurveySummaryModal({ enquestaId, onClose }: SurveySummaryModalPr
     // needing to set it synchronously.
     if (!idValid) return
 
+    // Reset to loading synchronously whenever this effect re-runs for a
+    // new id. Without this, a component instance that stays mounted across
+    // an enquestaId change (HomePage renders this modal without a `key`)
+    // keeps showing the previous survey's already-fetched content while the
+    // new fetch is in flight (WR-03) — e.g. Back/Forward between two
+    // `?enquesta=` history entries.
+    setState({ status: 'loading' })
+
     let cancelled = false
 
     fetch(metaUrl(enquestaId))
