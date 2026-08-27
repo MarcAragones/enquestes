@@ -1,146 +1,166 @@
 ---
 phase: 03-interactive-explorer
-reviewed: 2026-08-26T22:21:24Z
+reviewed: 2026-08-27T23:10:00Z
 depth: standard
-files_reviewed: 14
+files_reviewed: 4
 files_reviewed_list:
-  - package.json
-  - scripts/gh-pages-preview.mjs
-  - scripts/verify-explorer-assets.mjs
-  - src/App.tsx
-  - src/components/DataDictionary.tsx
-  - src/components/ErrorState.tsx
-  - src/components/ExplorerHeader.tsx
-  - src/lib/graphicWalkerFields.test.ts
-  - src/lib/graphicWalkerFields.ts
+  - src/components/SurveySummaryModal.tsx
   - src/lib/shareLink.test.ts
   - src/lib/shareLink.ts
   - src/pages/ExplorerPage.tsx
-  - src/services/duckdb.ts
-  - vite.config.ts
 findings:
   critical: 1
-  warning: 3
-  info: 3
+  warning: 4
+  info: 2
   total: 7
 status: issues_found
 ---
 
 # Phase 03: Code Review Report
 
-**Reviewed:** 2026-08-26T22:21:24Z
+**Reviewed:** 2026-08-27T23:10:00Z
 **Depth:** standard
-**Files Reviewed:** 14
+**Files Reviewed:** 4
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the interactive-explorer phase: the DuckDB-Wasm data layer (`src/services/duckdb.ts`), the share-link encode/decode module and its tests, the GraphicWalker field-mapping shim, `ExplorerPage` and its supporting components, and the local GitHub-Pages-fidelity tooling (`scripts/gh-pages-preview.mjs`, `scripts/verify-explorer-assets.mjs`).
+Reviewed the four files touched by the G-03-2 / G-03-4 / G-03-2b / G-03-4b gap-closure fixes. The `SurveySummaryModal` StrictMode lifecycle fix (listener-detach-before-close ordering) is correct and well-reasoned; I traced the mount → simulated-unmount → remount sequence and it behaves exactly as documented. The `ExplorerPage` not-found/load-failed classification (G-03-2b) and the `defaultConfig.layout.size.mode: 'full'` canvas fix (G-03-4b) are both implemented correctly and match the root causes identified in the corresponding debug reports.
 
-The SQL-injection and path-traversal surfaces are handled carefully and correctly: `isValidEnquestaId` gates every id before it reaches a virtual filename or a SQL string, and `gh-pages-preview.mjs`'s `resolveSafe` correctly contains any `../` escape attempt within its root. `decodeShareLink`'s hostile-input handling (length cap, version tag, base64/JSON error paths) is genuinely well-tested and never throws, as advertised.
-
-The one finding that must block ship is that `decodeShareLink`'s "never throws" contract stops at the JSON/field-reference level — it does not validate that the decoded value is actually shaped like a GraphicWalker `IChart[]` before `ExplorerPage` type-asserts it and hands it straight to `<GraphicWalker chart={...} />`, and the app has no error boundary anywhere to catch what happens next. A handful of warnings (a real TOCTOU race in the Parquet file-registration guard, a vitest include-glob that silently excludes `.test.tsx`, and an engine-init failure message that assumes a non-transient cause) and minor info items round out the report.
+However, the G-03-4 schema-drift narrowing in `shareLink.ts` (restricting the known-field check to shelf channels only) introduced a validation gap in the same function: `decodeShareLink`'s existing shape guard (`isChartLike`, added for the prior phase's CR-01) does not actually enforce that the returned value matches the array shape `ExplorerPage.tsx` casts it to (`as IChart[] | undefined`) — a single, non-array chart-shaped payload is validated as if wrapped in an array but then returned unwrapped, silently violating the contract every caller relies on. I verified this and two related edge cases (an empty top-level array, and an array-typed `encodings`) by actually exercising `decodeShareLink` against the installed module rather than only reading the source. I also found a stale-state bug in `SurveySummaryModal` (not fixed by G-03-2, and not part of the original phase review's scope, since this file wasn't reviewed then) and a text-duplication defect in `ExplorerPage`'s engine-error message.
 
 ## Critical Issues
 
-### CR-01: Unvalidated share-link payload shape can crash the survey page (no error boundary)
+### CR-01: `decodeShareLink` can return a non-array value that violates the `IChart[]` contract every caller relies on
 
-**File:** `src/lib/shareLink.ts:110-169`, `src/pages/ExplorerPage.tsx:62-66,174`
+**File:** `src/lib/shareLink.ts:238,266` (also affects `src/pages/ExplorerPage.tsx:94`)
 **Issue:**
-`decodeShareLink` validates the raw string length, the version tag, base64/UTF-8 decoding, JSON parsing, and that every nested `fid` value is a known field name — but it never validates that the *top-level* decoded value is actually an array of GraphicWalker chart specs. `collectFieldReferences` only walks into objects/arrays it finds; a JSON value that contains no nested `fid` key at all (e.g. a bare number, string, boolean, or an object without the expected `encodings`/`config`/`layout` structure) passes every check trivially, because the "referenced field names" set is empty and an empty set is vacuously a subset of `knownFieldNames`.
-
-`ExplorerPage.tsx` then does:
+Step 6 wraps a non-array `parsed` value in `[parsed]` *only* to run it through `isChartLike`/the shelf-field check:
+```ts
+const charts: Record<string, unknown>[] = Array.isArray(parsed) ? parsed : [parsed]
+if (!charts.every(isChartLike)) {
+  return undefined
+}
+```
+but step 8 returns the original `parsed` value verbatim, not `charts`:
+```ts
+return parsed
+```
+So a `?chart=` payload whose JSON is a single chart-shaped object (not wrapped in an array) — e.g. `{"visId":"v1","encodings":{"rows":[{"fid":"edat"}]}}` — passes validation (because `[parsed]` satisfies `isChartLike`) but is returned as that bare object, not an array. I confirmed this directly against the built module:
+```
+decoded is array? false {"visId":"v1","encodings":{"rows":[{"fid":"edat"}]}}
+```
+`ExplorerPage.tsx:94` then does an unchecked cast:
 ```ts
 return decodeShareLink(rawChartParam, knownFieldNames) as IChart[] | undefined
 ```
-— an unchecked `as` cast from `unknown` straight into the type GraphicWalker's `chart` prop expects — and renders `<GraphicWalker ... chart={decodedChart} />` unconditionally once data has loaded.
-
-Concretely, a URL such as `.../enquesta/mostra-sintetica?chart=v1.NDI` (base64url of the JSON value `42`) decodes to the number `42`, passes `decodeShareLink` cleanly, and is passed to GraphicWalker as `chart={42}`. GraphicWalker's internals assume an array of chart specs (`.map`/`.find`/property access on each entry); feeding it a non-array, non-chart-shaped value is very likely to throw during render. There is no `ErrorBoundary`/`componentDidCatch` anywhere in `src/` (confirmed via search), so this throw is not contained — it crashes past the nearest React root, producing a blank/broken page for that route. Because the bad state lives in the URL itself, a reload does not recover; the visitor must manually edit the address bar. Any survey link shared with a truncated, hand-edited, or stale `?chart=` value that happens to still parse as valid JSON reproduces this.
-
-**Fix:** Add a minimal runtime shape check to `decodeShareLink` before returning, and reject anything that doesn't look like a chart-spec array (or wrap the render in an error boundary as defense in depth — ideally both):
+and passes the result straight to `<GraphicWalker chart={decodedChart} />`, which requires `IChart[] | IVisSpec[]` (always an array — every real caller in this codebase only ever produces it via `VizSpecStore.exportCode(): IChart[]`). Handing GraphicWalker a bare object where it expects an array is exactly the class of defect the doc comment on `isChartLike` says it exists to prevent (CR-01 from the prior review), and it is reachable with a hand-typed URL, no special tooling — the client-side source (`visId`/`encodings` field names) is fully visible in the shipped bundle. In production this is currently caught by `ChartErrorBoundary` (degrades to a friendly error message instead of a blank crash), but the underlying decode function still violates its own return-type contract, and any future caller that doesn't wrap the render in an error boundary reintroduces the original CR-01 crash.
+**Fix:** Always return the normalized array, not the raw `parsed` value:
 ```ts
-// in shareLink.ts, replace step 7:
-if (!Array.isArray(parsed)) return undefined
-for (const chart of parsed) {
-  if (
-    typeof chart !== 'object' || chart === null ||
-    typeof (chart as Record<string, unknown>).encodings !== 'object'
-  ) {
-    return undefined
-  }
-}
-return parsed
+// step 8
+return charts
 ```
-and/or add a top-level `<ErrorBoundary>` around `<GraphicWalker />` in `ExplorerPage.tsx` so a shape mismatch degrades to a friendly `ErrorState` instead of a blank crash.
+(and drop the "a bare single chart-shaped object is also accepted" allowance from the doc comment, or explicitly wrap it — but either way, the returned value must always be an array so it actually matches `IChart[] | undefined`.)
 
 ## Warnings
 
-### WR-01: TOCTOU race in `queryParquet`'s file-registration guard — the exact scenario its own comment claims to prevent
+### WR-01: `isChartLike` accepts an array-typed `encodings`, silently disabling the T-03-11 schema-drift check for that payload
 
-**File:** `src/services/duckdb.ts:46-70`
-**Issue:** The `registeredFiles` Set is meant to stop a virtual filename from being registered twice (the comment explicitly cites "React StrictMode's double-invoked effect... which would otherwise throw on the second `registerFileURL` call for the same name"). But the guard is check-then-act across an `await`, not atomic:
-```ts
-if (!registeredFiles.has(virtualName)) {
-  await db.registerFileURL(virtualName, url, duckdb.DuckDBDataProtocol.HTTP, false)
-  registeredFiles.add(virtualName)
-}
+**File:** `src/lib/shareLink.ts:84-88`
+**Issue:** `isChartLike` only checks `typeof candidate.encodings === 'object' && candidate.encodings !== null`. Since `typeof [] === 'object'`, a payload like `{"visId":"v1","encodings":[]}` passes this guard even though `DraggableFieldState` (the type the comment says is being validated) is never an array. Because `collectShelfFieldReferences` iterates `SHELF_CHANNEL_KEYS` with `key in encodings`, and none of those string keys are own properties of an array, the shelf-field-reference check silently finds zero references and lets the payload through with no field validation at all. I confirmed this directly:
 ```
-`main.tsx` does wrap the app in `<StrictMode>`, and `ExplorerPage`'s phase-2 effect calls `queryParquet(id)` directly from the effect body (not gated behind any mutex). Under StrictMode's mount→cleanup→mount double-invoke, both invocations begin executing `queryParquet` synchronously up to their own `await getDb()`; once `getDb()`'s cached promise resolves, both resume and both read `registeredFiles.has(virtualName)` as `false` before either has reached the `.add()` call, so both proceed to call `db.registerFileURL` for the same name. The same race is reachable in production too: `onDataRetry` re-triggers the phase-2 effect without actually cancelling the in-flight promise from the previous attempt (the `cancelled` flag only suppresses the resulting `setState`, it does not abort `queryParquet` itself), so a visitor double-clicking "Torna-ho a provar" quickly can trigger the identical race.
-**Fix:** Cache the in-flight registration promise instead of a boolean, so concurrent callers await the same registration rather than racing:
-```ts
-const registrationPromises = new Map<string, Promise<void>>()
-
-async function ensureRegistered(db: duckdb.AsyncDuckDB, virtualName: string, url: string) {
-  let p = registrationPromises.get(virtualName)
-  if (!p) {
-    p = db.registerFileURL(virtualName, url, duckdb.DuckDBDataProtocol.HTTP, false)
-    registrationPromises.set(virtualName, p)
-  }
-  await p
-}
+array-encodings decoded -> [{"visId":"v1","encodings":[]}]
 ```
-
-### WR-02: vitest `include` glob excludes `.test.tsx`, silently dropping future component tests
-
-**File:** `vite.config.ts:10`
-**Issue:** `test.include: ['src/**/*.test.ts']` matches only `.test.ts` files. Today's two test files (`graphicWalkerFields.test.ts`, `shareLink.test.ts`) are unaffected since they're plain `.ts`, but this project ships React components (`ExplorerHeader`, `DataDictionary`, `ErrorState`, `ExplorerPage`) with no test coverage yet. The very first component test added as `Foo.test.tsx` (the conventional extension for a `.tsx`-adjacent test, and the one Vitest's own docs/templates use) will not be picked up by `npm test` at all — it will pass CI by simply never running, with no warning.
+This is exactly the kind of decoded value the function's own doc comment says must never reach GraphicWalker unchecked. It's mitigated by `ChartErrorBoundary`, but the dedicated shape guard added to close this gap doesn't actually close it for this input class.
 **Fix:**
 ```ts
-test: {
-  environment: 'node',
-  include: ['src/**/*.test.{ts,tsx}'],
-},
+function isChartLike(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.visId === 'string' &&
+    typeof candidate.encodings === 'object' &&
+    candidate.encodings !== null &&
+    !Array.isArray(candidate.encodings)
+  )
+}
 ```
-(Component tests will also need `environment: 'jsdom'` or a per-file `// @vitest-environment jsdom` pragma, which is a separate follow-up once such tests are added.)
 
-### WR-03: Engine-init failure is treated as universally non-transient, masking network-caused failures with a misleading message and no retry path
+### WR-02: A top-level empty array (`?chart=v1.W10`, i.e. base64 of `"[]"`) is accepted as a valid decoded chart instead of falling back to `undefined`
 
-**File:** `src/pages/ExplorerPage.tsx:86-101,150-156`, `src/services/duckdb.ts:26-33`
-**Issue:** Phase 1's `.catch(() => setEngineState({ status: 'error', message: '' }))` swallows the actual error and always renders the same static message: *"Prova-ho amb un altre navegador; aquesta aplicació necessita compatibilitat amb WebAssembly."* But `initDb()`'s failure modes are not limited to "this browser lacks WASM support" — `db.instantiate(bundle.mainModule, ...)` fetches and compiles the ~multi-MB DuckDB wasm binary over the network, which can fail transiently (flaky connection, CDN hiccup, GitHub Pages blip) with the exact same rejection shape as a genuine incompatible-browser failure. The code has no way to distinguish the two, yet tells every visitor who hit a transient network failure to go install a different browser, and (by design, per the code comment) offers no retry button — the only recovery is a full page reload, which is not surfaced to the visitor anywhere in the error UI.
-**Fix:** At minimum, soften the copy to not assume a browser-capability cause (e.g. "No s'ha pogut inicialitzar el motor de consultes. Comprova la connexió i torna-ho a provar."), and consider offering a retry action for phase 1 the same way phase 2 already does, since a fresh `initDb()` call is cheap and `dbPromise` can simply be reset (`dbPromise = null`) before retrying.
+**File:** `src/lib/shareLink.ts:238-241`
+**Issue:** `charts.every(isChartLike)` on an empty array is vacuously `true` (`Array.prototype.every` returns `true` for an empty array), so `parsed = []` sails through step 6 with zero elements checked, and step 8 returns `[]`. I confirmed:
+```
+empty array decoded -> []
+```
+This is a real, trivially-reachable URL (`?chart=v1.W10`) and it is a different outcome from `undefined`: `ExplorerPage` distinguishes "no/invalid share param → let GraphicWalker create its own default chart" (`decodedChart === undefined`) from "a specific chart to restore" — the doc comment's design intent is explicit that a malformed/stale link should behave like there was no link at all. An empty array instead sets `chart={[]}`, which is neither of those two intended states and produces a survey view with zero chart tabs instead of a fresh default chart.
+**Fix:** Reject an empty top-level array explicitly:
+```ts
+if (charts.length === 0 || !charts.every(isChartLike)) {
+  return undefined
+}
+```
+
+### WR-03: `SurveySummaryModal`'s fetch effect never resets `state` to `loading` when `enquestaId` changes, so a previous survey's summary can render as stale content
+
+**File:** `src/components/SurveySummaryModal.tsx:69-98`
+**Issue:** The data-fetch effect (`[enquestaId, idValid]`) only transitions `state` on success or failure — it never sets `{ status: 'loading' }` synchronously when `enquestaId` changes. `HomePage.tsx:88` renders `<SurveySummaryModal enquestaId={openEnquestaId} onClose={onCloseSummary} />` without a `key={openEnquestaId}`, so if `enquestaId` changes while the component instance stays mounted (e.g. the visitor uses the browser Back/Forward buttons to move between two different `?enquesta=A` / `?enquesta=B` history entries created by two separate `onSelect` calls — each `onSelect` pushes a new search-param via `setSearchParams`), the modal keeps displaying survey A's already-fetched title/description/KPIs while the fetch for survey B is in flight, instead of showing the loading skeleton. If the fetch for B later fails, the stale content for A is eventually replaced by the error state, but there is a window where the visitor is looking at the wrong survey's data under the new URL/dialog.
+**Fix:** Reset to loading synchronously whenever the effect re-runs for a new id:
+```ts
+useEffect(() => {
+  if (!idValid) return
+  setState({ status: 'loading' })
+  let cancelled = false
+  fetch(metaUrl(enquestaId))
+    // ...
+```
+
+### WR-04: `SurveySummaryModal` shows the same generic error message for "survey not found" and "load failed", reproducing the exact conflation G-03-2b fixed elsewhere
+
+**File:** `src/components/SurveySummaryModal.tsx:86-92`
+**Issue:** The fetch `.catch()` always sets `message: "No s'ha pogut carregar el resum d'aquesta enquesta."`, regardless of whether the fetch failed because the survey genuinely doesn't exist (`metaUrl` 404, e.g. a stale `?enquesta=` link to a removed survey) or because of a transient network failure. This is the identical pattern the `g-03-2b-wrong-error-copy.md` root-cause investigation diagnosed and fixed in `ExplorerPage` (distinct `not-found` vs `load-failed` kinds, per `DataErrorKind`), but the fix was scoped only to `ExplorerPage` — `SurveySummaryModal`, which hits the exact same `metaUrl(id)` endpoint, was never updated and still conflates the two cases.
+**Fix:** Mirror `ExplorerPage`'s `DataErrorKind` classification here (distinguish `res.status === 404` and skip surfacing a misleading generic message for a survey that doesn't exist).
 
 ## Info
 
-### IN-01: `FetchState<true>` error branch's `message` is always the empty string and never rendered
+### IN-01: Engine-init error state renders the same sentence twice (title + message both start identically)
 
-**File:** `src/pages/ExplorerPage.tsx:95`
-**Issue:** `setEngineState({ status: 'error', message: '' })` populates the `message` field of `FetchState`, but the render branch for `engineState.status === 'error'` (line 150) uses a hardcoded string and never reads `engineState.message`. The field is effectively dead weight that could mislead a future maintainer into thinking the message is dynamic.
-**Fix:** Either drop `message` from the phase-1 error state entirely (e.g. `{ status: 'error' }` if `FetchState` is loosened for this use, or reuse a dedicated non-generic type), or actually surface the caught error's message for debugging (behind a dev-only flag, since the intended UX is a static message).
+**File:** `src/pages/ExplorerPage.tsx:129,213`
+**Issue:** The caught error sets:
+```ts
+message: "No s'ha pogut inicialitzar el motor de consultes. Comprova la connexió i torna-ho a provar."
+```
+and the render branch passes:
+```tsx
+<ErrorState title="No s'ha pogut inicialitzar el motor de consultes." message={engineState.message} onRetry={onEngineRetry} />
+```
+`ErrorState` renders `title` in bold above `message` — so the visitor sees "No s'ha pogut inicialitzar el motor de consultes." twice in a row (once as the heading, then again verbatim as the first sentence of the body text) before the actually-new "Comprova la connexió..." sentence.
+**Fix:** Drop the duplicated lead sentence from the `message`, e.g. `message: "Comprova la connexió i torna-ho a provar."`.
 
-### IN-02: `duckdb.ConsoleLogger()` logs engine/query activity to the browser console unconditionally, including in production
+### IN-02: `shareLink.test.ts` has no coverage for the shape edge cases that WR-01/WR-02/CR-01 exploit
 
-**File:** `src/services/duckdb.ts:29`
-**Issue:** `new duckdb.ConsoleLogger()` is wired with no log-level or environment gate, so every visitor's production console receives DuckDB-Wasm's internal logging (bundle selection, query execution, etc.) on every page load. Not a security issue (survey data is public/anonymised per project constraints), but it is unnecessary console noise in a shipped build.
-**Fix:** Gate verbosity behind `import.meta.env.DEV`, e.g. `new duckdb.ConsoleLogger(import.meta.env.DEV ? duckdb.LogLevel.WARNING : duckdb.LogLevel.SILENT)` (adjust to the actual `LogLevel` enum exposed by the installed `@duckdb/duckdb-wasm` version).
-
-### IN-03: `verify-explorer-assets.mjs` hardcodes exact fixture byte-count and field-count as pass/fail assertions
-
-**File:** `scripts/verify-explorer-assets.mjs:109-124`
-**Issue:** The script asserts the committed sample Parquet is *exactly* 5597 bytes and that `mostra-sintetica_meta.json`'s `fields` array has *exactly* 6 entries. Any future regeneration of the sample data (even a semantically-identical rebuild via a newer DuckDB/pyarrow version that changes Parquet footer padding by a few bytes, or adding a 7th documented field) will fail this check with an error message that gives no hint the failure is expected/benign, rather than a real asset-pipeline regression.
-**Fix:** Either derive the expected byte count/field count from the fixture at build time (e.g. read `public/data/enquestes/mostra-sintetica_meta.json` directly and compare `fields.length` against that, instead of a literal `6`), or add a comment at the assertion site noting these numbers must be updated in lockstep with `public/data/enquestes/mostra-sintetica_*` changes.
+**File:** `src/lib/shareLink.test.ts`
+**Issue:** The hostile/stale-input test suite (`decodeShareLink hostile/stale input handling`) is thorough for the base64/JSON/version-tag/length layers and for shelf-field rejection, but it never exercises: a top-level empty array (`[]`), an `encodings` value that is itself an array, or a top-level single chart-shaped object rather than an array. All three are exactly the cases where the current implementation misbehaves (see CR-01, WR-01, WR-02) — none of the three fail a test today, so a regression here would ship silently.
+**Fix:** Add cases such as:
+```ts
+it('returns undefined for a top-level empty array', () => {
+  const encoded = encodeShareLink([])!
+  expect(decodeShareLink(encoded, KNOWN_FIELDS)).toBeUndefined()
+})
+it('returns undefined for a chart with a non-object (array) encodings', () => {
+  const encoded = encodeShareLink([{ visId: 'v1', encodings: [] }])!
+  expect(decodeShareLink(encoded, KNOWN_FIELDS)).toBeUndefined()
+})
+it('normalizes a bare single chart object into an array, not returned as-is', () => {
+  const spec = makeSpec()[0]
+  const encoded = encodeShareLink(spec)!
+  const decoded = decodeShareLink(encoded, KNOWN_FIELDS)
+  expect(Array.isArray(decoded)).toBe(true)
+})
+```
 
 ---
 
-_Reviewed: 2026-08-26T22:21:24Z_
+_Reviewed: 2026-08-27T23:10:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
