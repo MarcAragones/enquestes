@@ -160,10 +160,14 @@ function collectShelfFieldReferences(chart: Record<string, unknown>, out: Set<st
 
 /**
  * Decodes a `?chart=` query-param value back into the value shape
- * GraphicWalker's `chart` prop expects — no wrapping, no normalisation, no
- * singular/plural translation (this project carries GraphicWalker's own
+ * GraphicWalker's `chart` prop expects — always the plural array shape
+ * (`IChart[] | IVisSpec[]`), never a bare single chart-shaped object: a
+ * `?chart=` payload whose JSON is a single chart-shaped object (not wrapped
+ * in an array) is normalized into a one-element array before being
+ * returned, so every caller's `IChart[] | undefined` contract holds (CR-01).
+ * No other translation happens — this project carries GraphicWalker's own
  * plural chart-collection shape as-is, per the phase's assumption-delta
- * decision).
+ * decision.
  *
  * This is a deliberate SOFT fallback, not the hard trust-boundary rejection
  * `parseEnquestaMeta` implements for server-fetched JSON (D-07): a stale or
@@ -230,11 +234,11 @@ export function decodeShareLink(raw: string | null, knownFieldNames: string[]): 
   // accepts `IChart[] | IVisSpec[]` in production (always an array, since
   // it's populated from `VizSpecStore.exportCode(): IChart[]`), so the array
   // form is validated element-by-element; a bare single chart-shaped object
-  // is also accepted since this function's own round-trip tests exercise
-  // that shape too and nothing about the encode/decode mechanics requires
-  // top-level wrapping. Running this guard first means the narrower
-  // field-reference check below can rely on every chart it inspects having
-  // a confirmed `encodings` object.
+  // is also accepted (and normalized into `charts`, the one-element array
+  // returned at step 8 below — never the raw `parsed` value, see CR-01).
+  // Running this guard first means the narrower field-reference check below
+  // can rely on every chart it inspects having a confirmed `encodings`
+  // object.
   const charts: Record<string, unknown>[] = Array.isArray(parsed) ? parsed : [parsed]
   if (!charts.every(isChartLike)) {
     return undefined
@@ -261,7 +265,15 @@ export function decodeShareLink(raw: string | null, knownFieldNames: string[]): 
     }
   }
 
-  // 8. Return the parsed value verbatim — shaped exactly as the `chart`
-  // prop expects.
-  return parsed
+  // 8. Return the normalized array, never the raw `parsed` value: a bare
+  // single chart-shaped object was wrapped in `[parsed]` at step 6 only to
+  // run it through the shape/field checks above — returning `parsed`
+  // verbatim here would silently hand that unwrapped object back out,
+  // violating the `IChart[] | undefined` contract every caller (and the
+  // `as IChart[] | undefined` cast in ExplorerPage.tsx) relies on (CR-01).
+  // `charts` is always an array — either `parsed` itself (already an
+  // array) or `[parsed]` — so this also normalizes the bare-object input
+  // shape into the one-element array form GraphicWalker's `chart` prop
+  // expects.
+  return charts
 }
