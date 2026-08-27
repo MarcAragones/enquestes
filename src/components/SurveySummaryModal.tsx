@@ -12,6 +12,19 @@ import type { EnquestaMeta, FetchState } from '../types/enquesta'
 
 const INVALID_ID_MESSAGE = "No s'ha pogut carregar el resum d'aquesta enquesta."
 
+/**
+ * Raised only when metaUrl(id) responds with a 404 specifically, so the
+ * `.catch()` classifier below can distinguish "this survey does not exist"
+ * from any other (plausibly transient) fetch failure — mirroring
+ * ExplorerPage's identical `SurveyNotFoundError`/`DataErrorKind`
+ * classification (G-03-2b), which hits this exact same `metaUrl(id)`
+ * endpoint (WR-04).
+ */
+class SurveyNotFoundError extends Error {}
+
+const NOT_FOUND_MESSAGE = "Aquesta enquesta ja no existeix o l'enllaç no és correcte."
+const LOAD_FAILED_MESSAGE = "No s'ha pogut carregar el resum d'aquesta enquesta. Comprova la connexió i torna-ho a provar."
+
 interface SurveySummaryModalProps {
   enquestaId: string
   onClose: () => void
@@ -96,6 +109,7 @@ export function SurveySummaryModal({ enquestaId, onClose }: SurveySummaryModalPr
 
     fetch(metaUrl(enquestaId))
       .then((res) => {
+        if (res.status === 404) throw new SurveyNotFoundError()
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()
       })
@@ -103,11 +117,16 @@ export function SurveySummaryModal({ enquestaId, onClose }: SurveySummaryModalPr
         const data = parseEnquestaMeta(body)
         if (!cancelled) setState({ status: 'success', data })
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
+          // A 404 on this survey's own metadata means the survey does not
+          // exist (a stale `?enquesta=` link) — a different, more specific
+          // situation than a transient load failure, and one the generic
+          // message previously conflated (WR-04, mirroring ExplorerPage's
+          // G-03-2b fix for the identical `metaUrl(id)` endpoint).
           setState({
             status: 'error',
-            message: "No s'ha pogut carregar el resum d'aquesta enquesta.",
+            message: err instanceof SurveyNotFoundError ? NOT_FOUND_MESSAGE : LOAD_FAILED_MESSAGE,
           })
         }
       })
