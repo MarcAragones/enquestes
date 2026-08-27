@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 03
 current_phase_name: Interactive Explorer
 status: executing
-stopped_at: Completed 03-05-PLAN.md (gap closure G-03-4)
-last_updated: "2026-08-27T20:32:11.455Z"
+stopped_at: Completed 03-06-PLAN.md (gap closure G-03-2b, G-03-4b)
+last_updated: "2026-08-27T20:41:21.376Z"
 last_activity: 2026-08-27
 last_activity_desc: Phase 03 execution started
-state_head: 484892404e9193533950368b0743c44faea0d481
+state_head: 2e2620b15d5d34171d584911f566a6ff6c663145
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
   percent: 67
 ---
 
@@ -67,6 +67,7 @@ Progress: [███████░░░] 67%
 | Phase 03 P03 | 20min | 3 tasks | 4 files |
 | Phase 03 P04 | 12min | 1 tasks | 1 files |
 | Phase 03 P05 | 5min | 2 tasks | 2 files |
+| Phase 03 P06 | 8min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,8 @@ Recent decisions affecting current work:
 - [Phase 03]: Phase 03 Plan 03: Confirmed GraphicWalker 0.5.2's storeRef -> VizSpecStore.exportCode() as the current, synchronous chart-spec read-back mechanism (replacing RESEARCH.md's LOW-confidence assumption with a fact from the installed package's own .d.ts files); GraphicWalker's own toolbar already exposes image export (EXPL-10), so no custom export code was written
 - [Phase 03]: [Phase 03] Plan 04 (gap closure G-03-2): Merged SurveySummaryModal's two dialog-lifecycle effects into one StrictMode-idempotent effect (latest-ref for onClose, listener-detach-before-close cleanup ordering) rather than memoising onCloseSummary in HomePage.tsx, since the diagnosed defect lives in the modal's effect structure
 - [Phase 03]: [Phase 03] Plan 05 (gap closure G-03-4): Scoped decodeShareLink's T-03-11 schema-drift check to GraphicWalker shelf channels only (excluding the dimensions/measures field catalogue) with an explicit allowlist for GraphicWalker's three internal virtual field ids (gw_count_fid/gw_mea_key_fid/gw_mea_val_fid) — restores EXPL-11, which was previously rejecting every real share link unconditionally
+- [Phase 03]: [Phase 03] Plan 06 (gap closure G-03-2b/G-03-4b): Settled ExplorerPage's phase-2 meta+parquet requests via Promise.allSettled with fixed-priority classification (metadata-404 wins) instead of racing them with Promise.all, and kept the new not-found/load-failed error-kind union local to ExplorerPage.tsx rather than widening the shared FetchState<T> type
+- [Phase 03]: [Phase 03] Plan 06 (gap closure G-03-4b): Wired GraphicWalker's defaultConfig to layout.size.mode 'full' and changed ExplorerPage's root to an h-dvh flex column with a flex-1 min-h-0 canvas wrapper, since 'full' mode requires a definite-height ancestor chain (a percentage height resolves against a parent's height, not its min-height)
 
 ### Pending Todos
 
@@ -95,6 +98,7 @@ None yet.
 ### Blockers/Concerns
 
 - Phase 3: Highest-risk integration in the project (GitHub Pages COOP/COEP header limits, Vite worker/wasm asset bundling, Parquet range-request reliability) — verify against a real production build (`vite build && vite preview --base=/enquestes/`), not just dev, per research/SUMMARY.md
+- Phase 3 plan 03-06's human-check verification steps (not-found error copy visual confirmation, chart-fills-canvas visual confirmation, share-link round trip, responsive/dark-mode layout) were not run — no browser automation tool was available in the executing environment. Recorded as WINDOWS.md entries 6-7; a human must confirm against npm run preview:pages before Phase 3 is considered fully verified.
 
 ## Deferred Items
 
@@ -106,6 +110,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-27T20:32:11.306Z
-Stopped at: Completed 03-05-PLAN.md (gap closure G-03-4)
+Last session: 2026-08-27T20:41:20.879Z
+Stopped at: Completed 03-06-PLAN.md (gap closure G-03-2b, G-03-4b)
 Resume file: None

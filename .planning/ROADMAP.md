@@ -88,7 +88,7 @@ Plans:
   4. User can view field descriptions (data dictionary) from `meta.json` inside the explorer, and export the current chart as an image (PNG/SVG)
   5. User can generate and copy a link that reproduces the exact current visualization (fields and active filters) via query params
 
-**Plans**: 5/6 plans executed (3 gap-closure plans added after UAT)
+**Plans**: 6/6 plans executed (3 gap-closure plans added after UAT)
 
 Plans:
 **Wave 1**
@@ -110,7 +110,7 @@ Plans:
 
 **Gap closure (post-UAT) — Wave 2** *(blocked on 03-05)*
 
-- [ ] 03-06-PLAN.md — G-03-2b + G-03-4b (minor): distinct not-found vs. load-failure error copy on ExplorerPage, and a GraphicWalker `defaultConfig` plus a definite-height wrapper so charts fill the canvas (EXPL-02, EXPL-03, EXPL-06, EXPL-11)
+- [x] 03-06-PLAN.md — G-03-2b + G-03-4b (minor): distinct not-found vs. load-failure error copy on ExplorerPage, and a GraphicWalker `defaultConfig` plus a definite-height wrapper so charts fill the canvas (EXPL-02, EXPL-03, EXPL-06, EXPL-11)
 
 **UI hint**: yes
 
@@ -123,4 +123,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Foundation & Survey Listing | 3/3 | Complete    | 2026-08-26 |
 | 2. Offline Data Pipeline | 3/3 | Complete    | 2026-08-26 |
-| 3. Interactive Explorer | 5/6 | In Progress|  |
+| 3. Interactive Explorer | 6/6 | In Progress|  |
