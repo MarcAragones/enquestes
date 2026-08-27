@@ -10,42 +10,71 @@ import {
 // Real mostra-sintetica field names (public/data/enquestes/mostra-sintetica_meta.json).
 const KNOWN_FIELDS = ['edat', 'satisfaccio', 'recomanaria', 'segment', 'canal', 'territori']
 
-// A representative GraphicWalker IChart-shaped spec: field references (fid),
-// a mark type (config.geoms), and an active filter with an accented value.
+// GraphicWalker's own internal virtual field ids (node_modules/@kanaries/graphic-walker/dist/constants.js),
+// unconditionally appended to every chart's field catalogue by newChart()/createCountField()/createVirtualFields().
+// They never appear in any survey's meta.json, by design.
+const GW_COUNT_FID = 'gw_count_fid'
+const GW_MEA_KEY_FID = 'gw_mea_key_fid'
+const GW_MEA_VAL_FID = 'gw_mea_val_fid'
+
+/**
+ * A GraphicWalker `VizSpecStore.exportCode()`-shaped chart, wrapped in the
+ * array `exportCode()` actually returns (and that `ExplorerPage` passes
+ * straight through to the `chart` prop). The `encodings.dimensions`/`measures`
+ * arrays model the FULL field catalogue GraphicWalker always emits — the six
+ * real survey fields plus its three virtual field ids — independently of
+ * which fields are actually assigned to shelf channels (segment on columns,
+ * satisfaccio on rows, canal on color, territori on filters).
+ */
 function makeSpec(overrides: Partial<{ territoriValue: string }> = {}) {
   const territoriValue = overrides.territoriValue ?? 'Barcelonès'
-  return {
-    visId: 'gw_test',
-    name: 'Test chart',
-    encodings: {
-      dimensions: [{ fid: 'segment', name: 'segment', semanticType: 'nominal', analyticType: 'dimension' }],
-      measures: [{ fid: 'satisfaccio', name: 'satisfaccio', semanticType: 'quantitative', analyticType: 'measure' }],
-      rows: [],
-      columns: [],
-      color: [{ fid: 'canal', name: 'canal', semanticType: 'nominal', analyticType: 'dimension' }],
-      opacity: [],
-      size: [],
-      shape: [],
-      theta: [],
-      radius: [],
-      longitude: [],
-      latitude: [],
-      geoId: [],
-      details: [],
-      filters: [
-        {
-          fid: 'territori',
-          name: 'territori',
-          semanticType: 'nominal',
-          analyticType: 'dimension',
-          rule: { type: 'one of', value: [territoriValue] },
-        },
-      ],
-      text: [],
+  return [
+    {
+      visId: 'gw_test',
+      name: 'Test chart',
+      encodings: {
+        // Catalogue: every field available in the dataset, not shelf assignments.
+        dimensions: [
+          { fid: 'segment', name: 'segment', semanticType: 'nominal', analyticType: 'dimension' },
+          { fid: 'canal', name: 'canal', semanticType: 'nominal', analyticType: 'dimension' },
+          { fid: 'territori', name: 'territori', semanticType: 'nominal', analyticType: 'dimension' },
+          { fid: GW_MEA_KEY_FID, name: 'Measure names', semanticType: 'nominal', analyticType: 'dimension' },
+        ],
+        measures: [
+          { fid: 'edat', name: 'edat', semanticType: 'quantitative', analyticType: 'measure' },
+          { fid: 'satisfaccio', name: 'satisfaccio', semanticType: 'quantitative', analyticType: 'measure' },
+          { fid: 'recomanaria', name: 'recomanaria', semanticType: 'quantitative', analyticType: 'measure' },
+          { fid: GW_COUNT_FID, name: 'Number of records', semanticType: 'quantitative', analyticType: 'measure' },
+          { fid: GW_MEA_VAL_FID, name: 'Measure values', semanticType: 'quantitative', analyticType: 'measure' },
+        ],
+        // Shelf channels: what the chart actually uses.
+        rows: [{ fid: 'satisfaccio', name: 'satisfaccio', semanticType: 'quantitative', analyticType: 'measure' }],
+        columns: [{ fid: 'segment', name: 'segment', semanticType: 'nominal', analyticType: 'dimension' }],
+        color: [{ fid: 'canal', name: 'canal', semanticType: 'nominal', analyticType: 'dimension' }],
+        opacity: [],
+        size: [],
+        shape: [],
+        theta: [],
+        radius: [],
+        longitude: [],
+        latitude: [],
+        geoId: [],
+        details: [],
+        filters: [
+          {
+            fid: 'territori',
+            name: 'territori',
+            semanticType: 'nominal',
+            analyticType: 'dimension',
+            rule: { type: 'one of', value: [territoriValue] },
+          },
+        ],
+        text: [],
+      },
+      config: { geoms: ['point'] },
+      layout: {},
     },
-    config: { geoms: ['point'] },
-    layout: {},
-  }
+  ]
 }
 
 describe('shareLink module constants', () => {
@@ -91,9 +120,38 @@ describe('decodeShareLink round trip', () => {
     const encoded = encodeShareLink(spec)
     const decoded = decodeShareLink(encoded, KNOWN_FIELDS) as ReturnType<typeof makeSpec>
     expect(decoded).toEqual(spec)
-    expect((decoded.encodings.filters[0].rule as { value: string[] }).value[0]).toBe(
+    expect((decoded[0].encodings.filters[0].rule as { value: string[] }).value[0]).toBe(
       'Baix Llobregat, àèìòù çÇ ñÑ'
     )
+  })
+
+  it('round-trips a chart that places a GraphicWalker virtual field on a shelf (e.g. Number of records on rows)', () => {
+    const spec = makeSpec()
+    // Replace the "satisfaccio on rows" assignment with the virtual count field —
+    // dragging "Number of records" onto an axis is an ordinary, common action.
+    spec[0].encodings.rows = [
+      { fid: GW_COUNT_FID, name: 'Number of records', semanticType: 'quantitative', analyticType: 'measure' },
+    ]
+    const encoded = encodeShareLink(spec)
+    expect(encoded).not.toBeNull()
+    const decoded = decodeShareLink(encoded, KNOWN_FIELDS)
+    expect(decoded).toEqual(spec)
+  })
+
+  it('accepts a spec whose catalogue lists a stale field absent from knownFieldNames, as long as every shelf holds only known fields', () => {
+    const spec = makeSpec()
+    // A field the current survey has since dropped, still listed in the
+    // catalogue from when the sharer's dataset had it — but never shelved.
+    spec[0].encodings.dimensions.push({
+      fid: 'antiga_columna_eliminada',
+      name: 'antiga_columna_eliminada',
+      semanticType: 'nominal',
+      analyticType: 'dimension',
+    })
+    const encoded = encodeShareLink(spec)
+    expect(encoded).not.toBeNull()
+    const decoded = decodeShareLink(encoded, KNOWN_FIELDS)
+    expect(decoded).toEqual(spec)
   })
 })
 
@@ -143,10 +201,24 @@ describe('decodeShareLink hostile/stale input handling', () => {
   })
 
   it('returns undefined for a spec referencing a field name absent from knownFieldNames', () => {
+    // Restricting knownFieldNames to just segment/canal makes satisfaccio (rows)
+    // and territori (filters) — both shelf-assigned in makeSpec() — unknown.
+    // This is a genuine shelf-level rejection: the T-03-11 control still bites
+    // on any shelf reference outside knownFieldNames, not merely a stale catalogue.
     const spec = makeSpec()
     const encoded = encodeShareLink(spec)!
     expect(() => decodeShareLink(encoded, ['segment', 'canal'])).not.toThrow()
     expect(decodeShareLink(encoded, ['segment', 'canal'])).toBeUndefined()
+  })
+
+  it('returns undefined for a spec that places a field absent from knownFieldNames directly on a shelf channel', () => {
+    const spec = makeSpec()
+    spec[0].encodings.size = [
+      { fid: 'camp_desconegut', name: 'camp_desconegut', semanticType: 'quantitative', analyticType: 'measure' },
+    ]
+    const encoded = encodeShareLink(spec)!
+    expect(() => decodeShareLink(encoded, KNOWN_FIELDS)).not.toThrow()
+    expect(decodeShareLink(encoded, KNOWN_FIELDS)).toBeUndefined()
   })
 
   it('never throws for any hostile input class exercised above', () => {
