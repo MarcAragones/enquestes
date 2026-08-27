@@ -1,79 +1,75 @@
 ---
 phase: 03-interactive-explorer
-fixed_at: 2026-08-26T22:30:08Z
+fixed_at: 2026-08-27T21:02:29Z
 review_path: .planning/phases/03-interactive-explorer/03-REVIEW.md
 iteration: 1
-findings_in_scope: 4
-fixed: 4
+findings_in_scope: 5
+fixed: 5
 skipped: 0
 status: all_fixed
 ---
 
-# Phase 3: Code Review Fix Report
+# Phase 03: Code Review Fix Report
 
-**Fixed at:** 2026-08-26T22:30:08Z
+**Fixed at:** 2026-08-27T21:02:29Z
 **Source review:** .planning/phases/03-interactive-explorer/03-REVIEW.md
 **Iteration:** 1
 
 **Summary:**
-- Findings in scope: 4 (1 critical, 3 warnings)
-- Fixed: 4
+- Findings in scope: 5 (fix_scope: critical_warning — CR-01, WR-01 through WR-04; IN-01 and IN-02 skipped by scope)
+- Fixed: 5
 - Skipped: 0
+
+**Verification environment:** All fixes were made and verified inside an isolated git worktree (`workflow.use_worktrees` was not disabled), with `node_modules` symlinked from the main checkout (no reinstall). `npx tsc --noEmit -p .`, `npx tsc -b` (full build typecheck), `npx eslint .`, and `npx vitest run` were all re-run clean after the last commit — results should reproduce identically from the main checkout after this worktree's commits are merged in.
 
 ## Fixed Issues
 
-### CR-01: Unvalidated share-link payload shape can crash the survey page (no error boundary)
+### CR-01: `decodeShareLink` can return a non-array value that violates the `IChart[]` contract every caller relies on
 
-**Files modified:** `src/lib/shareLink.ts`, `src/pages/ExplorerPage.tsx`, `src/components/ChartErrorBoundary.tsx` (new)
-**Commit:** `5e933df`
-**Applied fix:**
-Before applying the review's suggested snippet verbatim, verified the actual GraphicWalker 0.5.2 contract against `03-03-SUMMARY.md` and `node_modules/@kanaries/graphic-walker/dist/interfaces.d.ts`: `ISpecProps.chart` accepts `IChart[] | IVisSpec[]`, and both `IChart` and the deprecated `IVisSpec` require a non-optional `visId: string` and a non-optional `encodings: DraggableFieldState` object. The review's suggested check (`typeof chart.encodings === 'object'`) was structurally correct for this installed version, but its `Array.isArray(parsed)`-only top-level gate would have broken all 16 existing `shareLink.test.ts` assertions — the test fixture `makeSpec()` encodes a single chart-shaped object, not an array, to exercise the encode/decode mechanics generically. Adapted the fix: added an `isChartLike()` guard (checks `visId`/`encodings` per the confirmed types) applied either to every element of an array or to a bare object, so real production payloads (`IChart[]`, from `VizSpecStore.exportCode()`) and the existing single-object test fixtures both validate correctly, while non-chart-shaped JSON (the `?chart=v1.NDI` → `42` exploit from the finding, bare strings/booleans, objects missing `visId`/`encodings`) is rejected and `decodeShareLink` returns `undefined`.
+**Files modified:** `src/lib/shareLink.ts`
+**Commit:** `102c659`
+**Applied fix:** Step 8 now returns `charts` (the normalized array built at step 6 — either `parsed` itself when it was already an array, or `[parsed]` when it was a bare single chart-shaped object) instead of returning the raw `parsed` value verbatim. This guarantees the function's return value always matches the `IChart[] | undefined` shape every caller (and `ExplorerPage.tsx`'s `as IChart[] | undefined` cast) relies on. Updated the doc comments on `decodeShareLink` and the step-6 inline comment to accurately describe the normalization instead of claiming "no wrapping, no normalisation." Existing round-trip tests in `shareLink.test.ts` all pass unchanged (they already exercise array-shaped specs, for which `charts === parsed` by reference, so behavior is identical for every existing test case).
 
-As defense-in-depth (the review's "and/or ... ideally both" suggestion), also added a new `ChartErrorBoundary` class component (React error boundaries require a class; there is no hook equivalent) wrapping `<GraphicWalker />` in `ExplorerPage.tsx`, keyed on the raw `?chart=` param so a fresh navigation resets a previously-tripped boundary. Any future render-time throw inside GraphicWalker now degrades to a friendly `ErrorState` instead of an unrecoverable blank page.
+### WR-01: `isChartLike` accepts an array-typed `encodings`, silently disabling the T-03-11 schema-drift check for that payload
 
-Verified: manually confirmed via a scratch script that `decodeShareLink` now returns `undefined` for the exact exploit payload (`encodeShareLink(42)` → decode → `undefined`) and for a bare non-chart object; all 16 existing `shareLink.test.ts` assertions still pass unmodified.
+**Files modified:** `src/lib/shareLink.ts`
+**Commit:** `59d840b`
+**Applied fix:** Added `!Array.isArray(candidate.encodings)` to `isChartLike`'s guard, applied exactly as suggested in REVIEW.md. `{"visId":"v1","encodings":[]}` (and any array-typed `encodings`) is now correctly rejected, so `collectShelfFieldReferences`'s `key in encodings` check can no longer be silently bypassed by handing it an array.
 
-### WR-01: TOCTOU race in `queryParquet`'s file-registration guard
+### WR-02: A top-level empty array is accepted as a valid decoded chart instead of falling back to `undefined`
 
-**Files modified:** `src/services/duckdb.ts`
-**Commit:** `168cf9f`
-**Applied fix:** Replaced the boolean `registeredFiles` Set (checked-then-set across an `await`, racy under StrictMode's double-invoked effect or a fast double-click on the phase-2 retry button) with a `Map<string, Promise<void>>` caching the in-flight `registerFileURL` promise itself, following the review's suggested pattern. A concurrent second caller now awaits the first caller's in-flight registration instead of racing it. Added one refinement beyond the review's snippet: on registration failure, the cache entry is evicted (`.catch(() => { registrationPromises.delete(virtualName); throw err })`) so a subsequent retry attempt re-registers instead of permanently replaying a cached rejection.
+**Files modified:** `src/lib/shareLink.ts`
+**Commit:** `21af62f`
+**Applied fix:** Step 6's guard is now `if (charts.length === 0 || !charts.every(isChartLike))`, applied exactly as suggested in REVIEW.md. A top-level empty array (e.g. `?chart=v1.W10`) now correctly returns `undefined` instead of `[]`, matching the documented "malformed/stale link behaves like no link at all" contract.
 
-### WR-02: vitest `include` glob excludes `.test.tsx`
+### WR-03: `SurveySummaryModal`'s fetch effect never resets `state` to `loading` when `enquestaId` changes
 
-**Files modified:** `vite.config.ts`
-**Commit:** `ec30755`
-**Applied fix:** Applied the review's suggested fix verbatim — changed `test.include` from `['src/**/*.test.ts']` to `['src/**/*.test.{ts,tsx}']`. No `.test.tsx` files exist yet, so this is a no-op for the current suite (confirmed 22/22 tests still pass) but unblocks the first future component test from silently being skipped by `npm test`.
+**Files modified:** `src/components/SurveySummaryModal.tsx`
+**Commits:** `0965305` (initial fix, following REVIEW.md's suggested `setState({ status: 'loading' })` call at the top of the effect), `3012a49` (follow-up correction)
+**Applied fix:** The initial fix applied REVIEW.md's suggestion literally (`setState({ status: 'loading' })` as the first line inside the fetch effect), but this project's ESLint config enforces `react-hooks/set-state-in-effect`, which flags exactly this pattern (a synchronous `setState` call inside an effect body causes an avoidable cascading render) — this was the only lint error in the entire repository after the first commit, so it was corrected in a same-session follow-up commit rather than left broken. The final implementation follows React's own recommended "adjusting state when a prop changes" pattern instead: a `trackedEnquestaId` state variable is compared against `enquestaId` during render, and if they differ, both `setTrackedEnquestaId` and `setState({ status: 'loading' })` are called synchronously during the render body (not inside `useEffect`) — this bails out and re-renders immediately with the reset state before the fetch effect even runs, with no extra flicker and no lint violation. `npx eslint .` is clean across the whole project after this correction.
 
-### WR-03: Engine-init failure treated as universally non-transient
+### WR-04: `SurveySummaryModal` shows the same generic error message for "survey not found" and "load failed"
 
-**Files modified:** `src/services/duckdb.ts`, `src/pages/ExplorerPage.tsx`
-**Commit:** `fb6bc29`
-**Applied fix:** Per the review's "at minimum" guidance plus the "consider offering a retry" follow-on, implemented both: (1) softened the phase-1 error copy to `"No s'ha pogut inicialitzar el motor de consultes. Comprova la connexió i torna-ho a provar."` (no longer assumes an incompatible-browser cause), and (2) added an `engineAttempt` counter plus an exported `resetDb()` in `duckdb.ts` (clears the cached `dbPromise` so a retry actually re-attempts `initDb()` rather than replaying the same rejected promise) wired to a new `onEngineRetry` handler and the `ErrorState`'s `onRetry` prop, mirroring phase 2's existing retry pattern. As a side effect, this also makes the previously-dead `engineState.message` field (IN-01, out of scope) actually populated and rendered, since the error state now carries a real message string.
+**Files modified:** `src/components/SurveySummaryModal.tsx`
+**Commit:** `b4e9382`
+**Applied fix:** Mirrored `ExplorerPage.tsx`'s `SurveyNotFoundError`/classification pattern for the identical `metaUrl(id)` endpoint: added a local `SurveyNotFoundError` class, thrown when `res.status === 404`; the `.catch()` handler now sets `NOT_FOUND_MESSAGE` ("Aquesta enquesta ja no existeix o l'enllaç no és correcte.") for that case and `LOAD_FAILED_MESSAGE` ("No s'ha pogut carregar el resum d'aquesta enquesta. Comprova la connexió i torna-ho a provar.") for any other failure. `FetchState<T>`'s shared error shape (`{ status: 'error'; message: string }`) was kept as-is — only the message text is now conditional — since that type is also used by `HomePage.tsx` and widening it was out of scope for this fix.
 
-## Skipped Issues
+## Skipped Issues (out of fix_scope)
 
-None — all four in-scope findings were fixed.
+The following findings from REVIEW.md were Info-tier and excluded by `fix_scope: critical_warning`; they were not attempted:
 
-## Verification
+### IN-01: Engine-init error state renders the same sentence twice
 
-Ran the full project verification suite in the isolated worktree after all four commits (each individual fix was also verified at commit time — see per-fix Tier 1/2 checks above):
+**File:** `src/pages/ExplorerPage.tsx:129,213`
+**Reason:** Out of scope (`fix_scope: critical_warning` excludes Info-tier findings).
 
-- `npm run build` — pass (tsc -b + vite build, no new errors)
-- `npm run lint` — pass (eslint, zero warnings/errors)
-- `npx vitest run` — pass (2 test files, 22/22 assertions)
-- `npm run verify:explorer` — pass (all 4 DuckDB asset checks)
-- `npm run verify:pages` — pass
+### IN-02: `shareLink.test.ts` has no coverage for the shape edge cases that WR-01/WR-02/CR-01 exploit
 
-All verification ran inside the isolated git worktree (`.claude/worktrees/rf-03-44074-1787783108`, branch `gsd-reviewfix/03-44074`), with `node_modules` symlinked from the main checkout rather than reinstalled. The worktree's commits were fast-forwarded onto `main` and the worktree removed as part of this run's cleanup — the same numbers are reproducible from `main` after that fast-forward.
-
-## Notes for human review
-
-- CR-01's fix (`isChartLike`) is a structural/shape guard, not a logic-bug fix — no `human_judgment: requires human verification` flag needed per the verification_strategy's logic-bug carve-out.
-- WR-03 changes the phase-1 error UX (message text + a new retry button). The functional behavior (retry actually re-attempts engine init) was verified via build/lint/test, but the *visual* appearance of the new retry button in the phase-1 error state was not manually screenshotted — same class of deferred manual UAT already tracked for this phase's other button-facing changes in `.planning/WINDOWS.md`.
+**File:** `src/lib/shareLink.test.ts`
+**Reason:** Out of scope (`fix_scope: critical_warning` excludes Info-tier findings). Note: since CR-01/WR-01/WR-02 are now fixed, the three suggested test cases in REVIEW.md's IN-02 fix section would all pass against the corrected implementation if added later.
 
 ---
 
-_Fixed: 2026-08-26T22:30:08Z_
+_Fixed: 2026-08-27T21:02:29Z_
 _Fixer: Claude (gsd-code-fixer)_
 _Iteration: 1_
