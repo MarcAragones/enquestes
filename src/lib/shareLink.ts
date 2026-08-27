@@ -84,7 +84,18 @@ export function encodeShareLink(spec: unknown): string | null {
 function isChartLike(value: unknown): boolean {
   if (typeof value !== 'object' || value === null) return false
   const candidate = value as Record<string, unknown>
-  return typeof candidate.visId === 'string' && typeof candidate.encodings === 'object' && candidate.encodings !== null
+  return (
+    typeof candidate.visId === 'string' &&
+    typeof candidate.encodings === 'object' &&
+    candidate.encodings !== null &&
+    // `typeof [] === 'object'`, so without this explicit exclusion an
+    // array-typed `encodings` (e.g. `{"visId":"v1","encodings":[]}`) would
+    // pass this guard even though `DraggableFieldState` is never an array —
+    // and `collectShelfFieldReferences` iterating `SHELF_CHANNEL_KEYS` via
+    // `key in encodings` finds zero own properties on an array, silently
+    // disabling the T-03-11 schema-drift check for that payload (WR-01).
+    !Array.isArray(candidate.encodings)
+  )
 }
 
 /** Every string value found at a `fid` key inside a parsed chart-like structure. */
