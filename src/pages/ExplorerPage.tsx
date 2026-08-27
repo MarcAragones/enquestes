@@ -19,6 +19,33 @@ interface ExplorerData {
   rows: Record<string, unknown>[]
 }
 
+/**
+ * Local to this page only — FetchState<T>'s error arm carries a plain
+ * message string and other pages depend on that shape, so it is not widened.
+ * `dataState` needs to distinguish "this survey does not exist" from "the
+ * load failed" (G-03-2b), which a shared message string cannot express.
+ */
+type DataErrorKind = 'not-found' | 'load-failed'
+
+type ExplorerDataState =
+  | { status: 'loading' }
+  | { status: 'error'; kind: DataErrorKind }
+  | { status: 'success'; data: ExplorerData }
+
+/**
+ * Raised only when metaUrl(id) responds with a 404 specifically, so its
+ * type survives Promise settlement and the classifier below can give a
+ * non-existent survey priority over any other concurrent rejection (e.g.
+ * the Parquet query, which also fails for a non-existent id, but with a
+ * less specific reason).
+ */
+class SurveyNotFoundError extends Error {}
+
+const NOT_FOUND_TITLE = "No s'ha trobat aquesta enquesta."
+const NOT_FOUND_MESSAGE = "Comprova l'enllaç o torna al llistat d'enquestes."
+const LOAD_FAILED_TITLE = "No s'han pogut carregar les dades d'aquesta enquesta."
+const LOAD_FAILED_MESSAGE = 'Comprova la connexió i torna-ho a provar.'
+
 /** aria-busy + sr-only status text + animate-pulse, matching LoadingSkeleton's conventions. */
 function LoadingBlock({ text }: { text: string }) {
   return (
@@ -41,7 +68,7 @@ export default function ExplorerPage() {
   const [searchParams] = useSearchParams()
 
   const [engineState, setEngineState] = useState<FetchState<true>>({ status: 'loading' })
-  const [dataState, setDataState] = useState<FetchState<ExplorerData>>({ status: 'loading' })
+  const [dataState, setDataState] = useState<ExplorerDataState>({ status: 'loading' })
   const [dataAttempt, setDataAttempt] = useState(0)
   const [engineAttempt, setEngineAttempt] = useState(0)
 
@@ -116,30 +143,44 @@ export default function ExplorerPage() {
   }
 
   // Phase 2: meta.json + Parquet, only once phase 1 succeeded. Plausibly
-  // transient (network blip), so this phase offers a retry.
+  // transient (network blip), so this phase offers a retry — except when the
+  // survey itself does not exist, where a retry can never succeed (G-03-2b).
+  //
+  // Both requests are settled together (Promise.allSettled), never raced
+  // (Promise.all): a non-existent survey 404s on the metadata request AND
+  // fails the Parquet query, so racing them makes the surfaced reason depend
+  // on which one loses first. Classification below applies a fixed priority
+  // instead — a metadata 404 always wins over any other concurrent failure.
   useEffect(() => {
     if (!valid || id === undefined || engineState.status !== 'success') return
     let cancelled = false
 
-    Promise.all([
+    Promise.allSettled([
       fetch(metaUrl(id)).then((res) => {
+        if (res.status === 404) throw new SurveyNotFoundError()
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()
       }),
       queryParquet(id),
-    ])
-      .then(([metaBody, rows]) => {
-        const meta = parseEnquestaMeta(metaBody)
-        if (!cancelled) setDataState({ status: 'success', data: { meta, rows } })
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setDataState({
-            status: 'error',
-            message: "No s'han pogut carregar les dades de l'enquesta.",
-          })
-        }
-      })
+    ]).then(([metaResult, rowsResult]) => {
+      if (cancelled) return
+
+      if (metaResult.status === 'rejected' && metaResult.reason instanceof SurveyNotFoundError) {
+        setDataState({ status: 'error', kind: 'not-found' })
+        return
+      }
+      if (metaResult.status === 'rejected' || rowsResult.status === 'rejected') {
+        setDataState({ status: 'error', kind: 'load-failed' })
+        return
+      }
+
+      try {
+        const meta = parseEnquestaMeta(metaResult.value)
+        setDataState({ status: 'success', data: { meta, rows: rowsResult.value } })
+      } catch {
+        setDataState({ status: 'error', kind: 'load-failed' })
+      }
+    })
 
     return () => {
       cancelled = true
@@ -159,7 +200,11 @@ export default function ExplorerPage() {
   let headerCopyLink: (() => Promise<void>) | undefined
   let content
   if (!valid) {
-    content = <p className="text-zinc-700 dark:text-zinc-300">No s'ha trobat aquesta enquesta.</p>
+    // A malformed id and a non-existent id present identically to a
+    // visitor — isValidEnquestaId only checks URL-segment shape, so the two
+    // cases are indistinguishable from the outside and share this branch's
+    // treatment (no retry: retrying can never make a bad id become valid).
+    content = <ErrorState title={NOT_FOUND_TITLE} message={NOT_FOUND_MESSAGE} />
   } else if (engineState.status === 'loading') {
     content = <LoadingBlock text="Inicialitzant el motor de consultes…" />
   } else if (engineState.status === 'error') {
@@ -173,7 +218,16 @@ export default function ExplorerPage() {
   } else if (dataState.status === 'loading') {
     content = <LoadingBlock text="Carregant les dades de l'enquesta…" />
   } else if (dataState.status === 'error') {
-    content = <ErrorState message={dataState.message} onRetry={onDataRetry} />
+    // A 404 on this survey's own metadata never offers a retry (G-03-2b) —
+    // retrying a survey that does not exist cannot succeed and only invites
+    // the visitor to keep trying. Any other failure is plausibly transient,
+    // so it keeps the retry affordance.
+    content =
+      dataState.kind === 'not-found' ? (
+        <ErrorState title={NOT_FOUND_TITLE} message={NOT_FOUND_MESSAGE} />
+      ) : (
+        <ErrorState title={LOAD_FAILED_TITLE} message={LOAD_FAILED_MESSAGE} onRetry={onDataRetry} />
+      )
   } else {
     const { meta, rows } = dataState.data
     headerTitle = meta.title
