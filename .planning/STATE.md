@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 03
 current_phase_name: Interactive Explorer
 status: executing
-stopped_at: Completed 03-04-PLAN.md (gap closure G-03-2)
-last_updated: "2026-08-27T20:24:11.874Z"
+stopped_at: Completed 03-05-PLAN.md (gap closure G-03-4)
+last_updated: "2026-08-27T20:32:11.455Z"
 last_activity: 2026-08-27
 last_activity_desc: Phase 03 execution started
-state_head: 09f3b2675ccfaa4e0b292929ed748845e4a11408
+state_head: 484892404e9193533950368b0743c44faea0d481
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
   percent: 67
 ---
 
@@ -66,6 +66,7 @@ Progress: [███████░░░] 67%
 | Phase 03 P02 | 25min | 2 tasks | 3 files |
 | Phase 03 P03 | 20min | 3 tasks | 4 files |
 | Phase 03 P04 | 12min | 1 tasks | 1 files |
+| Phase 03 P05 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,7 @@ Recent decisions affecting current work:
 - [Phase 03]: Plan 02: Confirmed @kanaries/graphic-walker@0.5.2's installed types expose IThemeProps.appearance (IDarkMode: 'media'|'light'|'dark') and wired it to the existing useTheme() hook so the GraphicWalker canvas matches the app shell's light/dark mode
 - [Phase 03]: Phase 03 Plan 03: Confirmed GraphicWalker 0.5.2's storeRef -> VizSpecStore.exportCode() as the current, synchronous chart-spec read-back mechanism (replacing RESEARCH.md's LOW-confidence assumption with a fact from the installed package's own .d.ts files); GraphicWalker's own toolbar already exposes image export (EXPL-10), so no custom export code was written
 - [Phase 03]: [Phase 03] Plan 04 (gap closure G-03-2): Merged SurveySummaryModal's two dialog-lifecycle effects into one StrictMode-idempotent effect (latest-ref for onClose, listener-detach-before-close cleanup ordering) rather than memoising onCloseSummary in HomePage.tsx, since the diagnosed defect lives in the modal's effect structure
+- [Phase 03]: [Phase 03] Plan 05 (gap closure G-03-4): Scoped decodeShareLink's T-03-11 schema-drift check to GraphicWalker shelf channels only (excluding the dimensions/measures field catalogue) with an explicit allowlist for GraphicWalker's three internal virtual field ids (gw_count_fid/gw_mea_key_fid/gw_mea_val_fid) — restores EXPL-11, which was previously rejecting every real share link unconditionally
 
 ### Pending Todos
 
@@ -104,6 +106,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-27T20:24:11.717Z
-Stopped at: Completed 03-04-PLAN.md (gap closure G-03-2)
+Last session: 2026-08-27T20:32:11.306Z
+Stopped at: Completed 03-05-PLAN.md (gap closure G-03-4)
 Resume file: None

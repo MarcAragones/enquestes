@@ -160,6 +160,17 @@ None - no external service configuration required.
 - EXPL-11 (shareable link) is now functionally restored at the unit level; plan 03-06's human verification step is the last remaining check (real-browser paste-and-restore) before this requirement can be marked fully validated
 - No other files were touched — `src/pages/ExplorerPage.tsx` remains plan 03-06's exclusive scope, as this plan's success criteria required
 
+## Self-Check: PASSED
+
+- FOUND: src/lib/shareLink.ts
+- FOUND: src/lib/shareLink.test.ts
+- FOUND: .planning/phases/03-interactive-explorer/03-05-SUMMARY.md
+- FOUND: ddd7632 (test commit)
+- FOUND: 14a0788 (feat commit)
+- FOUND: 4848924 (docs/summary commit)
+- Full project test suite (`npx vitest run`): 2 files, 25/25 tests pass
+- `git log --oneline --all --grep="03-05"` returns all 3 commits above
+
 ---
 *Phase: 03-interactive-explorer*
 *Completed: 2026-08-27*

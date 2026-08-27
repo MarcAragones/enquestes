@@ -88,7 +88,7 @@ Plans:
   4. User can view field descriptions (data dictionary) from `meta.json` inside the explorer, and export the current chart as an image (PNG/SVG)
   5. User can generate and copy a link that reproduces the exact current visualization (fields and active filters) via query params
 
-**Plans**: 4/6 plans executed (3 gap-closure plans added after UAT)
+**Plans**: 5/6 plans executed (3 gap-closure plans added after UAT)
 
 Plans:
 **Wave 1**
@@ -106,7 +106,7 @@ Plans:
 **Gap closure (post-UAT, 03-UAT.md) — Wave 1**
 
 - [x] 03-04-PLAN.md — G-03-2 (blocker): make SurveySummaryModal's `<dialog>` lifecycle StrictMode-idempotent so the summary stops self-dismissing under `npm run dev` (HOME-03, HOME-04)
-- [ ] 03-05-PLAN.md — G-03-4 (major): scope decodeShareLink's schema-drift guard to shelf channels with a GraphicWalker virtual-fid allowlist, and model the real exportCode() shape in the test fixture, so copied links restore again (EXPL-11)
+- [x] 03-05-PLAN.md — G-03-4 (major): scope decodeShareLink's schema-drift guard to shelf channels with a GraphicWalker virtual-fid allowlist, and model the real exportCode() shape in the test fixture, so copied links restore again (EXPL-11)
 
 **Gap closure (post-UAT) — Wave 2** *(blocked on 03-05)*
 
@@ -123,4 +123,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Foundation & Survey Listing | 3/3 | Complete    | 2026-08-26 |
 | 2. Offline Data Pipeline | 3/3 | Complete    | 2026-08-26 |
-| 3. Interactive Explorer | 4/6 | In Progress|  |
+| 3. Interactive Explorer | 5/6 | In Progress|  |
