@@ -235,7 +235,7 @@ export default function ExplorerPage() {
     content = (
       <>
         <DataDictionary fields={meta.fields} />
-        <div className="min-h-screen">
+        <div className="min-h-0 flex-1">
           <ChartErrorBoundary key={rawChartParam ?? 'no-chart'}>
             <GraphicWalker
               dataSource={rows}
@@ -243,6 +243,18 @@ export default function ExplorerPage() {
               appearance={theme}
               storeRef={vizStoreRef}
               chart={decodedChart}
+              // Every chart GraphicWalker creates from scratch is born with
+              // layout.size.mode 'auto' (shrink-to-content) unless overridden
+              // here. 'full' mode measures the real rendered container via
+              // useResizeDetector() and stretches the chart to fill it
+              // instead (G-03-4b). The width/height numbers are ignored in
+              // 'full' mode — the type requires a complete size object, but
+              // only the mode is consulted.
+              defaultConfig={{
+                layout: {
+                  size: { mode: 'full', width: 0, height: 0 },
+                },
+              }}
             />
           </ChartErrorBoundary>
         </div>
@@ -251,7 +263,15 @@ export default function ExplorerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+    // h-dvh (dynamic viewport height, not min-h-screen) so a mobile
+    // browser's collapsing address bar doesn't push the canvas past the
+    // fold; flex-col + the canvas wrapper's flex-1 min-h-0 is what makes
+    // GraphicWalker's defaultConfig 'full' mode have a real, definite
+    // container height to measure (G-03-4b) — the prop alone is inert
+    // without it. No overflow clip here: GraphicWalker scrolls internally,
+    // and clipping at this level would make the header/dictionary
+    // unreachable in a pathological narrow-viewport case.
+    <div className="flex h-dvh flex-col bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
       <ExplorerHeader title={headerTitle} onCopyLink={headerCopyLink} />
       {content}
     </div>
