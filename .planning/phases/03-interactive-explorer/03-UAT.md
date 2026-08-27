@@ -1,30 +1,20 @@
 ---
-status: testing
+status: complete
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
-updated: 2026-08-27T00:40:00Z
+updated: 2026-08-27T01:12:00Z
 ---
 
 ## Current Test
 
-number: 1
-name: Tracer end-to-end — loading phases, field typing, drag-and-drop, mark switching, full-width canvas, refresh-safe deep link
-expected: |
-  Open /enquesta/mostra-sintetica and confirm:
-  1. "Inicialitzant el motor de consultes…" appears, then "Carregant les dades de l'enquesta…", then the GraphicWalker canvas — two visibly distinct phases, not one spinner.
-  2. The field list shows all six fields, with edat/satisfaccio/recomanaria under measures and segment/canal/territori under dimensions.
-  3. Dragging segment to X and satisfaccio to Y draws a chart from real values, and the toolbar can switch that chart between bar, line, area and scatter/point marks.
-  4. The canvas spans the full browser width — not boxed inside a ~768px column — and exactly one header row is visible above it.
-  5. Refreshing the page and pasting the URL into a new tab both land on the explorer, never a 404 or a blank screen.
-  6. The browser console shows no errors mentioning styled-components, apache-arrow, or a failed Worker construction.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
 ### 1. Tracer end-to-end — loading phases, field typing, drag-and-drop, mark switching, full-width canvas, refresh-safe deep link
 expected: See "Current Test" above (03-01-PLAN.md Task 3 human-check; WINDOWS.md id 2)
-result: [pending]
+result: pass
 
 ### 2. Explorer header — single row in every state, back-link, dark-mode toggle, narrow-viewport wrap
 expected: |
@@ -33,7 +23,9 @@ expected: |
   3. Toggling dark mode restyles the header and, if GraphicWalker's appearance prop was found, the canvas too — no light-panel-inside-dark-page mismatch.
   4. Narrow the window to ~375px and then ~768px: the header wraps or truncates but the back-link and toggle stay reachable and nothing overflows horizontally.
   5. Visit /enquesta/no-existeix-aquesta — the header still renders and the back-link still works alongside the "No s'ha trobat aquesta enquesta." copy.
-result: [pending]
+result: issue
+reported: "Veig dos errors. 1. Critic. Quan vaig a la pàgina inicial i clico una enquesta, s'obre el pop-up però es tanca immediatament. 2. Petit. Quan vaig a l'enllaç d'una enquesta que no existeix, l'error que surt és \"No s'han pogut carregar les enquestes\". Sembla que està intentant carregar una cosa que no existeix."
+severity: blocker
 
 ### 3. Data dictionary panel — collapse/expand, field rendering, keyboard operability, narrow viewport, production build
 expected: |
@@ -43,7 +35,7 @@ expected: |
   4. It is keyboard operable: Tab to the summary, Enter/Space expands and collapses it.
   5. At ~375px width the panel and its rows stay readable with no horizontal overflow.
   6. Run `npm run build` + `npm run preview:pages` and repeat checks 1-5 against the production build served under /enquestes/, including a check that GraphicWalker's own canvas is not visually broken at ~375px and ~768px.
-result: [pending]
+result: pass
 
 ### 4. Chart export, copy-link round trip, and hostile-link fallback (production build)
 expected: |
@@ -56,18 +48,62 @@ expected: |
   6. Truncate the chart parameter to a few characters and load it. Same silent blank result.
   7. Paste a link built for a different survey id and confirm it opens that survey's explorer without applying a spec referencing fields that survey does not have.
   8. At ~375px width the header still wraps or truncates without pushing the Copy-link button off-screen.
-result: [pending]
+result: issue
+reported: "1. Si copio l'enllaç, no veig la gràfica que havia fet prèviament. 2. El bar chart no ocupa tot l'espai. Queda reduit a una petita part. Hauria de ser mes gran"
+severity: major
 
 ## Summary
 
 total: 4
-passed: 0
-issues: 0
-pending: 4
+passed: 2
+issues: 2
+pending: 0
 skipped: 0
 blocked: 0
 
+## Deferred Follow-Ups
+
+- test: 1
+  idea: "Share-link URL is long (full GraphicWalker chart spec, base64url-encoded, no compression). User asked if it can be shortened. No backend available for a real short-link service (project is $0 static site); options for later: compress payload before base64, or trim spec to only non-default fields before encoding."
+  deferred_at: 2026-08-27
+
 ## Gaps
+
+- gap_id: G-03-2
+  truth: "Clicking a survey card on the homepage opens SurveySummaryModal and it stays open until the user dismisses it"
+  status: failed
+  reason: "User reported: the popup opens then closes immediately when clicking a survey from the homepage"
+  severity: blocker
+  test: 2
+  artifacts: []
+  missing: []
+
+- gap_id: G-03-2b
+  truth: "Visiting /enquesta/{invalid-id} shows the ExplorerPage's invalid-id copy ('No s'ha trobat aquesta enquesta.'), not the HomePage's list-load-failure copy"
+  status: failed
+  reason: "User reported: visiting a non-existent survey link shows \"No s'han pogut carregar les enquestes\" (the homepage's survey-list load-failure message) instead of the expected not-found message — looks like it's trying to fetch something that doesn't exist"
+  severity: minor
+  test: 2
+  artifacts: []
+  missing: []
+
+- gap_id: G-03-4
+  truth: "Pasting a copied share link into a fresh tab opens on the identical visualization the sharer had built (EXPL-11)"
+  status: failed
+  reason: "User reported: after copying the link, the chart they had previously built is not shown when the link is opened"
+  severity: major
+  test: 4
+  artifacts: []
+  missing: []
+
+- gap_id: G-03-4b
+  truth: "The GraphicWalker chart canvas fills the available space rather than rendering small"
+  status: failed
+  reason: "User reported: the bar chart doesn't occupy all the space — it's reduced to a small part, should be bigger"
+  severity: minor
+  test: 4
+  artifacts: []
+  missing: []
 
 Two backstop truths from the plans have no automatable test and no held-out fixture, and are not part of the 4 tests above since they require assets that don't exist yet:
 - Zero-row Parquet rendering GraphicWalker's own empty canvas (03-01-PLAN.md backstop truth) — no zero-row Parquet fixture exists in the repo.
