@@ -105,6 +105,60 @@ function collectFieldReferences(value: unknown, out: Set<string>): void {
 }
 
 /**
+ * GraphicWalker's own internal virtual field ids (installed
+ * @kanaries/graphic-walker@0.5.2, `dist/constants.js`:
+ * `COUNT_FIELD_ID`/`MEA_KEY_ID`/`MEA_VAL_ID`). `newChart()`
+ * (`dist/models/visSpecHistory.js`) appends these to every chart's field
+ * catalogue unconditionally, whenever the dataset has any fields at all —
+ * they do not come from any survey's data. A visitor can legitimately drag
+ * one onto a shelf (e.g. "Number of records" onto an axis is an ordinary,
+ * common action), so they are valid field references that no survey's
+ * meta.json will ever list.
+ */
+const GRAPHIC_WALKER_VIRTUAL_FIDS = new Set(['gw_count_fid', 'gw_mea_key_fid', 'gw_mea_val_fid'])
+
+/**
+ * `DraggableFieldState` keys that represent shelf assignments — what a
+ * chart actually uses — as opposed to `dimensions`/`measures`, which
+ * enumerate every field available in the sharer's dataset (the field
+ * CATALOGUE, not shelf content). GraphicWalker rebuilds that catalogue from
+ * the `rawFields` prop at mount time, so a stale catalogue entry can never
+ * express a reference that survives into a rendered chart — only shelf
+ * channels can. Excluding `dimensions`/`measures` here is a deliberate
+ * narrowing of the schema-drift check (T-03-11), not an oversight.
+ */
+const SHELF_CHANNEL_KEYS = [
+  'rows',
+  'columns',
+  'color',
+  'opacity',
+  'size',
+  'shape',
+  'theta',
+  'radius',
+  'longitude',
+  'latitude',
+  'geoId',
+  'details',
+  'filters',
+  'text',
+] as const
+
+/**
+ * Every `fid` referenced by a chart-like value's shelf channels only —
+ * `encodings.dimensions`/`encodings.measures` (the field catalogue) are
+ * deliberately excluded, per `SHELF_CHANNEL_KEYS`'s doc comment above.
+ */
+function collectShelfFieldReferences(chart: Record<string, unknown>, out: Set<string>): void {
+  const encodings = chart.encodings as Record<string, unknown>
+  for (const key of SHELF_CHANNEL_KEYS) {
+    if (key in encodings) {
+      collectFieldReferences(encodings[key], out)
+    }
+  }
+}
+
+/**
  * Decodes a `?chart=` query-param value back into the value shape
  * GraphicWalker's `chart` prop expects — no wrapping, no normalisation, no
  * singular/plural translation (this project carries GraphicWalker's own
@@ -169,32 +223,42 @@ export function decodeShareLink(raw: string | null, knownFieldNames: string[]): 
     return undefined
   }
 
-  // 6. Every field reference (fid) must be present in the currently-loaded
-  // meta.json's field list — schema-drift control (T-03-11).
-  const referenced = new Set<string>()
-  collectFieldReferences(parsed, referenced)
-  const known = new Set(knownFieldNames)
-  for (const fid of referenced) {
-    if (!known.has(fid)) {
-      return undefined
-    }
+  // 6. Reject anything that doesn't look like a chart spec (or an array of
+  // them) before any field-reference logic runs — a bare JSON scalar (e.g.
+  // the number 42) or an object missing the chart-spec shape must never
+  // reach GraphicWalker's `chart` prop unchecked (CR-01). `ISpecProps.chart`
+  // accepts `IChart[] | IVisSpec[]` in production (always an array, since
+  // it's populated from `VizSpecStore.exportCode(): IChart[]`), so the array
+  // form is validated element-by-element; a bare single chart-shaped object
+  // is also accepted since this function's own round-trip tests exercise
+  // that shape too and nothing about the encode/decode mechanics requires
+  // top-level wrapping. Running this guard first means the narrower
+  // field-reference check below can rely on every chart it inspects having
+  // a confirmed `encodings` object.
+  const charts: Record<string, unknown>[] = Array.isArray(parsed) ? parsed : [parsed]
+  if (!charts.every(isChartLike)) {
+    return undefined
   }
 
-  // 7. Reject anything that doesn't look like a chart spec (or an array of
-  // them) before returning it — a bare JSON scalar (e.g. the number 42) or
-  // an object missing the chart-spec shape would otherwise pass every check
-  // above trivially (an empty field-reference set is vacuously a subset of
-  // knownFieldNames) and reach GraphicWalker's `chart` prop unchecked
-  // (CR-01). `ISpecProps.chart` accepts `IChart[] | IVisSpec[]` in
-  // production (always an array, since it's populated from
-  // `VizSpecStore.exportCode(): IChart[]`), so the array form is validated
-  // element-by-element; a bare single chart-shaped object is also accepted
-  // since this function's own round-trip tests exercise that shape too and
-  // nothing about the encode/decode mechanics requires top-level wrapping.
-  if (Array.isArray(parsed)) {
-    if (!parsed.every(isChartLike)) return undefined
-  } else if (!isChartLike(parsed)) {
-    return undefined
+  // 7. Every field reference (fid) found on a SHELF CHANNEL — not the
+  // dimensions/measures catalogue — must be present in the currently-loaded
+  // meta.json's field list, OR be one of GraphicWalker's own virtual field
+  // ids. This is the T-03-11 schema-drift control, narrowed in scope
+  // (G-03-4): `encodings.dimensions`/`encodings.measures` enumerate every
+  // field available in the dataset the sharer had, not the fields the
+  // visualization actually uses, and GraphicWalker rebuilds that catalogue
+  // from the `rawFields` prop at mount time — so a stale catalogue entry
+  // cannot express a reference that survives into a rendered chart. Only
+  // shelf channels can, so only shelf channels are inspected.
+  const known = new Set(knownFieldNames)
+  for (const chart of charts) {
+    const referenced = new Set<string>()
+    collectShelfFieldReferences(chart, referenced)
+    for (const fid of referenced) {
+      if (!known.has(fid) && !GRAPHIC_WALKER_VIRTUAL_FIDS.has(fid)) {
+        return undefined
+      }
+    }
   }
 
   // 8. Return the parsed value verbatim — shaped exactly as the `chart`

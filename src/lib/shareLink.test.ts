@@ -17,6 +17,11 @@ const GW_COUNT_FID = 'gw_count_fid'
 const GW_MEA_KEY_FID = 'gw_mea_key_fid'
 const GW_MEA_VAL_FID = 'gw_mea_val_fid'
 
+/** Minimal shape of a GraphicWalker `IViewField`-like catalogue/shelf entry, for test fixtures only. */
+type SpecField = { fid: string; name: string; semanticType: string; analyticType: string }
+/** A shelf-assigned filter field additionally carries a `rule`. */
+type SpecFilterField = SpecField & { rule: { type: string; value: string[] } }
+
 /**
  * A GraphicWalker `VizSpecStore.exportCode()`-shaped chart, wrapped in the
  * array `exportCode()` actually returns (and that `ExplorerPage` passes
@@ -39,27 +44,29 @@ function makeSpec(overrides: Partial<{ territoriValue: string }> = {}) {
           { fid: 'canal', name: 'canal', semanticType: 'nominal', analyticType: 'dimension' },
           { fid: 'territori', name: 'territori', semanticType: 'nominal', analyticType: 'dimension' },
           { fid: GW_MEA_KEY_FID, name: 'Measure names', semanticType: 'nominal', analyticType: 'dimension' },
-        ],
+        ] as SpecField[],
         measures: [
           { fid: 'edat', name: 'edat', semanticType: 'quantitative', analyticType: 'measure' },
           { fid: 'satisfaccio', name: 'satisfaccio', semanticType: 'quantitative', analyticType: 'measure' },
           { fid: 'recomanaria', name: 'recomanaria', semanticType: 'quantitative', analyticType: 'measure' },
           { fid: GW_COUNT_FID, name: 'Number of records', semanticType: 'quantitative', analyticType: 'measure' },
           { fid: GW_MEA_VAL_FID, name: 'Measure values', semanticType: 'quantitative', analyticType: 'measure' },
-        ],
+        ] as SpecField[],
         // Shelf channels: what the chart actually uses.
-        rows: [{ fid: 'satisfaccio', name: 'satisfaccio', semanticType: 'quantitative', analyticType: 'measure' }],
-        columns: [{ fid: 'segment', name: 'segment', semanticType: 'nominal', analyticType: 'dimension' }],
-        color: [{ fid: 'canal', name: 'canal', semanticType: 'nominal', analyticType: 'dimension' }],
-        opacity: [],
-        size: [],
-        shape: [],
-        theta: [],
-        radius: [],
-        longitude: [],
-        latitude: [],
-        geoId: [],
-        details: [],
+        rows: [
+          { fid: 'satisfaccio', name: 'satisfaccio', semanticType: 'quantitative', analyticType: 'measure' },
+        ] as SpecField[],
+        columns: [{ fid: 'segment', name: 'segment', semanticType: 'nominal', analyticType: 'dimension' }] as SpecField[],
+        color: [{ fid: 'canal', name: 'canal', semanticType: 'nominal', analyticType: 'dimension' }] as SpecField[],
+        opacity: [] as SpecField[],
+        size: [] as SpecField[],
+        shape: [] as SpecField[],
+        theta: [] as SpecField[],
+        radius: [] as SpecField[],
+        longitude: [] as SpecField[],
+        latitude: [] as SpecField[],
+        geoId: [] as SpecField[],
+        details: [] as SpecField[],
         filters: [
           {
             fid: 'territori',
@@ -68,8 +75,8 @@ function makeSpec(overrides: Partial<{ territoriValue: string }> = {}) {
             analyticType: 'dimension',
             rule: { type: 'one of', value: [territoriValue] },
           },
-        ],
-        text: [],
+        ] as SpecFilterField[],
+        text: [] as SpecField[],
       },
       config: { geoms: ['point'] },
       layout: {},
