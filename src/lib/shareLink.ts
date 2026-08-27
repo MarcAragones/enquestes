@@ -251,7 +251,14 @@ export function decodeShareLink(raw: string | null, knownFieldNames: string[]): 
   // can rely on every chart it inspects having a confirmed `encodings`
   // object.
   const charts: Record<string, unknown>[] = Array.isArray(parsed) ? parsed : [parsed]
-  if (!charts.every(isChartLike)) {
+  // A top-level empty array (e.g. `?chart=v1.W10`, base64 of `"[]"`) makes
+  // `charts.every(isChartLike)` vacuously true — `Array.prototype.every`
+  // returns `true` for an empty array — so it must be rejected explicitly
+  // (WR-02) rather than relying on the `every` check alone. An empty array
+  // is a different outcome from `undefined`: this function's contract is
+  // that a malformed/stale link behaves like there was no link at all, and
+  // `chart={[]}` would instead render zero chart tabs.
+  if (charts.length === 0 || !charts.every(isChartLike)) {
     return undefined
   }
 
