@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
@@ -75,8 +75,15 @@ blocked: 0
   reason: "User reported: the popup opens then closes immediately when clicking a survey from the homepage"
   severity: blocker
   test: 2
-  artifacts: []
-  missing: []
+  root_cause: "SurveySummaryModal.tsx splits the native <dialog> lifecycle across two effects that are not StrictMode-safe: one calls dialog.close() on cleanup, the other attaches a 'close' listener that invokes onClose (which deletes the ?enquesta= param that keeps the modal mounted, per HomePage.tsx). StrictMode's dev-only simulated mount/unmount/remount triggers the cleanup's dialog.close(), which fires the close listener, which deletes the URL param — a real, persistent state change caused by a simulated unmount. Pre-existing Phase 1 defect (HomePage.tsx/SurveySummaryModal.tsx unchanged since Phase 1); it was masked because Phase 1's own verification ran against a production preview build (no StrictMode double-invoke), and this UAT test ran via `npm run dev` (StrictMode active) without that call-out."
+  artifacts:
+    - path: "src/components/SurveySummaryModal.tsx"
+      issue: "Two non-idempotent effects (imperative dialog.close() cleanup + close-event listener invoking onClose) fire a spurious close during StrictMode's simulated unmount"
+    - path: "src/pages/HomePage.tsx"
+      issue: "Modal's mounted state is driven entirely by the ?enquesta= URL param, so the spurious onClose is a real, persistent state change, not a harmless flicker"
+  missing:
+    - "Make the dialog lifecycle StrictMode-idempotent — e.g. guard cleanup so it doesn't unconditionally close on every simulated unmount, and/or distinguish user-initiated close from effect cleanup so onClose only fires for genuine dismissal"
+  debug_session: ".planning/debug/g-03-2-modal-closes-immediately.md"
 
 - gap_id: G-03-2b
   truth: "Visiting /enquesta/{invalid-id} shows the ExplorerPage's invalid-id copy ('No s'ha trobat aquesta enquesta.'), not the HomePage's list-load-failure copy"
@@ -84,8 +91,16 @@ blocked: 0
   reason: "User reported: visiting a non-existent survey link shows \"No s'han pogut carregar les enquestes\" (the homepage's survey-list load-failure message) instead of the expected not-found message — looks like it's trying to fetch something that doesn't exist"
   severity: minor
   test: 2
-  artifacts: []
-  missing: []
+  root_cause: "ExplorerPage.tsx's phase-2 (data-load) error branch renders <ErrorState message={...} onRetry={...}/> without a title prop, so it falls back to ErrorState.tsx's default title — character-identical to HomePage's own list-load-failure heading. 'no-existeix-aquesta' passes isValidEnquestaId's format-only regex (it doesn't check existence), so the dedicated not-found branch never fires; execution reaches phase 2, metaUrl(id) 404s, and lands in the title-less generic error branch. Traces back to 03-01-PLAN.md's task spec, which only specified a message for this branch, never a distinct title."
+  artifacts:
+    - path: "src/pages/ExplorerPage.tsx"
+      issue: "Phase-2 data-error <ErrorState> render (line ~176) omits an explicit title prop, unlike the engine-error branch which passes one"
+    - path: "src/components/ErrorState.tsx"
+      issue: "Default title literal is shared verbatim with HomePage's list-load-failure heading"
+  missing:
+    - "Give ExplorerPage's phase-2 error branch its own explicit title, distinct from HomePage's"
+    - "Consider a dedicated 'this survey doesn't exist' treatment for a metaUrl 404 specifically, distinct from generic transient-fetch-failure copy"
+  debug_session: ".planning/debug/g-03-2b-wrong-error-copy.md"
 
 - gap_id: G-03-4
   truth: "Pasting a copied share link into a fresh tab opens on the identical visualization the sharer had built (EXPL-11)"
@@ -93,8 +108,16 @@ blocked: 0
   reason: "User reported: after copying the link, the chart they had previously built is not shown when the link is opened"
   severity: major
   test: 4
-  artifacts: []
-  missing: []
+  root_cause: "decodeShareLink's schema-drift field-reference guard (step 6, built for T-03-11) recursively collects every 'fid' anywhere in the decoded JSON and rejects the whole payload if any fid is absent from knownFieldNames (the survey's real meta.json field names). GraphicWalker's real VizSpecStore.exportCode() always populates encodings.dimensions/measures with the full field catalogue PLUS three GraphicWalker-internal virtual field ids (gw_count_fid, gw_mea_key_fid, gw_mea_val_fid) that are never in any survey's meta.json. This rejects every real, valid chart spec unconditionally — not just hostile/stale links. shareLink.test.ts's hand-authored makeSpec() fixture only includes shelf-assigned fields and omits the virtual fids GraphicWalker always emits, so the 16-test suite never exercised this failure. Confirmed via direct reproduction (a throwaway test constructing a realistic exportCode() shape reproduced decodeShareLink returning undefined for it)."
+  artifacts:
+    - path: "src/lib/shareLink.ts"
+      issue: "decodeShareLink step 6 validates fid references across the ENTIRE decoded object graph (including dimensions/measures catalogue arrays, which represent 'all available fields', not 'fields actually used'), rather than only the shelf-assignment channels (rows/columns/color/filters/etc.)"
+    - path: "src/lib/shareLink.test.ts"
+      issue: "makeSpec() fixture doesn't model GraphicWalker's real export shape (missing full field catalogue + gw_count_fid/gw_mea_key_fid/gw_mea_val_fid virtual fields), masking the bug"
+  missing:
+    - "Restrict the schema-drift fid check to shelf-assignment channels only, or allowlist GraphicWalker's known virtual field ids (gw_count_fid, gw_mea_key_fid, gw_mea_val_fid)"
+    - "Update shareLink.test.ts's makeSpec() fixture to match a real exportCode() shape so this regression class is caught going forward"
+  debug_session: ".planning/debug/g-03-4-share-link-restore.md"
 
 - gap_id: G-03-4b
   truth: "The GraphicWalker chart canvas fills the available space rather than rendering small"
@@ -102,8 +125,14 @@ blocked: 0
   reason: "User reported: the bar chart doesn't occupy all the space — it's reduced to a small part, should be bigger"
   severity: minor
   test: 4
-  artifacts: []
-  missing: []
+  root_cause: "GraphicWalker defaults every newly-created chart to layout.size.mode 'auto' (fixed 320x200-ish shrink-to-content sizing) unless the host passes a defaultConfig prop setting layout.size.mode to 'full', which is the only mode that measures the container via useResizeDetector() and stretches the chart to fill it. ExplorerPage.tsx's <GraphicWalker> mount never passes defaultConfig, so every chart is created in the small, unconfigured 'auto' mode. Confirmed by reading the installed package's own source (utils/save.js's emptyVisualLayout default, renderer/specRenderer.js and vis/react-vega.js's mode-gated container measurement)."
+  artifacts:
+    - path: "src/pages/ExplorerPage.tsx"
+      issue: "<GraphicWalker> mount (lines ~186-192) is missing a defaultConfig prop that would set layout.size.mode to 'full'"
+  missing:
+    - "Pass defaultConfig={{ layout: { size: { mode: 'full', width: 0, height: 0 } } }} (or equivalent) to <GraphicWalker> in ExplorerPage.tsx"
+    - "Note: only affects newly-created charts — a chart restored via the chart={decodedChart} share-link prop carries its own serialized layout.size, so interacts with gap G-03-4's fix"
+  debug_session: ".planning/debug/g-03-4b-graphicwalker-small-canvas.md"
 
 Two backstop truths from the plans have no automatable test and no held-out fixture, and are not part of the 4 tests above since they require assets that don't exist yet:
 - Zero-row Parquet rendering GraphicWalker's own empty canvas (03-01-PLAN.md backstop truth) — no zero-row Parquet fixture exists in the repo.
