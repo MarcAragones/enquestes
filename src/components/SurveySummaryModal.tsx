@@ -23,6 +23,23 @@ export function SurveySummaryModal({ enquestaId, onClose }: SurveySummaryModalPr
   const [state, setState] = useState<FetchState<EnquestaMeta>>({ status: 'loading' })
   const navigate = useNavigate()
 
+  // Reset to loading whenever enquestaId changes, following React's
+  // "adjusting state when a prop changes" pattern (calling setState during
+  // render, not inside an effect body) — the project's lint config
+  // (react-hooks/set-state-in-effect) forbids a synchronous setState in an
+  // effect precisely because it costs an extra cascading render; this
+  // render-time bailout re-renders immediately with the reset state before
+  // the fetch effect below even runs. Without this, a component instance
+  // that stays mounted across an enquestaId change (HomePage renders this
+  // modal without a `key`) keeps showing the previous survey's
+  // already-fetched content while the new fetch is in flight (WR-03) — e.g.
+  // Back/Forward between two `?enquesta=` history entries.
+  const [trackedEnquestaId, setTrackedEnquestaId] = useState(enquestaId)
+  if (enquestaId !== trackedEnquestaId) {
+    setTrackedEnquestaId(enquestaId)
+    setState({ status: 'loading' })
+  }
+
   // Always points at the latest onClose. HomePage re-creates onCloseSummary
   // on every render, so the lifecycle effect below reads it through this
   // ref instead of taking it as a dependency — an [onClose] dependency
@@ -72,14 +89,9 @@ export function SurveySummaryModal({ enquestaId, onClose }: SurveySummaryModalPr
     // needing to set it synchronously.
     if (!idValid) return
 
-    // Reset to loading synchronously whenever this effect re-runs for a
-    // new id. Without this, a component instance that stays mounted across
-    // an enquestaId change (HomePage renders this modal without a `key`)
-    // keeps showing the previous survey's already-fetched content while the
-    // new fetch is in flight (WR-03) — e.g. Back/Forward between two
-    // `?enquesta=` history entries.
-    setState({ status: 'loading' })
-
+    // The `state` reset to 'loading' for a new enquestaId happens above,
+    // during render (WR-03) — not here, to avoid a setState-in-effect
+    // cascading render.
     let cancelled = false
 
     fetch(metaUrl(enquestaId))
