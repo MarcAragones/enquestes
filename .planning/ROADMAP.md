@@ -88,7 +88,7 @@ Plans:
   4. User can view field descriptions (data dictionary) from `meta.json` inside the explorer, and export the current chart as an image (PNG/SVG)
   5. User can generate and copy a link that reproduces the exact current visualization (fields and active filters) via query params
 
-**Plans**: 3/3 plans executed
+**Plans**: 3/6 plans executed (3 gap-closure plans added after UAT)
 
 Plans:
 **Wave 1**
@@ -102,6 +102,15 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 03-03-PLAN.md — Chart image export plus the versioned, UTF-8-safe shareable link with its silent D-07 fallback on malformed, stale or oversized params (EXPL-10, EXPL-11)
+
+**Gap closure (post-UAT, 03-UAT.md) — Wave 1**
+
+- [ ] 03-04-PLAN.md — G-03-2 (blocker): make SurveySummaryModal's `<dialog>` lifecycle StrictMode-idempotent so the summary stops self-dismissing under `npm run dev` (HOME-03, HOME-04)
+- [ ] 03-05-PLAN.md — G-03-4 (major): scope decodeShareLink's schema-drift guard to shelf channels with a GraphicWalker virtual-fid allowlist, and model the real exportCode() shape in the test fixture, so copied links restore again (EXPL-11)
+
+**Gap closure (post-UAT) — Wave 2** *(blocked on 03-05)*
+
+- [ ] 03-06-PLAN.md — G-03-2b + G-03-4b (minor): distinct not-found vs. load-failure error copy on ExplorerPage, and a GraphicWalker `defaultConfig` plus a definite-height wrapper so charts fill the canvas (EXPL-02, EXPL-03, EXPL-06, EXPL-11)
 
 **UI hint**: yes
 
