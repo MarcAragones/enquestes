@@ -19,22 +19,50 @@ interface SurveySummaryModalProps {
 
 export function SurveySummaryModal({ enquestaId, onClose }: SurveySummaryModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const onCloseRef = useRef(onClose)
   const [state, setState] = useState<FetchState<EnquestaMeta>>({ status: 'loading' })
   const navigate = useNavigate()
 
+  // Always points at the latest onClose. HomePage re-creates onCloseSummary
+  // on every render, so the lifecycle effect below reads it through this
+  // ref instead of taking it as a dependency — an [onClose] dependency
+  // would tear down and rebuild the dialog lifecycle (detach/reattach the
+  // 'close' listener, and briefly leave the dialog without one) on every
+  // parent render.
   useEffect(() => {
-    const dialog = dialogRef.current
-    dialog?.showModal()
-    return () => dialog?.close()
-  }, [])
+    onCloseRef.current = onClose
+  })
 
   useEffect(() => {
     const dialog = dialogRef.current
     if (!dialog) return
-    const handleClose = () => onClose()
+
+    const handleClose = () => onCloseRef.current()
     dialog.addEventListener('close', handleClose)
-    return () => dialog.removeEventListener('close', handleClose)
-  }, [onClose])
+    if (!dialog.open) dialog.showModal()
+
+    // Cleanup order is the entire fix for G-03-2: detach the 'close'
+    // listener BEFORE closing the element. React StrictMode's dev-only
+    // mount -> simulated-unmount -> remount cycle runs this cleanup even
+    // though nothing was ever visitor-dismissed. If the listener were still
+    // attached at that point, the imperative close() below would dispatch a
+    // real native 'close' event into it, invoking onClose (which deletes
+    // the ?enquesta= param that keeps this modal mounted) for a lifecycle
+    // event that was never a genuine visitor action — the modal would
+    // appear to open then vanish. With the listener detached first, that
+    // simulated close() fires into nothing, and the remount right after
+    // finds the element already closed, so the `!dialog.open` guard above
+    // lets showModal() run again without throwing InvalidStateError. A
+    // genuine dismissal (Escape / Tanca / backdrop click) still invokes
+    // onClose exactly once, since the listener is attached while it
+    // happens; a real unmount right after that dismissal calls close() on
+    // an already-closed element, which is a specified no-op that dispatches
+    // no event.
+    return () => {
+      dialog.removeEventListener('close', handleClose)
+      dialog.close()
+    }
+  }, [])
 
   const idValid = isValidEnquestaId(enquestaId)
 
