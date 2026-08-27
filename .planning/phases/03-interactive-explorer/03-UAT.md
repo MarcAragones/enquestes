@@ -1,14 +1,23 @@
 ---
-status: diagnosed
+status: testing
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
-updated: 2026-08-27T01:12:00Z
+updated: 2026-08-27T23:51:52Z
 ---
 
 ## Current Test
 
-[testing complete]
+number: 5
+name: SurveySummaryModal StrictMode lifecycle + fresh content on id change
+expected: |
+  1. Run `npm run dev`. On the homepage, click a survey card. The modal opens and STAYS open (no immediate flash-close).
+  2. With the modal open, press Escape — it closes and the `?enquesta=` param is removed.
+  3. Reopen it, click the backdrop (outside the dialog) — it closes the same way.
+  4. Reopen it, click "Tanca" — it closes the same way.
+  5. Navigate so two different `?enquesta=` history entries exist, then use the browser Back/Forward buttons to switch between them while the modal stays mounted — the modal should show a loading state for the new id, never the previous survey's stale content.
+  6. Repeat step 1 against the production build (`npm run build && npm run preview:pages`) to confirm no regression there.
+awaiting: user response
 
 ## Tests
 
@@ -52,12 +61,38 @@ result: issue
 reported: "1. Si copio l'enllaç, no veig la gràfica que havia fet prèviament. 2. El bar chart no ocupa tot l'espai. Queda reduit a una petita part. Hauria de ser mes gran"
 severity: major
 
+### 5. SurveySummaryModal StrictMode lifecycle + fresh content on id change (G-03-2, WR-03 gap-closure fix)
+expected: |
+  1. Run `npm run dev`. On the homepage, click a survey card. The modal opens and STAYS open (no immediate flash-close).
+  2. With the modal open, press Escape — it closes and the `?enquesta=` param is removed.
+  3. Reopen it, click the backdrop (outside the dialog) — it closes the same way.
+  4. Reopen it, click "Tanca" — it closes the same way.
+  5. Navigate so two different `?enquesta=` history entries exist, then use the browser Back/Forward buttons to switch between them while the modal stays mounted — the modal should show a loading state for the new id, never the previous survey's stale content.
+  6. Repeat step 1 against the production build (`npm run build && npm run preview:pages`) to confirm no regression there.
+result: pending
+
+### 6. Not-found vs load-failed error copy (G-03-2b gap-closure fix)
+expected: |
+  1. In the production preview, visit `/enquesta/no-existeix-aquesta` and a malformed id. Both should show "No s'ha trobat aquesta enquesta." with NO retry button.
+  2. Confirm `mostra-sintetica` still loads normally (no regression).
+  3. If you can force a genuine transient load failure (e.g. offline/throttled network on a valid id), confirm it still shows the load-failed heading WITH a working "Torna-ho a provar" retry — distinct from the not-found copy in step 1.
+result: pending
+
+### 7. Chart canvas fill + share-link round trip at full size (G-03-4, G-03-4b gap-closure fixes)
+expected: |
+  Run `npm run build` then `npm run preview:pages`, work against http://localhost:4173/enquestes/enquesta/mostra-sintetica:
+  1. Build a bar chart (e.g. segment on X, satisfaccio on Y). Confirm it visually fills the canvas area — NOT a small box surrounded by empty space. Repeat for line and scatter mark types.
+  2. Click "Copia l'enllaç", paste into a fresh tab. Confirm it reproduces the EXACT same chart (same fields/shelves/mark type) AND renders it at full size (not shrunk).
+  3. Hand-edit the pasted URL's chart parameter to garbage, truncate it, and try a link built for a different survey id — each should land on a silent, blank, usable explorer with no error.
+  4. At ~375px and ~768px widths, confirm the header, data dictionary, and canvas all stay reachable with no horizontal overflow, in both light and dark mode.
+result: pending
+
 ## Summary
 
-total: 4
+total: 7
 passed: 2
 issues: 2
-pending: 0
+pending: 3
 skipped: 0
 blocked: 0
 
