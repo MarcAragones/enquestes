@@ -1,113 +1,140 @@
 ---
 phase: 03-interactive-explorer
-verified: 2026-08-26T22:34:39Z
+verified: 2026-08-27T23:20:00Z
 status: human_needed
-score: 11/11 must-haves verified (present + wired + automated proof); 4 behavior-dependent items routed to human verification
-behavior_unverified: 4
+score: 12/12 must-haves verified (present + wired + automated/reproduced proof); 6 behavior-dependent items routed to human verification
+behavior_unverified: 6
 overrides_applied: 0
+re_verification:
+  previous_status: human_needed
+  previous_score: 11/11 (behavior_unverified 4)
+  gaps_closed:
+    - "G-03-2 (blocker): SurveySummaryModal self-dismissed immediately under React StrictMode — fixed by merging the dialog lifecycle into one idempotent effect (listener detached before close)"
+    - "G-03-2b (minor): /enquesta/{invalid-id} showed HomePage's plural list-load-failure copy instead of a distinct not-found message — fixed with a discriminated ExplorerDataState (not-found vs load-failed) and Promise.allSettled fixed-priority classification"
+    - "G-03-4 (major): every share link failed to restore its chart because decodeShareLink's schema-drift check walked the entire object graph including the field catalogue and GraphicWalker's virtual fids — fixed by scoping the check to shelf channels with a virtual-fid allowlist"
+    - "G-03-4b (minor): newly built charts rendered small because GraphicWalker was never given defaultConfig / a definite-height container — fixed with layout.size.mode 'full' plus an h-dvh flex-column ancestor chain"
+  gaps_remaining: []
+  regressions: []
 gaps: []
 behavior_unverified_items:
+  - truth: "SurveySummaryModal stays open under React StrictMode (dev server), all four dismissal paths (Escape/Tanca/backdrop/real unmount) invoke onClose exactly once, and the modal shows the loading state (not stale prior content) when enquestaId changes without unmount (G-03-2, WR-03, HOME-03/04)"
+    test: "Run `npm run dev`, click a survey card, confirm the modal stays open (no flash-close), then test Escape/Tanca/backdrop each close it once; separately use browser Back/Forward across two different `?enquesta=` history entries and confirm the modal shows a loading skeleton for the new id rather than the previous survey's stale content"
+    expected: "Modal opens and stays open; each dismissal path fires onClose exactly once; a mid-flight id change shows loading, never stale content from the prior id"
+    why_human: "This is a StrictMode mount->simulated-unmount->remount cleanup-ordering invariant and a render-time state-reset invariant; this repo's vitest environment is 'node' (no jsdom/@testing-library), so no automated test can drive a real <dialog> through this lifecycle — code review confirms the listener-detach-before-close ordering and the render-time trackedEnquestaId reset are logically correct, but no test exercises them"
+  - truth: "Visiting /enquesta/{well-formed-but-nonexistent-id} deterministically shows the not-found heading (no retry) rather than the load-failed heading, regardless of which of the two concurrent requests (meta.json, Parquet query) rejects first (G-03-2b, EXPL-02)"
+    test: "Visit /enquesta/no-existeix-aquesta and a malformed id in the production preview; confirm both show 'No s'ha trobat aquesta enquesta.' with no retry button, and that mostra-sintetica still loads normally"
+    expected: "Distinct not-found copy with no retry for both cases; genuine transient failures still show load-failed copy with a working retry"
+    why_human: "The fixed-priority classification (metadata-404 wins over any other concurrent rejection) is an ordering invariant across two racing promises; no unit test exercises ExplorerPage's Promise.allSettled classification (no ExplorerPage test file exists), so presence/wiring alone cannot prove the priority holds under real concurrent failure timing. Recorded as WINDOWS.md id 6."
   - truth: "Drag-and-drop chart building actually works in a real browser (X/Y/Color/Size/Filter, bar/line/area/scatter switching) (EXPL-03, EXPL-04)"
     test: "Open /enquesta/mostra-sintetica, drag segment→X, satisfaccio→Y, canal→Color, add a territori filter, then switch mark type between bar/line/area/scatter"
     expected: "Chart renders from real values on each drag and each mark-type switch; no console errors"
-    why_human: "GraphicWalker owns all drag/shelf interaction internally (D-06) — this project supplies only dataSource/rawFields; no automated harness drives real pointer drag events against its canvas"
-  - truth: "A zero-row Parquet renders GraphicWalker's own empty canvas without a project-authored error (backstop truth, 03-01 must_haves)"
-    test: "Point the explorer at a survey whose Parquet has zero rows and observe the canvas"
-    expected: "GraphicWalker shows its own empty-state, no thrown error, no blank crash"
-    why_human: "Explicitly flagged in 03-01-PLAN.md as a held-out check requiring an actual zero-row Parquet fixture; no such fixture exists in the repo and no test exercises this path"
-  - truth: "GraphicWalker's own canvas layout stays visually usable (not broken) at small/medium viewports (EXPL-06 backstop truth, 03-02 must_haves)"
-    test: "Load the production build (npm run preview:pages) at ~375px and ~768px viewport widths and inspect the GraphicWalker canvas"
-    expected: "Canvas does not visually break, overflow, or become unusable; project-owned header/dictionary wrap/truncate correctly"
-    why_human: "D-03 explicitly declines special responsive handling for GraphicWalker's internal canvas — this is the library's own responsive behavior, outside this project's CSS, and cannot be verified by grep/build"
-  - truth: "Chart image export (EXPL-10) and the copy-link round trip including hostile-link fallback (EXPL-11) work end-to-end in a real browser"
-    test: "Build a chart, export it via GraphicWalker's toolbar (PNG/SVG downloads and opens); click 'Copia l'enllaç', confirm 'Copiat!' swap with address bar unchanged; paste the link in a fresh tab and confirm identical reproduction; then try a garbage, truncated, and cross-survey chart param"
-    expected: "A valid image file downloads and opens; the pasted link reproduces the exact visualization; all three hostile variants land on a silent, blank, usable explorer with no error surfaced"
-    why_human: "Export is delegated entirely to GraphicWalker's own toolbar (structurally confirmed via installed-package type inspection, not a click-and-download test); the full copy/paste/reopen round trip requires a real clipboard and a real second tab"
+    why_human: "GraphicWalker owns all drag/shelf interaction internally — this project supplies only dataSource/rawFields; no automated harness drives real pointer drag events against its canvas"
+  - truth: "A newly built chart visually fills the explorer's canvas area instead of rendering at GraphicWalker's small unconfigured default size (G-03-4b, EXPL-03, EXPL-06)"
+    test: "Build a chart in the production preview; confirm it is visually large, filling the space beneath the header, across bar/line/scatter mark types"
+    expected: "Chart is large, not a small box surrounded by empty space, at every mark type"
+    why_human: "Compiled-CSS grep (100dvh present) and defaultConfig-prop presence prove the mechanism is wired, but whether the rendered Vega-Lite chart is visually large requires a real browser. Recorded as WINDOWS.md id 7."
+  - truth: "A chart restored from a share link copied after the G-03-4/G-03-4b fixes reproduces the sharer's exact visualization AND renders it at full size, including the three hostile-link variants (garbage/truncated/cross-survey) failing silently blank (composed EXPL-11 x EXPL-06)"
+    test: "Build a chart, copy the link, paste into a fresh tab, confirm identical reproduction at full size; then try garbage, truncated, and cross-survey chart params"
+    expected: "Exact reproduction at full size; all three hostile variants land on a silent, blank, usable explorer with no error"
+    why_human: "decodeShareLink's fix is proven correct at the unit/module level (19/19 shareLink tests pass; CR-01/WR-01/WR-02 independently reproduced against the built module in this verification), but the full clipboard-write -> paste-in-new-tab -> GraphicWalker-importCode -> visual-size round trip requires a real browser and clipboard. Recorded as WINDOWS.md id 7."
+  - truth: "Chart image export (EXPL-10) works end-to-end via GraphicWalker's own toolbar"
+    test: "Build a chart, export it via GraphicWalker's toolbar (PNG/SVG downloads and opens)"
+    expected: "A valid image file downloads and opens"
+    why_human: "Export is delegated entirely to GraphicWalker's own toolbar (structurally confirmed via installed-package type inspection); the actual click-download-open behavior requires a real browser"
 human_verification:
-  - test: "Two loading phases, field typing, drag-and-drop across bar/line/area/scatter, full-width canvas, refresh-safe deep link, no console errors (03-01-PLAN.md Task 3 human-check; WINDOWS.md id 2)"
-    expected: "Distinct 'Inicialitzant el motor de consultes…' then 'Carregant les dades de l'enquesta…' then the canvas; all six fields correctly split measures/dimensions; drag+mark-switch works over real values; canvas spans full width; refresh/paste both land on the explorer; no console errors"
-    why_human: "Real-browser drag interaction, visual layout, and console inspection — not observable via static analysis"
-  - test: "Single header row in every state, back-link navigation, dark-mode toggle restyling header+canvas, narrow-viewport wrap/truncate, invalid-id header persistence (03-02-PLAN.md Task 1 human-check; WINDOWS.md id 3)"
-    expected: "One header row (back-link, title, toggle) in every page state including the invalid-id branch; dark mode restyles header and canvas; header stays usable at ~375px/~768px"
-    why_human: "Visual appearance and viewport-narrowing behavior require a real rendered browser"
-  - test: "Collapsed dictionary panel, all 6 fields with correct type captions, no description/undefined leakage, no layout jump on collapse, keyboard operability, narrow-viewport readability, production-build responsiveness pass (03-02-PLAN.md Task 2 human-check; WINDOWS.md id 4)"
-    expected: "Diccionari de dades (6) collapsed by default; expands to show 6 fields with correct mesura/dimensió captions and no placeholder text; keyboard Tab+Enter/Space toggles it; readable at ~375px in the production build"
-    why_human: "Visual layout, keyboard interaction, and production-build viewport behavior are not statically verifiable"
-  - test: "Image export, copy-link/Copiat! swap, pasted-link exact-reproduction round trip including active filter, three hostile-link variants landing silently blank, cross-survey link safety, narrow-viewport header layout (03-03-PLAN.md Task 3 human-check; WINDOWS.md id 5)"
-    expected: "See behavior_unverified_items above (EXPL-10/EXPL-11 entry) — same test, same expectation"
-    why_human: "Real clipboard, a real second browser tab, and an actual downloaded image file are required; none of this is reachable from static analysis or the unit-test suite"
+  - test: "SurveySummaryModal StrictMode lifecycle: opens and stays open under `npm run dev`, all four dismissal paths (Escape/Tanca/backdrop/unmount) each fire onClose exactly once, no regression in the production preview, and no stale content when enquestaId changes without unmount (WR-03)"
+    expected: "Modal never self-dismisses; each dismissal path closes exactly once; a mid-session id change shows the loading skeleton rather than the prior survey's content"
+    why_human: "No DOM test environment in this repo (vitest environment is 'node'); StrictMode's dev-only double-invoke and the dialog's native close event cannot be exercised outside a real browser"
+  - test: "/enquesta/no-existeix-aquesta and a malformed id both show 'No s'ha trobat aquesta enquesta.' with no retry button; a genuine transient failure still shows the load-failed heading with a working retry; mostra-sintetica still loads normally (WINDOWS.md id 6, 03-06 Task 1 human-check)"
+    expected: "Not-found and load-failed are visually and functionally distinct; no regression on the happy path"
+    why_human: "The classification is a race/ordering invariant between two concurrently-settling promises; no automated test drives real concurrent fetch timing against ExplorerPage"
+  - test: "A newly built chart visually fills the canvas across mark types; the share-link round trip restores the exact chart AND at full size; malformed/truncated/cross-survey chart params fail soft; layout holds at ~375px/~768px and in dark mode (WINDOWS.md id 7, 03-06 Task 2 human-check)"
+    expected: "Large, correctly-sized chart on every path described; no visual breakage at narrow/medium viewports or in dark mode"
+    why_human: "Visual layout, real clipboard, a real second browser tab, and an actual rendered Vega-Lite chart size are not reachable from static analysis or the unit-test suite"
+  - test: "Tracer end-to-end drag/mark-switch/loading-phase/refresh check (WINDOWS.md id 2, 03-01-PLAN.md Task 3 human-check) — already passed in 03-UAT.md test 1, carried forward as unchanged"
+    expected: "See 03-UAT.md test 1 (result: pass)"
+    why_human: "Already confirmed by human UAT; retained here for completeness since it remains an open WINDOWS.md ledger entry"
+  - test: "Header single-row/back-link/dark-mode/narrow-viewport check (WINDOWS.md id 3) and data dictionary collapse/expand/keyboard/narrow-viewport check (WINDOWS.md id 4) — already passed in 03-UAT.md test 3, carried forward as unchanged since neither file was touched by the gap-closure plans"
+    expected: "See 03-UAT.md test 3 (result: pass)"
+    why_human: "Already confirmed by human UAT; retained here for completeness since both remain open WINDOWS.md ledger entries"
+  - test: "Chart image export via GraphicWalker's own toolbar (EXPL-10)"
+    expected: "A PNG or SVG downloads and opens correctly"
+    why_human: "Real click-download-open behavior in a real browser, not automatable"
 ---
 
-# Phase 3: Interactive Explorer Verification Report
+# Phase 3: Interactive Explorer Verification Report (Re-verification after gap closure)
 
 **Phase Goal:** Users can interactively explore any survey's real data in the browser via drag-and-drop chart building, powered by SQL over Parquet — the app's core value
-**Verified:** 2026-08-26T22:34:39Z
+**Verified:** 2026-08-27T23:20:00Z
 **Status:** human_needed
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — after gap closure (plans 03-04, 03-05, 03-06 + code-review fix pass)
 
 ## Goal Achievement
+
+This re-verification focuses full 3-level scrutiny on the four closed gaps (G-03-2, G-03-2b, G-03-4, G-03-4b) and the five code-review findings fixed afterward (CR-01, WR-01, WR-02, WR-03, WR-04), and performs a regression check on everything the prior `03-VERIFICATION.md` (2026-08-26) already verified and that remains untouched by these plans.
 
 ### Observable Truths
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Progress indicator during DuckDB-Wasm init + Parquet load; clear error on failure (EXPL-01, EXPL-02) | ✓ VERIFIED | `ExplorerPage.tsx:163-176` renders two distinct `LoadingBlock` texts ("Inicialitzant el motor de consultes…" then "Carregant les dades de l'enquesta…") gated on `engineState`/`dataState`; two distinct `ErrorState` branches with non-interpolated Catalan copy, engine-error has no retry (per plan intent) until WR-03 fix added a retry (see WR-03 below) |
-| 2 | Drag variables onto X/Y/Color/Size/Filter, multiple chart types, correct dimension/measure typing (EXPL-03, EXPL-04, EXPL-05) | ✓ VERIFIED (typing) / ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (drag interaction) | `graphicWalkerFields.ts` passes `EnquestaMetaField.type` through verbatim (never re-inferred), confirmed against real fixture `mostra-sintetica_meta.json` (3 measures: edat/satisfaccio/recomanaria, 3 dimensions: segment/canal/territori); `graphicWalkerFields.test.ts` asserts the mapping (6/6 passing). `<GraphicWalker rawFields={...} dataSource={rows} />` wired in `ExplorerPage.tsx:186-192`. Actual drag/mark-switch behavior is GraphicWalker's own internal state (D-06) — no automated harness exercises it; routed to human verification |
-| 3 | Explorer visually usable on small/medium screens; back-nav to list; direct `/enquesta/:id` link works on load/refresh, no 404 (EXPL-06, EXPL-07, EXPL-08) | ✓ VERIFIED (routing) / ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (canvas responsiveness) | `public/404.html` implements the spa-github-pages redirect with `pathSegmentsToKeep=1`; `vite.config.ts` sets `base: '/enquestes/'`; `npm run verify:pages` passes against the real production build (ran live, "all checks passed"). `ExplorerHeader.tsx` renders `<Link to="/">` back-link in every page-state branch of `ExplorerPage.tsx` (invalid-id, engine-error, data-error, success). GraphicWalker's own canvas responsiveness at small/medium viewports is an explicit backstop truth (D-03 declines special handling) — routed to human verification |
-| 4 | Data dictionary from meta.json inside explorer; export chart as image (EXPL-09, EXPL-10) | ✓ VERIFIED (dictionary) / ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (export) | `DataDictionary.tsx` renders a `<details>` panel, collapsed by default, showing all 6 fields with `mesura`/`dimensió` captions, "Aquesta enquesta no té camps documentats." fallback for empty, label-fallback and description-omission both implemented (lines 39-45); wired into `ExplorerPage.tsx:183`. Image export is delegated to GraphicWalker's own toolbar — confirmed structurally via `node_modules/@kanaries/graphic-walker/dist/interfaces.d.ts` type inspection per 03-03-SUMMARY.md (`IGWHandler.exportChart`, locale keys `settings.button.export_chart*`), zero project code needed, but the actual click→download→open behavior is not automatable — routed to human verification |
-| 5 | Generate/copy a link that reproduces the exact visualization via query params (EXPL-11) | ✓ VERIFIED (encode/decode logic) / ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (full browser round trip) | `shareLink.ts` implements versioned (`v1.`), UTF-8-safe, length-capped (4096) encode/decode with schema-drift field-reference validation and the CR-01 `isChartLike` shape guard; `shareLink.test.ts` — 16/16 assertions passing (ran live via `npx vitest run`, 22/22 total across both test files). `ExplorerHeader`'s "Copia l'enllaç" → "Copiat!" (2s) wired via `onCopyLink` prop; address bar never synced (no `setSearchParams`/`pushState`/`replaceState` found in `ExplorerPage.tsx`, confirmed by reading the full file). The actual clipboard-write → paste-in-new-tab → identical-render round trip requires a real browser — routed to human verification |
+| 1 | Two-phase loading indicators; distinct engine-init error with retry (EXPL-01, EXPL-02) | ✓ VERIFIED | `ExplorerPage.tsx:208-217` unchanged from prior verification; regression-checked, still present and wired |
+| 2 | Not-found (404) vs load-failed classification, correct priority under concurrent settlement, no retry on 404 (G-03-2b, EXPL-02) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | `ExplorerPage.tsx:154-193` — `Promise.allSettled` + fixed-priority classification (`SurveyNotFoundError` wins), four distinct copy constants, `grep` confirms `LOAD_FAILED_TITLE` text present, `npm run build`'s `tsc -b` enforces exhaustive handling of the new `ExplorerDataState` union. Ordering invariant across two racing promises has no automated test — routed to human verification |
+| 3 | Drag X/Y/Color/Size/Filter, multiple chart types, correct dimension/measure typing (EXPL-03, EXPL-04, EXPL-05) | ✓ VERIFIED (typing) / ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (drag) | Unchanged from prior verification; `graphicWalkerFields.test.ts` 6/6 passing (confirmed live via `npx vitest run`); drag interaction is GraphicWalker's own internal state, no automated harness |
+| 4 | SurveySummaryModal stays open under React StrictMode; all dismissal paths fire onClose exactly once; no stale content on id change (G-03-2, WR-03, HOME-03/04) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | `SurveySummaryModal.tsx:62-95` — single dependency-less lifecycle effect, `close` listener detached BEFORE `dialog.close()` in cleanup, `onClose` read via `onCloseRef` (never an effect dependency); `SurveySummaryModal.tsx:50-54` — render-time `trackedEnquestaId` comparison resets `state` to loading synchronously (React's "adjusting state during render" pattern, chosen specifically to satisfy this project's `react-hooks/set-state-in-effect` lint rule, confirmed clean via live `npm run lint`). Code-reasoning traces all four lifecycle paths correctly (StrictMode simulated unmount, remount, genuine dismissal, real unmount after dismissal) but no jsdom/DOM test environment exists in this repo (`vite.config.ts` `test.environment: 'node'`, no `@testing-library/*` installed) to exercise it — routed to human verification |
+| 5 | A newly built chart fills the explorer's canvas area (G-03-4b, EXPL-03, EXPL-06) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | `ExplorerPage.tsx:238,253-257` — `<GraphicWalker>` receives `defaultConfig={{layout:{size:{mode:'full',width:0,height:0}}}}`; page root changed to `flex h-dvh flex-col`, canvas wrapper is `min-h-0 flex-1`. Live build confirms `dist/assets/index-rPwIhuZi.css` contains the compiled `100dvh` rule (proves the Tailwind utility was not silently dropped) — ran live in this verification, not trusted from SUMMARY. Visual chart size in a real browser is not automatable — routed to human verification |
+| 6 | Explorer visually usable on small/medium screens; back-nav to list; direct `/enquesta/:id` link works on load/refresh, no 404 (EXPL-06, EXPL-07, EXPL-08) | ✓ VERIFIED (routing/back-nav) / ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (canvas responsiveness) | `public/404.html` + `vite.config.ts` `base: '/enquestes/'` unchanged; `node scripts/verify-pages.mjs` ran live against a fresh build in this verification — "all checks passed"; `ExplorerHeader` renders in every state including the new not-found kind (`ExplorerPage.tsx:275` renders unconditionally outside the `content` branch). GraphicWalker's own canvas responsiveness remains an explicit backstop truth — routed to human verification |
+| 7 | Data dictionary from meta.json inside explorer (EXPL-09) | ✓ VERIFIED | `DataDictionary.tsx` unchanged since prior verification; regression-checked, still wired at `ExplorerPage.tsx:237` |
+| 8 | `decodeShareLink` correctly restores a chart spec shaped like GraphicWalker's real `VizSpecStore.exportCode()` output — shelf-scoped schema-drift check with virtual-fid allowlist (G-03-4, EXPL-11) | ✓ VERIFIED | `shareLink.ts:129-170,265-284` — `GRAPHIC_WALKER_VIRTUAL_FIDS` allowlist + `SHELF_CHANNEL_KEYS`-scoped `collectShelfFieldReferences`, excluding the `dimensions`/`measures` catalogue. `npx vitest run src/lib/shareLink.test.ts` ran live in this verification: 19/19 passing, including the 4 new G-03-4 regression tests (round-trips a real `exportCode()`-shaped spec, round-trips a virtual field on a shelf, accepts a stale catalogue with clean shelves, still rejects an unknown shelf field) |
+| 9 | `decodeShareLink` always returns a normalized array (never a bare object), rejects array-typed `encodings`, rejects a top-level empty array (CR-01, WR-01, WR-02 from the post-gap-closure code review) | ✓ VERIFIED | Independently reproduced against the actual module in this verification (not trusted from `03-REVIEW-FIX.md`'s narrative): ran `decodeShareLink` directly via `tsx` against three constructed payloads — a bare single chart-shaped object now decodes to `Array.isArray === true`; `{"visId":"v1","encodings":[]}` now decodes to `undefined`; `encodeShareLink([])` now decodes to `undefined`. All three match the fix report's claims |
+| 10 | A chart restored via share link after the fix reproduces the sharer's visualization AND fills the canvas (composed EXPL-11 x EXPL-06) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Underlying decode logic verified (#8, #9 above) and canvas-fill mechanism verified (#5 above); the full real-browser clipboard round trip composing both fixes is not automatable — routed to human verification |
+| 11 | Image export (EXPL-10) works end-to-end in a real browser | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Unchanged from prior verification — delegated to GraphicWalker's own toolbar, structurally confirmed via type inspection, click-download-open not automatable |
+| 12 | `SurveySummaryModal` distinguishes "survey not found" from "load failed" (WR-04 from the post-gap-closure code review) | ✓ VERIFIED | `SurveySummaryModal.tsx:23-26,110-132` mirrors `ExplorerPage`'s `SurveyNotFoundError`/classification pattern for the identical `metaUrl(id)` endpoint; `NOT_FOUND_MESSAGE` vs `LOAD_FAILED_MESSAGE` are distinct constants, confirmed present in source. The classification branch itself is a race/ordering concern only insofar as it's a single fetch (not two concurrent ones like ExplorerPage's phase 2), so the 404-vs-other-failure branch is a straightforward conditional, not an ordering invariant — counted as VERIFIED at the code level; the rendered message text in a real browser is bundled into truth #4's human-check item |
 
-**Score:** 11/11 requirement-level must-haves present, substantive, and wired; 4 of them carry a behavior-dependent component that cannot be proven by static analysis and is routed to human verification (not counted against the score per Step 9 scoring rule, not FAILED).
+**Score:** 12/12 must-haves present, substantive, and wired; 6 of them carry a behavior-dependent component (state transition, cleanup-ordering invariant, or pure visual/interactive confirmation) that cannot be proven by static analysis and is routed to human verification (not counted against the score, not FAILED).
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `src/services/duckdb.ts` | Singleton AsyncDuckDB owner + read_parquet call path | ✓ VERIFIED | Exports `getDb`, `queryParquet`, `resetDb`; exactly two bundles (`mvp`, `eh`, no `coi`); `isValidEnquestaId` gates every id before SQL/filename use; TOCTOU race fixed (WR-01) via `registrationPromises` Map caching in-flight promises |
-| `src/lib/graphicWalkerFields.ts` | meta.json field → GraphicWalker rawFields mapping | ✓ VERIFIED | Verbatim pass-through of `type` to `analyticType`, no re-inference; exports `toGraphicWalkerFields` |
-| `src/lib/graphicWalkerFields.test.ts` | Unit assertions for type mapping | ✓ VERIFIED | 6 assertions, passing (`npx vitest run` ran live) |
-| `src/pages/ExplorerPage.tsx` | Two-phase loading, two error states, GraphicWalker mount | ✓ VERIFIED | 205 lines; both loading phases, both error states with retry (engine retry added by WR-03), `ChartErrorBoundary` wraps `<GraphicWalker>` (CR-01 defense-in-depth) |
-| `scripts/verify-explorer-assets.mjs` | Production-build proof DuckDB assets + Parquet served under `/enquestes/` | ✓ VERIFIED | Ran live against a fresh `npm run build`: "all checks passed (4 DuckDB assets verified)" |
-| `src/components/ExplorerHeader.tsx` | App-shell header: title, back-link, theme toggle, copy-link button | ✓ VERIFIED | Exports `ExplorerHeader`/`ExplorerHeaderProps`; renders `<Link to="/">`, `<ThemeToggle>`, conditional "Copia l'enllaç"/"Copiat!" button |
-| `src/components/DataDictionary.tsx` | Collapsed-by-default field-description panel | ✓ VERIFIED | Exports `DataDictionary`/`DataDictionaryProps`; native `<details>`, no custom toggle state; empty/partial/overflow cases all implemented |
-| `src/lib/shareLink.ts` | Chart-spec encode/decode with D-07 soft fallback | ✓ VERIFIED | Exports `encodeShareLink`, `decodeShareLink`, `SHARE_PARAM`, `SHARE_VERSION`, `MAX_SHARE_PARAM_LENGTH`; CR-01 shape guard (`isChartLike`) added post-review |
-| `src/lib/shareLink.test.ts` | Round-trip/length/unknown-field/version/malformed assertions | ✓ VERIFIED | 16 assertions, passing (ran live) |
-| `src/components/ChartErrorBoundary.tsx` | Error boundary around GraphicWalker (CR-01 fix, not originally planned) | ✓ VERIFIED | Class component with `getDerivedStateFromError`/`componentDidCatch`, wraps `<GraphicWalker>` in `ExplorerPage.tsx:185-193`, keyed on `rawChartParam` |
+| `src/components/SurveySummaryModal.tsx` | Single StrictMode-idempotent dialog lifecycle effect; distinct not-found/load-failed copy; fresh content on id change | ✓ VERIFIED | One lifecycle effect (lines 66-95) with listener-detach-before-close ordering; `onCloseRef` latest-value pattern; render-time `trackedEnquestaId` reset (WR-03); `SurveyNotFoundError`/`NOT_FOUND_MESSAGE`/`LOAD_FAILED_MESSAGE` (WR-04) |
+| `src/lib/shareLink.ts` | Shelf-scoped schema-drift check with virtual-fid allowlist; normalized-array return; array-encodings rejection; empty-array rejection | ✓ VERIFIED | `GRAPHIC_WALKER_VIRTUAL_FIDS`, `SHELF_CHANNEL_KEYS`, `collectShelfFieldReferences` (G-03-4); `isChartLike` excludes array-typed `encodings` (WR-01); step 6 rejects `charts.length === 0` (WR-02); step 8 returns `charts` not raw `parsed` (CR-01) |
+| `src/lib/shareLink.test.ts` | Fixture modeling GraphicWalker's real `exportCode()` shape; regression tests for the G-03-4 fix | ✓ VERIFIED | 19 assertions, all passing live in this verification; `makeSpec()` returns an array with a full field catalogue including all three virtual fids |
+| `src/pages/ExplorerPage.tsx` | Discriminated not-found/load-failed data-error state; `defaultConfig` on GraphicWalker; definite-height canvas wrapper | ✓ VERIFIED | `ExplorerDataState` union (lines 30-33); `Promise.allSettled` + fixed-priority classification (lines 158-183); `defaultConfig` (lines 253-257); `flex h-dvh flex-col` root + `min-h-0 flex-1` canvas wrapper (lines 238, 274) |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|-----|-----|--------|---------|
-| `ExplorerPage.tsx` | `services/duckdb.ts` | `getDb()` (phase 1), `queryParquet(id)` (phase 2) | ✓ WIRED | Lines 94, 129 |
-| `ExplorerPage.tsx` | `lib/graphicWalkerFields.ts` | `toGraphicWalkerFields(meta.fields)` feeds `rawFields` | ✓ WIRED | Line 188 |
-| `services/duckdb.ts` | `lib/enquestes.ts` | `dataUrl()` composes Parquet URL from `BASE_URL` | ✓ WIRED | Line 97 |
-| `services/duckdb.ts` | `@duckdb/duckdb-wasm` dist assets | Vite `?url` imports for wasm/worker | ✓ WIRED | Lines 7-10; confirmed present on disk in `dist/` via live build + `verify:explorer` |
-| `ExplorerPage.tsx` | `components/ExplorerHeader.tsx` | Renders header in every page state | ✓ WIRED | Line 201, outside the state-branching `content` variable — renders unconditionally |
-| `ExplorerHeader.tsx` | `components/ThemeToggle.tsx` | Existing dark-mode toggle | ✓ WIRED | Line 67 |
-| `ExplorerPage.tsx` | `components/DataDictionary.tsx` | Passes `meta.fields` through | ✓ WIRED | Line 183 |
-| `ExplorerHeader.tsx` | `ExplorerPage.tsx` | `onCopyLink` callback prop | ✓ WIRED | Prop declared line 8, invoked line 37, supplied as `onCopyLink` line 201 (only in success branch, via `headerCopyLink`) |
-| `ExplorerPage.tsx` | `lib/shareLink.ts` | `encodeShareLink` on copy, `decodeShareLink` on mount | ✓ WIRED | Lines 67, 73 |
-| `ExplorerPage.tsx` | `@kanaries/graphic-walker` | `storeRef` reads current spec; `chart` prop restores decoded one | ✓ WIRED | Lines 52, 190-191 |
+| `SurveySummaryModal.tsx` dialog `close` event | `onCloseRef.current()` | Latest-value ref, attached in the single lifecycle effect | ✓ WIRED | Line 70; ref refreshed every render via a separate dependency-less effect (line 62-64) |
+| `ExplorerPage.tsx` phase-2 effect | `SurveyNotFoundError` classification | `metaResult.reason instanceof SurveyNotFoundError` checked first, before any other rejection | ✓ WIRED | Lines 168-171, confirmed by reading the fixed-priority `if` chain |
+| `ExplorerPage.tsx` `decodedChart` | `decodeShareLink` | `useMemo` gated on `[rawChartParam, dataState]`, cast `as IChart[] \| undefined` | ✓ WIRED | Line 91-95; now safe post-CR-01 since `decodeShareLink` always returns an array or `undefined` |
+| `ExplorerPage.tsx` `<GraphicWalker>` | `defaultConfig` | Prop passed directly on the JSX element | ✓ WIRED | Lines 253-257 |
+| `shareLink.ts` `decodeShareLink` step 6 | `isChartLike` | Runs BEFORE the field-reference guard (reordered per G-03-4/CR-01) | ✓ WIRED | Lines 253, 261 |
+| `shareLink.ts` `decodeShareLink` step 7 | `collectShelfFieldReferences` | Walks only `SHELF_CHANNEL_KEYS`, excludes `dimensions`/`measures` | ✓ WIRED | Lines 276-284 |
 
 ### Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 |----------|---------------|--------|---------------------|--------|
-| `ExplorerPage.tsx` `rows` | `dataState.data.rows` | `queryParquet(id)` → real `SELECT * FROM read_parquet(...)` against the committed `mostra-sintetica_respostes.parquet` (250 rows, confirmed via live `meta.json` read) | Yes | ✓ FLOWING |
-| `ExplorerPage.tsx` `rawFields` | `meta.fields` | Real fetch of `[id]_meta.json`, parsed via `parseEnquestaMeta` (trust-boundary validator, throws on shape mismatch) | Yes | ✓ FLOWING |
-| `GraphicWalker` `chart` prop | `decodedChart` | `decodeShareLink(rawChartParam, knownFieldNames)` — real URL search param, real known-field list from loaded meta | Yes (or `undefined` when absent/invalid, by design) | ✓ FLOWING |
+| `ExplorerPage.tsx` `dataState.data.rows` | `queryParquet(id)` | Real `SELECT * FROM read_parquet(...)` against the committed `mostra-sintetica_respostes.parquet` | Yes | ✓ FLOWING |
+| `ExplorerPage.tsx` `decodedChart` | `decodeShareLink(rawChartParam, knownFieldNames)` | Real URL search param + real known-field list from loaded meta, now correctly restoring a real GraphicWalker export shape (fixed) | Yes (or `undefined` by design when absent/invalid) | ✓ FLOWING |
+| `ExplorerPage.tsx` `dataState.kind` | `Promise.allSettled([...]).then(([metaResult, rowsResult]) => ...)` | Real fetch/query settlement results, classified by fixed priority | Yes | ✓ FLOWING |
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Unit tests (shareLink + graphicWalkerFields) | `npx vitest run` | 2 test files, 22/22 assertions passed | ✓ PASS |
-| Lint | `npm run lint` | Zero errors/warnings | ✓ PASS |
-| Production build | `npm run build` | `tsc -b && vite build` succeeded, all chunks emitted | ✓ PASS |
-| DuckDB asset + Parquet production-build fidelity | `node scripts/verify-explorer-assets.mjs` (against live build) | "all checks passed (4 DuckDB assets verified)" | ✓ PASS |
-| GitHub-Pages base-path/404 fidelity | `node scripts/verify-pages.mjs` (against live build) | "all checks passed" | ✓ PASS |
-| Anti-pattern scan (TODO/FIXME/TBD/XXX/HACK/placeholder) | `grep` across all 10 phase-3 source files | No matches | ✓ PASS |
-| Prohibited-class scan (`font-medium`, `gap-3`, `p-3`, `space-y-3`, `p-5`) | `grep` across ExplorerHeader/DataDictionary/ExplorerPage | No matches | ✓ PASS |
+| Full unit test suite | `npx vitest run` (ran live in this verification) | 2 test files, 25/25 tests passed | ✓ PASS |
+| shareLink suite in isolation | `npx vitest run src/lib/shareLink.test.ts` | 19/19 passed, including the 4 new G-03-4 regression tests | ✓ PASS |
+| Lint | `npm run lint` (ran live) | Zero errors/warnings | ✓ PASS |
+| Production build | `npm run build` (ran live) | `tsc -b && vite build` succeeded, all chunks emitted | ✓ PASS |
+| Compiled-CSS proof of the canvas-height fix | `grep -o "100dvh" dist/assets/*.css` (ran live against a fresh build) | `dist/assets/index-rPwIhuZi.css:100dvh` | ✓ PASS |
+| DuckDB asset + Parquet production-build fidelity | `node scripts/verify-explorer-assets.mjs` (ran live) | "all checks passed (4 DuckDB assets verified)" | ✓ PASS |
+| GitHub-Pages base-path/404 fidelity | `node scripts/verify-pages.mjs` (ran live) | "all checks passed" | ✓ PASS |
+| CR-01 fix: bare chart object normalizes to array | `tsx -e "..."` direct call to `decodeShareLink` (ran live in this verification against the actual source module) | `Array.isArray(decoded) === true` | ✓ PASS |
+| WR-01 fix: array-typed `encodings` rejected | `tsx -e "..."` direct call (ran live) | `decoded === undefined` | ✓ PASS |
+| WR-02 fix: top-level empty array rejected | `tsx -e "..."` direct call (ran live) | `decoded === undefined` | ✓ PASS |
+| Anti-pattern scan (TODO/FIXME/TBD/XXX/HACK/PLACEHOLDER + "not yet implemented"/"coming soon") | `grep` across all 4 gap-closure/review-fix files (ran live) | No matches | ✓ PASS |
 
 ### Probe Execution
 
@@ -117,55 +144,59 @@ No `scripts/*/tests/probe-*.sh` files exist in this repository and none are decl
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |-------------|------------|-------------|--------|----------|
-| EXPL-01 | 03-01 | Progress indicator during DuckDB init + Parquet load | ✓ SATISFIED | Two-phase `LoadingBlock`, confirmed in code |
-| EXPL-02 | 03-01 | Clear error on init/query failure | ✓ SATISFIED | Two distinct `ErrorState` branches, non-interpolated copy |
-| EXPL-03 | 03-01 | Drag X/Y/Color/Size/Filter with GraphicWalker | ✓ SATISFIED (wiring) / human-check pending (interaction) | `dataSource`/`rawFields` wired; drag itself is library-owned |
-| EXPL-04 | 03-01 | Multiple chart types | ✓ SATISFIED (wiring) / human-check pending | GraphicWalker's own toolbar; no project restriction found |
-| EXPL-05 | 03-01 | Correct dimension/measure typing from meta.json | ✓ SATISFIED | `toGraphicWalkerFields`, tested, verified against real fixture |
-| EXPL-06 | 03-02 | Usable on small/medium screens | ✓ SATISFIED (header) / human-check pending (canvas) | Header wrap/truncate implemented; canvas is a declared backstop |
-| EXPL-07 | 03-02 | Back to listing from explorer | ✓ SATISFIED | `<Link to="/">` in every page state |
-| EXPL-08 | 03-01 | Direct `/enquesta/:id` link works, no 404 on refresh | ✓ SATISFIED | 404.html SPA redirect + `verify:pages` passing live |
-| EXPL-09 | 03-02 | Field descriptions (data dictionary) | ✓ SATISFIED | `DataDictionary` component, all edge cases implemented |
-| EXPL-10 | 03-03 | Export chart as image | ✓ SATISFIED (structurally, via GraphicWalker's toolbar) / human-check pending | Confirmed via installed-package type inspection, no click-test |
-| EXPL-11 | 03-03 | Copy/generate a link reproducing exact visualization | ✓ SATISFIED (encode/decode) / human-check pending (full round trip) | 16 passing unit tests; real clipboard round trip not automatable |
+| EXPL-01 | 03-01 | Progress indicator during DuckDB init + Parquet load | ✓ SATISFIED | Unchanged, regression-checked |
+| EXPL-02 | 03-01, 03-06 | Clear error on init/query failure, now discriminated not-found vs load-failed | ✓ SATISFIED (classification logic + copy) / human-check pending (ordering invariant, rendered text) | `ExplorerDataState`, `Promise.allSettled` fixed-priority classification |
+| EXPL-03 | 03-01, 03-06 | Drag X/Y/Color/Size/Filter with GraphicWalker; canvas fills available space | ✓ SATISFIED (wiring + defaultConfig) / human-check pending (drag interaction, visual size) | `dataSource`/`rawFields`/`defaultConfig` wired |
+| EXPL-04 | 03-01 | Multiple chart types | ✓ SATISFIED (wiring) / human-check pending | Unchanged |
+| EXPL-05 | 03-01 | Correct dimension/measure typing from meta.json | ✓ SATISFIED | Unchanged, `graphicWalkerFields.test.ts` 6/6 passing |
+| EXPL-06 | 03-02, 03-06 | Usable on small/medium screens; canvas fills space | ✓ SATISFIED (header, defaultConfig mechanism) / human-check pending (canvas responsiveness, visual size) | `h-dvh` flex-column + `flex-1 min-h-0`, compiled-CSS proof |
+| EXPL-07 | 03-02 | Back to listing from explorer | ✓ SATISFIED | `<Link to="/">` renders in every page state including the new not-found branch |
+| EXPL-08 | 03-01 | Direct `/enquesta/:id` link works, no 404 on refresh | ✓ SATISFIED | `verify:pages` passing live |
+| EXPL-09 | 03-02 | Field descriptions (data dictionary) | ✓ SATISFIED | Unchanged |
+| EXPL-10 | 03-03 | Export chart as image | ✓ SATISFIED (structurally) / human-check pending | Unchanged |
+| EXPL-11 | 03-03, 03-05, 03-06 | Copy/generate a link reproducing exact visualization | ✓ SATISFIED (decode logic now correct, unit-tested and independently reproduced) / human-check pending (full browser round trip + composed sizing) | 19/19 `shareLink.test.ts` passing; CR-01/WR-01/WR-02 independently reproduced |
+| HOME-03, HOME-04 (bonus — Phase 1 requirements) | 03-04 | Modal opens and stays open; explore button reachable | ✓ SATISFIED (code fix) / human-check pending (StrictMode lifecycle) | Fixed as a pre-existing Phase 1 defect surfaced by Phase 3 UAT; not part of Phase 3's own requirement scope but tracked for completeness |
 
-No orphaned requirements — REQUIREMENTS.md traceability table maps all of EXPL-01..EXPL-11 to Phase 3, and all 11 appear in the three plans' `requirements` fields (03-01: 01,02,03,04,05,08; 03-02: 06,07,09; 03-03: 10,11).
+No orphaned requirements — all of EXPL-01..EXPL-11 remain mapped to Phase 3 in `REQUIREMENTS.md`, and all 11 appear across the six plans' `requirements` fields (03-01, 03-02, 03-03 as before, plus 03-05: EXPL-11 and 03-06: EXPL-02/03/06/11 for the gap closures). HOME-03/HOME-04 are Phase 1 requirements incidentally re-touched by 03-04's gap closure — not a Phase 3 orphan, since REQUIREMENTS.md maps them to Phase 1 where they were already marked Complete; this phase's fix restores rather than newly claims them.
 
 ### Anti-Patterns Found
 
-None. Scanned all 10 files touched by this phase's three plans plus the code-review-fix commits (`duckdb.ts`, `graphicWalkerFields.ts`, `shareLink.ts`, `ExplorerPage.tsx`, `ExplorerHeader.tsx`, `DataDictionary.tsx`, `ChartErrorBoundary.tsx`, `App.tsx`, `verify-explorer-assets.mjs`, `vite.config.ts`) for `TBD|FIXME|XXX|TODO|HACK|PLACEHOLDER` and placeholder-language patterns — zero matches. No debt markers of any kind.
+None. Scanned all 4 files touched by the gap-closure and code-review-fix commits (`SurveySummaryModal.tsx`, `shareLink.ts`, `shareLink.test.ts`, `ExplorerPage.tsx`) for `TBD|FIXME|XXX|TODO|HACK|PLACEHOLDER` and placeholder-language patterns — zero matches, confirmed live in this verification (not trusted from prior scans).
 
-### Code Review Findings — Resolution Confirmed
+### Code Review Findings — Resolution Independently Reproduced
 
-`03-REVIEW.md` flagged 1 critical + 3 warnings. All four were independently re-verified against the current codebase (not just the claims in `03-REVIEW-FIX.md`):
+`03-REVIEW.md` flagged 1 critical + 4 warnings (+ 2 info, out of fix scope). All five in-scope findings were independently re-verified against the current codebase in this run — reading the diffs AND, for the three `shareLink.ts` findings, directly executing `decodeShareLink` against the built module with hand-constructed hostile payloads rather than trusting `03-REVIEW-FIX.md`'s narrative:
 
-- **CR-01** (unvalidated share-link payload shape could crash the page): confirmed fixed — `shareLink.ts` now has an `isChartLike()` structural guard (lines 84-88) applied to both array and bare-object payloads before returning, and a new `ChartErrorBoundary.tsx` wraps `<GraphicWalker>` in `ExplorerPage.tsx` as defense-in-depth. Commit `5e933df` verified present in `git log`.
-- **WR-01** (TOCTOU race in file-registration guard): confirmed fixed — `duckdb.ts`'s `ensureRegistered` now caches the in-flight `Promise<void>` in a `Map` rather than a boolean `Set`, with cache eviction on failure. Commit `168cf9f` verified present.
-- **WR-02** (vitest glob excludes `.test.tsx`): confirmed fixed — `vite.config.ts`'s `test.include` reads `['src/**/*.test.{ts,tsx}']`. Commit `ec30755` verified present.
-- **WR-03** (engine-init error treated as universally non-transient, no retry): confirmed fixed — `ExplorerPage.tsx` now has `onEngineRetry`/`engineAttempt` wired to `resetDb()`, and the copy no longer assumes a browser-incompatibility cause. Commit `fb6bc29` verified present.
-
-All four fix commits exist in `git log`, match their claimed diffs (`git show --stat`), and the post-fix state was re-verified live in this run (build, lint, 22/22 tests, both verify scripts) rather than trusted from the fix report's own claims.
+- **CR-01** (decode returned a bare object instead of a normalized array): confirmed fixed by direct execution — a bare chart-shaped object now decodes to an array.
+- **WR-01** (array-typed `encodings` silently bypassed the schema-drift check): confirmed fixed by direct execution — `{"visId":"v1","encodings":[]}` now decodes to `undefined`.
+- **WR-02** (top-level empty array accepted as valid): confirmed fixed by direct execution — `encodeShareLink([])` now decodes to `undefined`.
+- **WR-03** (stale modal content on id change without unmount): confirmed fixed by code reading — `SurveySummaryModal.tsx:50-54`'s render-time `trackedEnquestaId` comparison resets `state` to loading before the fetch effect runs; could not be behaviorally exercised (no DOM test environment) — folded into behavior_unverified_items #4.
+- **WR-04** (modal conflated not-found and load-failed): confirmed fixed by code reading — `SurveySummaryModal.tsx` now mirrors `ExplorerPage`'s classification for the identical endpoint.
+- **IN-01, IN-02** (info-tier, explicitly out of `fix_scope: critical_warning`): confirmed still open, as declared — `ExplorerPage.tsx`'s engine-error message still repeats its title as the message's first sentence (cosmetic only, not a functional defect); `shareLink.test.ts` has no dedicated regression tests for the three shape-edge-cases the fixes address (mitigated by this verification's direct-execution reproduction of all three, but a standing test-coverage gap for future regressions). Neither blocks the phase goal; both are pre-existing, deliberately-scoped-out, low-severity items.
 
 ### Human Verification Required
 
-See frontmatter `human_verification` (4 items, harvested from `.planning/WINDOWS.md` ids 2-5 and the two declared backstop truths in `03-01-PLAN.md`/`03-02-PLAN.md`). Summary:
+See frontmatter `human_verification` (6 items). Three are newly required by this gap-closure round (SurveySummaryModal StrictMode lifecycle, not-found/load-failed ordering invariant, canvas-fill + share-link-round-trip-at-full-size); three are carried forward from the already-passed portions of `03-UAT.md` (tests 1 and 3) and remain open only because they are still listed as open `unrun-verify` entries in `.planning/WINDOWS.md` (ids 2, 3, 4) — they are not being re-flagged as failing, they were already confirmed pass in `03-UAT.md`.
 
-1. **Tracer end-to-end drag/mark-switch/loading-phase/refresh check** (WINDOWS id 2)
-2. **Header single-row/back-link/dark-mode/narrow-viewport/invalid-id check** (WINDOWS id 3)
-3. **Data-dictionary collapse/expand/keyboard/narrow-viewport/production-build check** (WINDOWS id 4)
-4. **Export/copy-link/round-trip/hostile-link/cross-survey/narrow-viewport check** (WINDOWS id 5)
-
-Plus two explicitly-declared backstop truths not yet exercised against a real fixture:
-- Zero-row Parquet renders GraphicWalker's own empty canvas without a project-authored error (no zero-row fixture exists in the repo)
-- GraphicWalker's own canvas layout at small/medium viewports (D-03 declines project-side responsive handling for it)
+New items requiring confirmation before this phase can move to `passed`:
+1. **SurveySummaryModal StrictMode click-through** (dev server) — the actual fix for the blocker gap G-03-2
+2. **Not-found vs load-failed error copy** in the production preview (WINDOWS.md id 6)
+3. **Canvas-fill + share-link-round-trip-at-full-size** in the production preview (WINDOWS.md id 7)
 
 ### Gaps Summary
 
-No gaps found. Every artifact this phase's three plans declared exists, is substantive, and is wired into the render path with a real data flow from DuckDB-Wasm's Parquet query through to GraphicWalker's canvas. All four code-review findings (1 critical, 3 warnings) were independently re-verified as fixed in the current codebase, not merely accepted from the fix report's narrative. Automated checks (build, lint, 22/22 unit tests, both production-build fidelity scripts) all pass live in this run.
+No gaps found. All four UAT-reported gaps (G-03-2, G-03-2b, G-03-4, G-03-4b) have code-level fixes present in the current codebase, independently confirmed in this verification run — not merely accepted from SUMMARY.md's narrative:
+- G-03-2 and G-03-4b were confirmed by direct code reading against the diagnosed root causes (both debug sessions traced the defect into the installed `@kanaries/graphic-walker` package's own source, and the fixes address exactly those mechanisms).
+- G-03-4 was confirmed by both a live unit test run (19/19 `shareLink.test.ts` assertions, including 4 new regression tests) and by reading the shelf-scoping/allowlist implementation directly.
+- G-03-2b was confirmed by reading the `Promise.allSettled` fixed-priority classification and confirming the distinct copy constants and `tsc -b` exhaustiveness gate.
 
-The phase is held at `human_needed` rather than `passed` because five of its must-have truths are genuinely behavior-dependent — real drag-and-drop interaction inside a third-party library's canvas, real image export/download, a real clipboard round trip across two browser tabs, and real-viewport responsive rendering — none of which a static grep/build/test pass can prove. These are exactly the items already tracked as open in `.planning/WINDOWS.md` (ids 2-5) under this project's `human_verify_mode: end-of-phase` policy, plus two explicitly-declared backstop truths in the plans themselves. No new gap was discovered beyond what the executor already flagged; this verification independently confirms none of them can be closed by automation and none of them are masking an actual defect (spot-checking the underlying code for all four shows correct, non-stubbed implementations).
+The subsequent code review's 5 in-scope findings (CR-01, WR-01, WR-02, WR-03, WR-04) were also independently reproduced in this run: the three `shareLink.ts` fixes were proven by directly executing `decodeShareLink` against hand-crafted hostile payloads (not by reading the fix report), and the two `SurveySummaryModal.tsx` fixes were confirmed by code reading.
+
+All automated checks (build, lint, 25/25 unit tests, both production-build fidelity scripts, and the compiled-CSS proof of the height fix) pass live in this run.
+
+The phase remains at `human_needed` rather than `passed` because six of its must-have truths are genuinely behavior-dependent — a StrictMode dev-only mount/cleanup-ordering invariant with no DOM test environment in this repo, a two-promise race/priority-ordering invariant with no ExplorerPage test file, real drag-and-drop interaction inside a third-party library's canvas, real visual chart sizing, a real clipboard round trip across two browser tabs, and real image export/download. None of these can be proven by grep/build/test alone, and no new gap was discovered beyond what the executors already flagged in `WINDOWS.md` (ids 2-7) — this verification independently confirms the underlying code is correct and non-stubbed for all of them, closing the actionable gaps while leaving the genuinely un-automatable behavioral confirmations open for a human.
 
 ---
 
-_Verified: 2026-08-26T22:34:39Z_
+_Verified: 2026-08-27T23:20:00Z_
 _Verifier: Claude (gsd-verifier)_
