@@ -1,140 +1,138 @@
 ---
 phase: 03-interactive-explorer
-verified: 2026-08-27T23:20:00Z
+verified: 2026-08-28T19:15:00Z
 status: human_needed
-score: 12/12 must-haves verified (present + wired + automated/reproduced proof); 6 behavior-dependent items routed to human verification
+score: 12/12 must-haves present, substantive, and wired; 6 carry a behavior-dependent component not fully closed by automated proof
 behavior_unverified: 6
 overrides_applied: 0
 re_verification:
   previous_status: human_needed
-  previous_score: 11/11 (behavior_unverified 4)
+  previous_score: 12/12 (behavior_unverified 6)
   gaps_closed:
-    - "G-03-2 (blocker): SurveySummaryModal self-dismissed immediately under React StrictMode — fixed by merging the dialog lifecycle into one idempotent effect (listener detached before close)"
-    - "G-03-2b (minor): /enquesta/{invalid-id} showed HomePage's plural list-load-failure copy instead of a distinct not-found message — fixed with a discriminated ExplorerDataState (not-found vs load-failed) and Promise.allSettled fixed-priority classification"
-    - "G-03-4 (major): every share link failed to restore its chart because decodeShareLink's schema-drift check walked the entire object graph including the field catalogue and GraphicWalker's virtual fids — fixed by scoping the check to shelf channels with a virtual-fid allowlist"
-    - "G-03-4b (minor): newly built charts rendered small because GraphicWalker was never given defaultConfig / a definite-height container — fixed with layout.size.mode 'full' plus an h-dvh flex-column ancestor chain"
-  gaps_remaining: []
+    - "G-03-5 (blocker, discovered in 03-UAT.md round 2, AFTER the previous 03-VERIFICATION.md ran): SurveySummaryModal still self-closed under React StrictMode despite 03-04's fix, because HTMLDialogElement.close() only QUEUES the native close event rather than dispatching it synchronously — closed by 03-07's extraction of a framework-free openDialogLifecycle with a caller-owned suppression counter, proven timing-agnostic by a from-scratch FakeDialog regression test (dialogLifecycle.test.ts, 21/21 passing across immediate/microtask/macrotask dispatch, plus a meta-test independently confirmed in this verification to still fail against 03-04's superseded implementation)"
+  gaps_remaining:
+    - "G-03-6 (major, discovered in the same 03-UAT.md round): a user report that /enquesta/no-existeix-aquesta showed the load-failed copy instead of not-found copy in npm run preview:pages. Two full debug passes (.planning/debug/g-03-6-not-found-still-wrong.md) found NO reproducible code-level defect — curl, Node fetch, and 4/4 real-headless-Chrome end-to-end runs (genuine DuckDB-Wasm engine) all correctly classify not-found. Independently re-confirmed live in this verification (fresh gh-pages-preview.mjs instance: 404 for a nonexistent meta.json, 200 for a real one). Status remains 'inconclusive' per the debug session, not 'resolved' — no fix commit exists, and no confirmed clean re-test from the original reporter has been recorded. Carried forward as an open human-verification item, not a confirmed code gap."
   regressions: []
 gaps: []
 behavior_unverified_items:
-  - truth: "SurveySummaryModal stays open under React StrictMode (dev server), all four dismissal paths (Escape/Tanca/backdrop/real unmount) invoke onClose exactly once, and the modal shows the loading state (not stale prior content) when enquestaId changes without unmount (G-03-2, WR-03, HOME-03/04)"
-    test: "Run `npm run dev`, click a survey card, confirm the modal stays open (no flash-close), then test Escape/Tanca/backdrop each close it once; separately use browser Back/Forward across two different `?enquesta=` history entries and confirm the modal shows a loading skeleton for the new id rather than the previous survey's stale content"
-    expected: "Modal opens and stays open; each dismissal path fires onClose exactly once; a mid-flight id change shows loading, never stale content from the prior id"
-    why_human: "This is a StrictMode mount->simulated-unmount->remount cleanup-ordering invariant and a render-time state-reset invariant; this repo's vitest environment is 'node' (no jsdom/@testing-library), so no automated test can drive a real <dialog> through this lifecycle — code review confirms the listener-detach-before-close ordering and the render-time trackedEnquestaId reset are logically correct, but no test exercises them"
-  - truth: "Visiting /enquesta/{well-formed-but-nonexistent-id} deterministically shows the not-found heading (no retry) rather than the load-failed heading, regardless of which of the two concurrent requests (meta.json, Parquet query) rejects first (G-03-2b, EXPL-02)"
-    test: "Visit /enquesta/no-existeix-aquesta and a malformed id in the production preview; confirm both show 'No s'ha trobat aquesta enquesta.' with no retry button, and that mostra-sintetica still loads normally"
-    expected: "Distinct not-found copy with no retry for both cases; genuine transient failures still show load-failed copy with a working retry"
-    why_human: "The fixed-priority classification (metadata-404 wins over any other concurrent rejection) is an ordering invariant across two racing promises; no unit test exercises ExplorerPage's Promise.allSettled classification (no ExplorerPage test file exists), so presence/wiring alone cannot prove the priority holds under real concurrent failure timing. Recorded as WINDOWS.md id 6."
+  - truth: "SurveySummaryModal.tsx's dialog lifecycle effect, wired to a REAL <dialog> element under REAL React StrictMode in a real browser (npm run dev), stays open, and all four dismissal paths (Escape/Tanca/backdrop/unmount) invoke onClose exactly once (G-03-5, HOME-03/04)"
+    test: "Run `npm run dev`, click a survey card, WAIT at least 2 full seconds without touching anything, confirm the modal and `?enquesta=` are both still present (repeat across 5 different cards — the race is timing-dependent so one success is not evidence). Then test Escape/Tanca/backdrop each close it exactly once (2s wait after each). Then click 'Explorar dades interactives' and confirm the resulting explorer page is fully interactive, not inert. Finally repeat steps 1 and 3 against `npm run build && npm run preview:pages` to confirm no regression on the production path."
+    expected: "Modal opens and stays open after a deliberate wait, every time, across 5 repeats; each dismissal path fires onClose exactly once; navigation leaves the explorer interactive; no regression in the production preview"
+    why_human: "The isolated openDialogLifecycle mechanism is now proven by an automated FakeDialog regression test (21/21 passing, immediate/microtask/macrotask dispatch, meta-test independently re-run in this verification and confirmed to fail against 03-04's prior implementation) — this materially reduces risk versus the previous round. But 03-07-PLAN.md's own Task 2 <human-check> (the literal npm run dev click-through against the real component/real <dialog>/real StrictMode) was NOT performed — no browser automation tool was available in the executing environment (recorded in 03-07-SUMMARY.md and WINDOWS.md id 8). No jsdom/@testing-library exists in this repo (vitest environment is 'node'), so the FakeDialog model, however spec-faithful, cannot itself stand in for observing the real component in a real browser."
+  - truth: "Visiting /enquesta/{well-formed-but-nonexistent-id} deterministically shows the not-found heading (no retry) rather than the load-failed heading in a real browser session on the visitor's own machine (G-03-6, EXPL-02)"
+    test: "In a FRESH terminal (kill anything already bound to port 4173) and a fresh/incognito tab, run `npm run build && npm run preview:pages`, visit /enquesta/no-existeix-aquesta and a malformed id. Confirm both show 'No s'ha trobat aquesta enquesta.' with no retry button, and mostra-sintetica still loads normally. If it still reproduces the load-failed copy, open DevTools Network tab and report the actual HTTP status/body for the meta.json request."
+    expected: "Not-found copy for both cases, no regression on the happy path. If it still fails: a concrete Network-tab observation to finally pin the root cause (which two independent debug passes — curl, Node fetch, and 4/4 real headless-Chrome end-to-end runs — could not reproduce against the current code)"
+    why_human: "This is an ordering/classification invariant across two racing promises that a UAT tester reported failing once, post-fix, in a way the debug investigation could not reproduce through any available synthetic or real-Chrome method (independently re-confirmed live in this verification: gh-pages-preview.mjs correctly 404s the missing meta.json and 200s the real one). No ExplorerPage test file exists to exercise this behaviorally. Closing this out requires either a clean re-test (closes as transient environment state) or a fresh Network-tab observation (would finally confirm a real cause) — neither is obtainable from static analysis."
   - truth: "Drag-and-drop chart building actually works in a real browser (X/Y/Color/Size/Filter, bar/line/area/scatter switching) (EXPL-03, EXPL-04)"
     test: "Open /enquesta/mostra-sintetica, drag segment→X, satisfaccio→Y, canal→Color, add a territori filter, then switch mark type between bar/line/area/scatter"
     expected: "Chart renders from real values on each drag and each mark-type switch; no console errors"
-    why_human: "GraphicWalker owns all drag/shelf interaction internally — this project supplies only dataSource/rawFields; no automated harness drives real pointer drag events against its canvas"
+    why_human: "GraphicWalker owns all drag/shelf interaction internally — this project supplies only dataSource/rawFields/defaultConfig; no automated harness drives real pointer drag events against its canvas. Unchanged since the previous verification round."
   - truth: "A newly built chart visually fills the explorer's canvas area instead of rendering at GraphicWalker's small unconfigured default size (G-03-4b, EXPL-03, EXPL-06)"
     test: "Build a chart in the production preview; confirm it is visually large, filling the space beneath the header, across bar/line/scatter mark types"
     expected: "Chart is large, not a small box surrounded by empty space, at every mark type"
-    why_human: "Compiled-CSS grep (100dvh present) and defaultConfig-prop presence prove the mechanism is wired, but whether the rendered Vega-Lite chart is visually large requires a real browser. Recorded as WINDOWS.md id 7."
-  - truth: "A chart restored from a share link copied after the G-03-4/G-03-4b fixes reproduces the sharer's exact visualization AND renders it at full size, including the three hostile-link variants (garbage/truncated/cross-survey) failing silently blank (composed EXPL-11 x EXPL-06)"
+    why_human: "Compiled-CSS grep (100dvh present, re-confirmed live in this verification) and defaultConfig-prop presence prove the mechanism is wired, but whether the rendered Vega-Lite chart is visually large requires a real browser. Recorded as WINDOWS.md id 7, unchanged since the previous verification round."
+  - truth: "A chart restored from a share link reproduces the sharer's exact visualization AND renders it at full size, including the three hostile-link variants (garbage/truncated/cross-survey) failing silently blank (composed EXPL-11 x EXPL-06)"
     test: "Build a chart, copy the link, paste into a fresh tab, confirm identical reproduction at full size; then try garbage, truncated, and cross-survey chart params"
     expected: "Exact reproduction at full size; all three hostile variants land on a silent, blank, usable explorer with no error"
-    why_human: "decodeShareLink's fix is proven correct at the unit/module level (19/19 shareLink tests pass; CR-01/WR-01/WR-02 independently reproduced against the built module in this verification), but the full clipboard-write -> paste-in-new-tab -> GraphicWalker-importCode -> visual-size round trip requires a real browser and clipboard. Recorded as WINDOWS.md id 7."
+    why_human: "decodeShareLink's fix is proven correct at the unit/module level (19/19 shareLink tests re-run live in this verification), but the full clipboard-write -> paste-in-new-tab -> GraphicWalker-importCode -> visual-size round trip requires a real browser and clipboard. Recorded as WINDOWS.md id 7, unchanged since the previous verification round."
   - truth: "Chart image export (EXPL-10) works end-to-end via GraphicWalker's own toolbar"
     test: "Build a chart, export it via GraphicWalker's toolbar (PNG/SVG downloads and opens)"
     expected: "A valid image file downloads and opens"
-    why_human: "Export is delegated entirely to GraphicWalker's own toolbar (structurally confirmed via installed-package type inspection); the actual click-download-open behavior requires a real browser"
+    why_human: "Export is delegated entirely to GraphicWalker's own toolbar; the actual click-download-open behavior requires a real browser. Unchanged since the previous verification round."
 human_verification:
-  - test: "SurveySummaryModal StrictMode lifecycle: opens and stays open under `npm run dev`, all four dismissal paths (Escape/Tanca/backdrop/unmount) each fire onClose exactly once, no regression in the production preview, and no stale content when enquestaId changes without unmount (WR-03)"
-    expected: "Modal never self-dismisses; each dismissal path closes exactly once; a mid-session id change shows the loading skeleton rather than the prior survey's content"
-    why_human: "No DOM test environment in this repo (vitest environment is 'node'); StrictMode's dev-only double-invoke and the dialog's native close event cannot be exercised outside a real browser"
-  - test: "/enquesta/no-existeix-aquesta and a malformed id both show 'No s'ha trobat aquesta enquesta.' with no retry button; a genuine transient failure still shows the load-failed heading with a working retry; mostra-sintetica still loads normally (WINDOWS.md id 6, 03-06 Task 1 human-check)"
-    expected: "Not-found and load-failed are visually and functionally distinct; no regression on the happy path"
-    why_human: "The classification is a race/ordering invariant between two concurrently-settling promises; no automated test drives real concurrent fetch timing against ExplorerPage"
-  - test: "A newly built chart visually fills the canvas across mark types; the share-link round trip restores the exact chart AND at full size; malformed/truncated/cross-survey chart params fail soft; layout holds at ~375px/~768px and in dark mode (WINDOWS.md id 7, 03-06 Task 2 human-check)"
-    expected: "Large, correctly-sized chart on every path described; no visual breakage at narrow/medium viewports or in dark mode"
-    why_human: "Visual layout, real clipboard, a real second browser tab, and an actual rendered Vega-Lite chart size are not reachable from static analysis or the unit-test suite"
+  - test: "SurveySummaryModal StrictMode lifecycle click-through under `npm run dev` — the literal 03-07-PLAN.md Task 2 <human-check> (5x open+wait, Escape/Tanca/backdrop each exactly once, Explorar-dades-interactives leaves the explorer interactive, production-preview regression spot check) (WINDOWS.md id 8)"
+    expected: "Modal never self-dismisses across 5 repeats with a deliberate 2s wait each time; each dismissal path fires exactly once; explorer is interactive afterward; no regression in the production preview"
+    why_human: "No DOM test environment in this repo; the automated FakeDialog regression test proves the extracted mechanism but not the real component/browser/StrictMode integration, which was never observed this round (no browser automation tool available in the executing environment)"
+  - test: "G-03-6 fresh re-test: /enquesta/no-existeix-aquesta and a malformed id in a fresh terminal + fresh/incognito tab against `npm run preview:pages`; if it still fails, capture the Network tab's actual status/body for the meta.json request (.planning/debug/g-03-6-not-found-still-wrong.md's own recommended next step)"
+    expected: "Either a clean re-test (closes G-03-6 as transient environment state, not a code gap) or a concrete Network-tab observation that finally identifies a real cause"
+    why_human: "Two exhaustive debug passes (curl, Node fetch, 4/4 real headless-Chrome end-to-end runs, independently spot-checked again live in this verification) found the current code correct every time; the one real-user report that started this thread has not been re-confirmed either way"
+  - test: "Not-found vs load-failed error copy (WINDOWS.md id 6, 03-06 Task 1 human-check) — carried forward, subsumed by the G-03-6 re-test above"
+    expected: "See G-03-6 re-test item above"
+    why_human: "Same underlying check; kept for WINDOWS.md ledger traceability"
+  - test: "Canvas-fill + share-link-round-trip-at-full-size in the production preview (WINDOWS.md id 7, 03-06 Task 2 human-check)"
+    expected: "Large, correctly-sized chart on every path; exact share-link reproduction at full size; malformed/truncated/cross-survey params fail soft; layout holds at ~375px/~768px and in dark mode"
+    why_human: "Visual layout, real clipboard, a real second browser tab, and actual rendered Vega-Lite chart size are not reachable from static analysis or the unit-test suite. Unchanged since the previous verification round."
   - test: "Tracer end-to-end drag/mark-switch/loading-phase/refresh check (WINDOWS.md id 2, 03-01-PLAN.md Task 3 human-check) — already passed in 03-UAT.md test 1, carried forward as unchanged"
     expected: "See 03-UAT.md test 1 (result: pass)"
-    why_human: "Already confirmed by human UAT; retained here for completeness since it remains an open WINDOWS.md ledger entry"
-  - test: "Header single-row/back-link/dark-mode/narrow-viewport check (WINDOWS.md id 3) and data dictionary collapse/expand/keyboard/narrow-viewport check (WINDOWS.md id 4) — already passed in 03-UAT.md test 3, carried forward as unchanged since neither file was touched by the gap-closure plans"
+    why_human: "Already confirmed by human UAT; retained for completeness since it remains an open WINDOWS.md ledger entry"
+  - test: "Header single-row/back-link/dark-mode/narrow-viewport check (WINDOWS.md id 3) and data dictionary collapse/expand/keyboard/narrow-viewport check (WINDOWS.md id 4) — already passed in 03-UAT.md test 3, carried forward as unchanged"
     expected: "See 03-UAT.md test 3 (result: pass)"
-    why_human: "Already confirmed by human UAT; retained here for completeness since both remain open WINDOWS.md ledger entries"
+    why_human: "Already confirmed by human UAT; retained for completeness since both remain open WINDOWS.md ledger entries"
   - test: "Chart image export via GraphicWalker's own toolbar (EXPL-10)"
     expected: "A PNG or SVG downloads and opens correctly"
-    why_human: "Real click-download-open behavior in a real browser, not automatable"
+    why_human: "Real click-download-open behavior in a real browser, not automatable. Unchanged since the previous verification round."
 ---
 
-# Phase 3: Interactive Explorer Verification Report (Re-verification after gap closure)
+# Phase 3: Interactive Explorer Verification Report (Re-verification after G-03-5 gap closure)
 
 **Phase Goal:** Users can interactively explore any survey's real data in the browser via drag-and-drop chart building, powered by SQL over Parquet — the app's core value
-**Verified:** 2026-08-27T23:20:00Z
+**Verified:** 2026-08-28T19:15:00Z
 **Status:** human_needed
-**Re-verification:** Yes — after gap closure (plans 03-04, 03-05, 03-06 + code-review fix pass)
+**Re-verification:** Yes — after 03-07's gap-closure of G-03-5, and re-checking G-03-6 (which remains open/inconclusive)
 
 ## Goal Achievement
 
-This re-verification focuses full 3-level scrutiny on the four closed gaps (G-03-2, G-03-2b, G-03-4, G-03-4b) and the five code-review findings fixed afterward (CR-01, WR-01, WR-02, WR-03, WR-04), and performs a regression check on everything the prior `03-VERIFICATION.md` (2026-08-26) already verified and that remains untouched by these plans.
+This verification independently re-ran every automated check rather than trusting 03-07-SUMMARY.md's narrative, then read the new code directly against the diagnosed root cause. It also re-checks the state of G-03-6 (a UAT-discovered regression that received no code fix — the debug investigation could not reproduce a defect), and cross-references a new code-review pass (`03-REVIEW.md`, run after 03-07) whose three warnings remain unfixed.
 
 ### Observable Truths
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Two-phase loading indicators; distinct engine-init error with retry (EXPL-01, EXPL-02) | ✓ VERIFIED | `ExplorerPage.tsx:208-217` unchanged from prior verification; regression-checked, still present and wired |
-| 2 | Not-found (404) vs load-failed classification, correct priority under concurrent settlement, no retry on 404 (G-03-2b, EXPL-02) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | `ExplorerPage.tsx:154-193` — `Promise.allSettled` + fixed-priority classification (`SurveyNotFoundError` wins), four distinct copy constants, `grep` confirms `LOAD_FAILED_TITLE` text present, `npm run build`'s `tsc -b` enforces exhaustive handling of the new `ExplorerDataState` union. Ordering invariant across two racing promises has no automated test — routed to human verification |
-| 3 | Drag X/Y/Color/Size/Filter, multiple chart types, correct dimension/measure typing (EXPL-03, EXPL-04, EXPL-05) | ✓ VERIFIED (typing) / ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (drag) | Unchanged from prior verification; `graphicWalkerFields.test.ts` 6/6 passing (confirmed live via `npx vitest run`); drag interaction is GraphicWalker's own internal state, no automated harness |
-| 4 | SurveySummaryModal stays open under React StrictMode; all dismissal paths fire onClose exactly once; no stale content on id change (G-03-2, WR-03, HOME-03/04) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | `SurveySummaryModal.tsx:62-95` — single dependency-less lifecycle effect, `close` listener detached BEFORE `dialog.close()` in cleanup, `onClose` read via `onCloseRef` (never an effect dependency); `SurveySummaryModal.tsx:50-54` — render-time `trackedEnquestaId` comparison resets `state` to loading synchronously (React's "adjusting state during render" pattern, chosen specifically to satisfy this project's `react-hooks/set-state-in-effect` lint rule, confirmed clean via live `npm run lint`). Code-reasoning traces all four lifecycle paths correctly (StrictMode simulated unmount, remount, genuine dismissal, real unmount after dismissal) but no jsdom/DOM test environment exists in this repo (`vite.config.ts` `test.environment: 'node'`, no `@testing-library/*` installed) to exercise it — routed to human verification |
-| 5 | A newly built chart fills the explorer's canvas area (G-03-4b, EXPL-03, EXPL-06) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | `ExplorerPage.tsx:238,253-257` — `<GraphicWalker>` receives `defaultConfig={{layout:{size:{mode:'full',width:0,height:0}}}}`; page root changed to `flex h-dvh flex-col`, canvas wrapper is `min-h-0 flex-1`. Live build confirms `dist/assets/index-rPwIhuZi.css` contains the compiled `100dvh` rule (proves the Tailwind utility was not silently dropped) — ran live in this verification, not trusted from SUMMARY. Visual chart size in a real browser is not automatable — routed to human verification |
-| 6 | Explorer visually usable on small/medium screens; back-nav to list; direct `/enquesta/:id` link works on load/refresh, no 404 (EXPL-06, EXPL-07, EXPL-08) | ✓ VERIFIED (routing/back-nav) / ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (canvas responsiveness) | `public/404.html` + `vite.config.ts` `base: '/enquestes/'` unchanged; `node scripts/verify-pages.mjs` ran live against a fresh build in this verification — "all checks passed"; `ExplorerHeader` renders in every state including the new not-found kind (`ExplorerPage.tsx:275` renders unconditionally outside the `content` branch). GraphicWalker's own canvas responsiveness remains an explicit backstop truth — routed to human verification |
-| 7 | Data dictionary from meta.json inside explorer (EXPL-09) | ✓ VERIFIED | `DataDictionary.tsx` unchanged since prior verification; regression-checked, still wired at `ExplorerPage.tsx:237` |
-| 8 | `decodeShareLink` correctly restores a chart spec shaped like GraphicWalker's real `VizSpecStore.exportCode()` output — shelf-scoped schema-drift check with virtual-fid allowlist (G-03-4, EXPL-11) | ✓ VERIFIED | `shareLink.ts:129-170,265-284` — `GRAPHIC_WALKER_VIRTUAL_FIDS` allowlist + `SHELF_CHANNEL_KEYS`-scoped `collectShelfFieldReferences`, excluding the `dimensions`/`measures` catalogue. `npx vitest run src/lib/shareLink.test.ts` ran live in this verification: 19/19 passing, including the 4 new G-03-4 regression tests (round-trips a real `exportCode()`-shaped spec, round-trips a virtual field on a shelf, accepts a stale catalogue with clean shelves, still rejects an unknown shelf field) |
-| 9 | `decodeShareLink` always returns a normalized array (never a bare object), rejects array-typed `encodings`, rejects a top-level empty array (CR-01, WR-01, WR-02 from the post-gap-closure code review) | ✓ VERIFIED | Independently reproduced against the actual module in this verification (not trusted from `03-REVIEW-FIX.md`'s narrative): ran `decodeShareLink` directly via `tsx` against three constructed payloads — a bare single chart-shaped object now decodes to `Array.isArray === true`; `{"visId":"v1","encodings":[]}` now decodes to `undefined`; `encodeShareLink([])` now decodes to `undefined`. All three match the fix report's claims |
-| 10 | A chart restored via share link after the fix reproduces the sharer's visualization AND fills the canvas (composed EXPL-11 x EXPL-06) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Underlying decode logic verified (#8, #9 above) and canvas-fill mechanism verified (#5 above); the full real-browser clipboard round trip composing both fixes is not automatable — routed to human verification |
-| 11 | Image export (EXPL-10) works end-to-end in a real browser | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Unchanged from prior verification — delegated to GraphicWalker's own toolbar, structurally confirmed via type inspection, click-download-open not automatable |
-| 12 | `SurveySummaryModal` distinguishes "survey not found" from "load failed" (WR-04 from the post-gap-closure code review) | ✓ VERIFIED | `SurveySummaryModal.tsx:23-26,110-132` mirrors `ExplorerPage`'s `SurveyNotFoundError`/classification pattern for the identical `metaUrl(id)` endpoint; `NOT_FOUND_MESSAGE` vs `LOAD_FAILED_MESSAGE` are distinct constants, confirmed present in source. The classification branch itself is a race/ordering concern only insofar as it's a single fetch (not two concurrent ones like ExplorerPage's phase 2), so the 404-vs-other-failure branch is a straightforward conditional, not an ordering invariant — counted as VERIFIED at the code level; the rendered message text in a real browser is bundled into truth #4's human-check item |
+| 1 | Two-phase loading indicators; distinct engine-init error with retry (EXPL-01, EXPL-02) | ✓ VERIFIED | `ExplorerPage.tsx` unchanged in this area; regression-checked live (`npx vitest run`, `npm run build`) |
+| 2 | Not-found (404) vs load-failed classification, correct priority under concurrent settlement, no retry on 404 (EXPL-02) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (G-03-6 open) | `ExplorerPage.tsx:154-193` classification logic unchanged and re-read; independently re-confirmed live in this verification against a fresh `gh-pages-preview.mjs` instance (404 for a nonexistent meta.json, 200 for a real one). But G-03-6 (a post-fix UAT regression report) was never resolved — two debug passes found no reproducible code defect (curl, Node fetch, 4/4 real-headless-Chrome end-to-end runs), yet the original human report has not been re-confirmed either way. Routed to human verification, not counted as FAILED |
+| 3 | Drag X/Y/Color/Size/Filter, multiple chart types, correct dimension/measure typing (EXPL-03, EXPL-04, EXPL-05) | ✓ VERIFIED (typing) / ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (drag) | Unchanged; `graphicWalkerFields.test.ts` 6/6 re-run live and passing; drag interaction is GraphicWalker's own internal state, no automated harness |
+| 4 | SurveySummaryModal stays open under React StrictMode (real browser, `npm run dev`); all dismissal paths fire onClose exactly once; no stale content on id change (G-03-5, HOME-03/04) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (mechanism now automated-tested; full browser integration not observed) | `src/lib/dialogLifecycle.ts` — new framework-free `openDialogLifecycle(dialog, onDismiss, suppressCounter)`, read in full: increments a caller-owned counter BEFORE `close()` in cleanup, decrements-and-swallows in the close handler, correctly timing-agnostic per the WHATWG spec's queued-close-event semantics that broke 03-04's fix. `src/lib/dialogLifecycle.test.ts` re-run live in this verification: 21/21 passing across immediate/microtask/macrotask dispatch schedulers, INCLUDING a meta-test independently confirmed to still FAIL against 03-04's shipped (`legacyLifecycle`) semantics under microtask/macrotask dispatch — proving the harness has real teeth, not a vacuous pass. `SurveySummaryModal.tsx:66-95` correctly wires this: suppression counter held in a `useRef` (not an effect-local variable, required per the plan's own DoS threat mitigation), `onClose` still read via a ref (never an effect dependency). This is real behavioral proof of the underlying mechanism — but 03-07-PLAN.md's own Task 2 `<human-check>` (npm run dev click-through against the real `<dialog>`/real React StrictMode) was **not performed** — no browser automation tool was available in the executing environment (WINDOWS.md id 8, confirmed still open in the current ledger). Routed to human verification |
+| 5 | A newly built chart fills the explorer's canvas area (G-03-4b, EXPL-03, EXPL-06) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Unchanged; `defaultConfig` prop and `h-dvh flex-col` layout re-confirmed present; compiled-CSS `100dvh` re-confirmed live in a fresh `npm run build`. Visual chart size in a real browser not automatable |
+| 6 | Explorer visually usable on small/medium screens; back-nav to list; direct `/enquesta/:id` link works on load/refresh, no 404 (EXPL-06, EXPL-07, EXPL-08) | ✓ VERIFIED (routing/back-nav) / ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (canvas responsiveness) | `node scripts/verify-pages.mjs` re-run live against a fresh build in this verification — "all checks passed". GraphicWalker's own canvas responsiveness remains a backstop truth routed to human verification |
+| 7 | Data dictionary from meta.json inside explorer (EXPL-09) | ✓ VERIFIED | `DataDictionary.tsx` unchanged; regression-checked, still wired |
+| 8 | `decodeShareLink` correctly restores a chart spec shaped like GraphicWalker's real export output — shelf-scoped schema-drift check with virtual-fid allowlist (G-03-4, EXPL-11) | ✓ VERIFIED | `shareLink.ts` unchanged since the previous verification round; `npx vitest run src/lib/shareLink.test.ts` re-run live in this verification: 19/19 passing |
+| 9 | `decodeShareLink` always returns a normalized array, rejects array-typed `encodings`, rejects a top-level empty array (CR-01, WR-01, WR-02 from the prior code review) | ✓ VERIFIED | Unchanged since the previous verification round; covered by the same 19/19 passing `shareLink.test.ts` run |
+| 10 | A chart restored via share link reproduces the sharer's visualization AND fills the canvas (composed EXPL-11 x EXPL-06) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Underlying decode logic (#8, #9) and canvas-fill mechanism (#5) both verified; the full real-browser clipboard round trip is not automatable |
+| 11 | Image export (EXPL-10) works end-to-end in a real browser | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Unchanged — delegated to GraphicWalker's own toolbar, not automatable |
+| 12 | `SurveySummaryModal` distinguishes "survey not found" from "load failed" (WR-04 from the prior code review) | ✓ VERIFIED | `SurveySummaryModal.tsx` classification pattern unchanged since the previous verification round, re-read and confirmed present |
 
-**Score:** 12/12 must-haves present, substantive, and wired; 6 of them carry a behavior-dependent component (state transition, cleanup-ordering invariant, or pure visual/interactive confirmation) that cannot be proven by static analysis and is routed to human verification (not counted against the score, not FAILED).
+**Score:** 12/12 must-haves present, substantive, and wired; 6 of them carry a behavior-dependent component that static analysis/automated tests cannot fully close, routed to human verification (not counted against the score, not FAILED). Truth #4's underlying mechanism gained a genuine automated regression test this round (a meaningful evidentiary upgrade from the prior round, where no test existed at all) but the actual browser/React-StrictMode integration remains unobserved. Truth #2 gained an unresolved open question (G-03-6) that the prior verification round did not carry, discovered by UAT after that round completed.
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `src/components/SurveySummaryModal.tsx` | Single StrictMode-idempotent dialog lifecycle effect; distinct not-found/load-failed copy; fresh content on id change | ✓ VERIFIED | One lifecycle effect (lines 66-95) with listener-detach-before-close ordering; `onCloseRef` latest-value pattern; render-time `trackedEnquestaId` reset (WR-03); `SurveyNotFoundError`/`NOT_FOUND_MESSAGE`/`LOAD_FAILED_MESSAGE` (WR-04) |
-| `src/lib/shareLink.ts` | Shelf-scoped schema-drift check with virtual-fid allowlist; normalized-array return; array-encodings rejection; empty-array rejection | ✓ VERIFIED | `GRAPHIC_WALKER_VIRTUAL_FIDS`, `SHELF_CHANNEL_KEYS`, `collectShelfFieldReferences` (G-03-4); `isChartLike` excludes array-typed `encodings` (WR-01); step 6 rejects `charts.length === 0` (WR-02); step 8 returns `charts` not raw `parsed` (CR-01) |
-| `src/lib/shareLink.test.ts` | Fixture modeling GraphicWalker's real `exportCode()` shape; regression tests for the G-03-4 fix | ✓ VERIFIED | 19 assertions, all passing live in this verification; `makeSpec()` returns an array with a full field catalogue including all three virtual fids |
-| `src/pages/ExplorerPage.tsx` | Discriminated not-found/load-failed data-error state; `defaultConfig` on GraphicWalker; definite-height canvas wrapper | ✓ VERIFIED | `ExplorerDataState` union (lines 30-33); `Promise.allSettled` + fixed-priority classification (lines 158-183); `defaultConfig` (lines 253-257); `flex h-dvh flex-col` root + `min-h-0 flex-1` canvas wrapper (lines 238, 274) |
+| `src/lib/dialogLifecycle.ts` | Framework-free, timing-agnostic dialog open/close lifecycle with a caller-owned suppression counter | ✓ VERIFIED | `DialogLike` structural interface + `openDialogLifecycle`; increment-before-close / detach-after-close ordering read directly and matches the plan's mandated design |
+| `src/lib/dialogLifecycle.test.ts` | FakeDialog spec-faithful reproduction of the StrictMode/async-close race, parameterised over 3 dispatch timings, plus a meta-test proving the harness has teeth | ✓ VERIFIED | 21/21 tests re-run live and passing; meta-test asserts `legacyLifecycle` (03-04's shipped semantics) still fails under microtask/macrotask dispatch |
+| `src/components/SurveySummaryModal.tsx` | Lifecycle effect delegates to `openDialogLifecycle`; suppression counter in a `useRef`; `onClose` read via ref, not a dependency | ✓ VERIFIED | Lines 66-95 read directly; empty dependency array preserved; 03-04's superseded comment removed and replaced per the plan |
+| `src/pages/ExplorerPage.tsx` | Discriminated not-found/load-failed data-error state; `defaultConfig` on GraphicWalker; definite-height canvas wrapper | ✓ VERIFIED | Unchanged since the previous verification round, re-confirmed present |
+| `src/lib/shareLink.ts` | Shelf-scoped schema-drift check with virtual-fid allowlist; normalized-array return | ✓ VERIFIED | Unchanged, 19/19 tests re-run live |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|-----|-----|--------|---------|
-| `SurveySummaryModal.tsx` dialog `close` event | `onCloseRef.current()` | Latest-value ref, attached in the single lifecycle effect | ✓ WIRED | Line 70; ref refreshed every render via a separate dependency-less effect (line 62-64) |
-| `ExplorerPage.tsx` phase-2 effect | `SurveyNotFoundError` classification | `metaResult.reason instanceof SurveyNotFoundError` checked first, before any other rejection | ✓ WIRED | Lines 168-171, confirmed by reading the fixed-priority `if` chain |
-| `ExplorerPage.tsx` `decodedChart` | `decodeShareLink` | `useMemo` gated on `[rawChartParam, dataState]`, cast `as IChart[] \| undefined` | ✓ WIRED | Line 91-95; now safe post-CR-01 since `decodeShareLink` always returns an array or `undefined` |
-| `ExplorerPage.tsx` `<GraphicWalker>` | `defaultConfig` | Prop passed directly on the JSX element | ✓ WIRED | Lines 253-257 |
-| `shareLink.ts` `decodeShareLink` step 6 | `isChartLike` | Runs BEFORE the field-reference guard (reordered per G-03-4/CR-01) | ✓ WIRED | Lines 253, 261 |
-| `shareLink.ts` `decodeShareLink` step 7 | `collectShelfFieldReferences` | Walks only `SHELF_CHANNEL_KEYS`, excludes `dimensions`/`measures` | ✓ WIRED | Lines 276-284 |
+| `SurveySummaryModal.tsx` dialog lifecycle effect | `openDialogLifecycle` | Direct import and call, cleanup returned from the effect | ✓ WIRED | Line 91: `return openDialogLifecycle(dialog, () => onCloseRef.current(), closeSuppressCountRef)` |
+| `openDialogLifecycle`'s dismissal callback | `onCloseRef.current()` | Closure reading the latest-value ref | ✓ WIRED | Ref refreshed every render via a separate dependency-less effect (lines 79-81), unchanged from before |
+| `closeSuppressCountRef` | `openDialogLifecycle`'s `suppressCounter` parameter | Passed as the ref object itself (not `.current`) | ✓ WIRED | Confirmed by direct read; matches the 03-07-SUMMARY.md-documented self-caught bug fix (the ref object, not its value, must be passed) |
+| `ExplorerPage.tsx` phase-2 effect | `SurveyNotFoundError` classification | `metaResult.reason instanceof SurveyNotFoundError` checked first | ✓ WIRED | Unchanged; re-read and confirmed |
 
 ### Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 |----------|---------------|--------|---------------------|--------|
-| `ExplorerPage.tsx` `dataState.data.rows` | `queryParquet(id)` | Real `SELECT * FROM read_parquet(...)` against the committed `mostra-sintetica_respostes.parquet` | Yes | ✓ FLOWING |
-| `ExplorerPage.tsx` `decodedChart` | `decodeShareLink(rawChartParam, knownFieldNames)` | Real URL search param + real known-field list from loaded meta, now correctly restoring a real GraphicWalker export shape (fixed) | Yes (or `undefined` by design when absent/invalid) | ✓ FLOWING |
-| `ExplorerPage.tsx` `dataState.kind` | `Promise.allSettled([...]).then(([metaResult, rowsResult]) => ...)` | Real fetch/query settlement results, classified by fixed priority | Yes | ✓ FLOWING |
+| `ExplorerPage.tsx` `dataState.data.rows` | `queryParquet(id)` | Real `SELECT * FROM read_parquet(...)` against the committed Parquet fixture | Yes | ✓ FLOWING |
+| `SurveySummaryModal.tsx` dialog element | `dialogRef.current` -> `openDialogLifecycle` | Real DOM ref passed to a real function, not a stub | Yes (mechanism); browser-DOM behavior itself unverified this round | ✓ FLOWING (mechanism) |
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Full unit test suite | `npx vitest run` (ran live in this verification) | 2 test files, 25/25 tests passed | ✓ PASS |
-| shareLink suite in isolation | `npx vitest run src/lib/shareLink.test.ts` | 19/19 passed, including the 4 new G-03-4 regression tests | ✓ PASS |
+| Full unit test suite | `npx vitest run` (ran live) | 3 test files, 46/46 tests passed | ✓ PASS |
+| dialogLifecycle suite in isolation | `npx vitest run src/lib/dialogLifecycle.test.ts` (ran live) | 21/21 passed, including the meta-test proving the harness reproduces 03-04's defect | ✓ PASS |
+| shareLink suite in isolation | `npx vitest run src/lib/shareLink.test.ts` (ran live) | 19/19 passed | ✓ PASS |
+| graphicWalkerFields suite in isolation | `npx vitest run src/lib/graphicWalkerFields.test.ts` (ran live) | 6/6 passed | ✓ PASS |
 | Lint | `npm run lint` (ran live) | Zero errors/warnings | ✓ PASS |
 | Production build | `npm run build` (ran live) | `tsc -b && vite build` succeeded, all chunks emitted | ✓ PASS |
-| Compiled-CSS proof of the canvas-height fix | `grep -o "100dvh" dist/assets/*.css` (ran live against a fresh build) | `dist/assets/index-rPwIhuZi.css:100dvh` | ✓ PASS |
 | DuckDB asset + Parquet production-build fidelity | `node scripts/verify-explorer-assets.mjs` (ran live) | "all checks passed (4 DuckDB assets verified)" | ✓ PASS |
 | GitHub-Pages base-path/404 fidelity | `node scripts/verify-pages.mjs` (ran live) | "all checks passed" | ✓ PASS |
-| CR-01 fix: bare chart object normalizes to array | `tsx -e "..."` direct call to `decodeShareLink` (ran live in this verification against the actual source module) | `Array.isArray(decoded) === true` | ✓ PASS |
-| WR-01 fix: array-typed `encodings` rejected | `tsx -e "..."` direct call (ran live) | `decoded === undefined` | ✓ PASS |
-| WR-02 fix: top-level empty array rejected | `tsx -e "..."` direct call (ran live) | `decoded === undefined` | ✓ PASS |
-| Anti-pattern scan (TODO/FIXME/TBD/XXX/HACK/PLACEHOLDER + "not yet implemented"/"coming soon") | `grep` across all 4 gap-closure/review-fix files (ran live) | No matches | ✓ PASS |
+| G-03-6 independent spot check | Fresh `gh-pages-preview.mjs` instance on port 4199; curl a nonexistent meta.json and a real one | `no-existeix-aquesta_meta.json` -> 404; `mostra-sintetica_meta.json` -> 200 | ✓ PASS (server-level; does not close the open UAT question about the visitor's real-browser session) |
+| Anti-pattern scan (TODO/FIXME/TBD/XXX/HACK/PLACEHOLDER + "not yet implemented"/"coming soon") | `grep` across the 6 files touched by 03-07 plus the files flagged in `03-REVIEW.md` | No matches | ✓ PASS |
 
 ### Probe Execution
 
@@ -144,59 +142,51 @@ No `scripts/*/tests/probe-*.sh` files exist in this repository and none are decl
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |-------------|------------|-------------|--------|----------|
-| EXPL-01 | 03-01 | Progress indicator during DuckDB init + Parquet load | ✓ SATISFIED | Unchanged, regression-checked |
-| EXPL-02 | 03-01, 03-06 | Clear error on init/query failure, now discriminated not-found vs load-failed | ✓ SATISFIED (classification logic + copy) / human-check pending (ordering invariant, rendered text) | `ExplorerDataState`, `Promise.allSettled` fixed-priority classification |
-| EXPL-03 | 03-01, 03-06 | Drag X/Y/Color/Size/Filter with GraphicWalker; canvas fills available space | ✓ SATISFIED (wiring + defaultConfig) / human-check pending (drag interaction, visual size) | `dataSource`/`rawFields`/`defaultConfig` wired |
+| EXPL-01 | 03-01 | Progress indicator during DuckDB init + Parquet load | ✓ SATISFIED | Unchanged |
+| EXPL-02 | 03-01, 03-06 | Clear error on init/query failure, discriminated not-found vs load-failed | ✓ SATISFIED (classification logic) / human-check pending (G-03-6 unresolved regression report) | See truth #2 |
+| EXPL-03 | 03-01, 03-06 | Drag X/Y/Color/Size/Filter; canvas fills available space | ✓ SATISFIED (wiring) / human-check pending | Unchanged |
 | EXPL-04 | 03-01 | Multiple chart types | ✓ SATISFIED (wiring) / human-check pending | Unchanged |
-| EXPL-05 | 03-01 | Correct dimension/measure typing from meta.json | ✓ SATISFIED | Unchanged, `graphicWalkerFields.test.ts` 6/6 passing |
-| EXPL-06 | 03-02, 03-06 | Usable on small/medium screens; canvas fills space | ✓ SATISFIED (header, defaultConfig mechanism) / human-check pending (canvas responsiveness, visual size) | `h-dvh` flex-column + `flex-1 min-h-0`, compiled-CSS proof |
-| EXPL-07 | 03-02 | Back to listing from explorer | ✓ SATISFIED | `<Link to="/">` renders in every page state including the new not-found branch |
+| EXPL-05 | 03-01 | Correct dimension/measure typing | ✓ SATISFIED | 6/6 passing |
+| EXPL-06 | 03-02, 03-06 | Usable on small/medium screens; canvas fills space | ✓ SATISFIED (mechanism) / human-check pending | Unchanged |
+| EXPL-07 | 03-02 | Back to listing from explorer | ✓ SATISFIED | Unchanged |
 | EXPL-08 | 03-01 | Direct `/enquesta/:id` link works, no 404 on refresh | ✓ SATISFIED | `verify:pages` passing live |
 | EXPL-09 | 03-02 | Field descriptions (data dictionary) | ✓ SATISFIED | Unchanged |
 | EXPL-10 | 03-03 | Export chart as image | ✓ SATISFIED (structurally) / human-check pending | Unchanged |
-| EXPL-11 | 03-03, 03-05, 03-06 | Copy/generate a link reproducing exact visualization | ✓ SATISFIED (decode logic now correct, unit-tested and independently reproduced) / human-check pending (full browser round trip + composed sizing) | 19/19 `shareLink.test.ts` passing; CR-01/WR-01/WR-02 independently reproduced |
-| HOME-03, HOME-04 (bonus — Phase 1 requirements) | 03-04 | Modal opens and stays open; explore button reachable | ✓ SATISFIED (code fix) / human-check pending (StrictMode lifecycle) | Fixed as a pre-existing Phase 1 defect surfaced by Phase 3 UAT; not part of Phase 3's own requirement scope but tracked for completeness |
+| EXPL-11 | 03-03, 03-05, 03-06 | Copy/generate a link reproducing exact visualization | ✓ SATISFIED (decode logic) / human-check pending | 19/19 passing |
+| HOME-03, HOME-04 (Phase 1 requirements, re-touched by 03-04/03-07) | 03-04, 03-07 | Modal opens and stays open; explore button reachable | ✓ SATISFIED (code + automated mechanism test) / human-check pending (real-browser click-through never performed, WINDOWS.md id 8) | `dialogLifecycle.test.ts` 21/21; Task 2 human-check not run |
 
-No orphaned requirements — all of EXPL-01..EXPL-11 remain mapped to Phase 3 in `REQUIREMENTS.md`, and all 11 appear across the six plans' `requirements` fields (03-01, 03-02, 03-03 as before, plus 03-05: EXPL-11 and 03-06: EXPL-02/03/06/11 for the gap closures). HOME-03/HOME-04 are Phase 1 requirements incidentally re-touched by 03-04's gap closure — not a Phase 3 orphan, since REQUIREMENTS.md maps them to Phase 1 where they were already marked Complete; this phase's fix restores rather than newly claims them.
+No orphaned requirements — all of EXPL-01..EXPL-11 remain mapped to Phase 3 in `REQUIREMENTS.md`, and all appear across the seven plans' `requirements` fields (03-01 through 03-07). HOME-03/HOME-04 are Phase 1 requirements incidentally re-touched by Phase 3's gap closures (03-04, then 03-07 after a regression) — not a Phase 3 orphan.
 
 ### Anti-Patterns Found
 
-None. Scanned all 4 files touched by the gap-closure and code-review-fix commits (`SurveySummaryModal.tsx`, `shareLink.ts`, `shareLink.test.ts`, `ExplorerPage.tsx`) for `TBD|FIXME|XXX|TODO|HACK|PLACEHOLDER` and placeholder-language patterns — zero matches, confirmed live in this verification (not trusted from prior scans).
+None blocking. Scanned `dialogLifecycle.ts`, `dialogLifecycle.test.ts`, `SurveySummaryModal.tsx`, and every file listed in `03-REVIEW.md` for `TBD|FIXME|XXX|TODO|HACK|PLACEHOLDER` and placeholder-language patterns — zero matches, confirmed live in this verification.
 
-### Code Review Findings — Resolution Independently Reproduced
+**Unresolved code-review warnings (not blockers, flagged for awareness):** `03-REVIEW.md` (run after 03-07, status `issues_found`, 0 critical / 3 warning / 3 info) has no corresponding fix pass yet. Independently re-confirmed live in this verification that all three warnings remain present in the current code:
+- **WR-01** (`src/services/duckdb.ts`): `resetDb()` clears the `dbPromise` singleton but not the separate `registrationPromises` cache — confirmed still missing a `registrationPromises.clear()` call. The review itself notes this is not reachable through the shipped UI today (the only caller, `onEngineRetry`, only fires before any registration can exist), so it is latent, not active.
+- **WR-02** (`package.json` / `package-lock.json`): `styled-components` range mismatch (`^6.1.19` vs `^6.5.3`) confirmed still present in both files. `npm ci` still succeeds since `6.5.3` satisfies `^6.1.19`; not a functional break.
+- **WR-03** (`src/pages/ExplorerPage.tsx:172-182`): a `meta.json` that parses as JSON but fails `parseEnquestaMeta`'s schema validation still falls into the generic `'load-failed'` branch, which offers a Retry button for a failure that can never succeed on retry — confirmed still unfixed (`kind: 'load-failed'` at line 181, no third `DataErrorKind` exists).
 
-`03-REVIEW.md` flagged 1 critical + 4 warnings (+ 2 info, out of fix scope). All five in-scope findings were independently re-verified against the current codebase in this run — reading the diffs AND, for the three `shareLink.ts` findings, directly executing `decodeShareLink` against the built module with hand-constructed hostile payloads rather than trusting `03-REVIEW-FIX.md`'s narrative:
-
-- **CR-01** (decode returned a bare object instead of a normalized array): confirmed fixed by direct execution — a bare chart-shaped object now decodes to an array.
-- **WR-01** (array-typed `encodings` silently bypassed the schema-drift check): confirmed fixed by direct execution — `{"visId":"v1","encodings":[]}` now decodes to `undefined`.
-- **WR-02** (top-level empty array accepted as valid): confirmed fixed by direct execution — `encodeShareLink([])` now decodes to `undefined`.
-- **WR-03** (stale modal content on id change without unmount): confirmed fixed by code reading — `SurveySummaryModal.tsx:50-54`'s render-time `trackedEnquestaId` comparison resets `state` to loading before the fetch effect runs; could not be behaviorally exercised (no DOM test environment) — folded into behavior_unverified_items #4.
-- **WR-04** (modal conflated not-found and load-failed): confirmed fixed by code reading — `SurveySummaryModal.tsx` now mirrors `ExplorerPage`'s classification for the identical endpoint.
-- **IN-01, IN-02** (info-tier, explicitly out of `fix_scope: critical_warning`): confirmed still open, as declared — `ExplorerPage.tsx`'s engine-error message still repeats its title as the message's first sentence (cosmetic only, not a functional defect); `shareLink.test.ts` has no dedicated regression tests for the three shape-edge-cases the fixes address (mitigated by this verification's direct-execution reproduction of all three, but a standing test-coverage gap for future regressions). Neither blocks the phase goal; both are pre-existing, deliberately-scoped-out, low-severity items.
+None of these three block the phase goal (EXPL-02 only requires a clear error message on failure, not perfect retry semantics for every schema-validation edge case) and none introduce a placeholder/stub. They are pre-existing hygiene gaps surfaced by review, not yet actioned by a follow-up plan — noted here so they are not silently dropped.
 
 ### Human Verification Required
 
-See frontmatter `human_verification` (6 items). Three are newly required by this gap-closure round (SurveySummaryModal StrictMode lifecycle, not-found/load-failed ordering invariant, canvas-fill + share-link-round-trip-at-full-size); three are carried forward from the already-passed portions of `03-UAT.md` (tests 1 and 3) and remain open only because they are still listed as open `unrun-verify` entries in `.planning/WINDOWS.md` (ids 2, 3, 4) — they are not being re-flagged as failing, they were already confirmed pass in `03-UAT.md`.
+See frontmatter `human_verification` (7 items). Two are materially new or changed since the previous verification round:
 
-New items requiring confirmation before this phase can move to `passed`:
-1. **SurveySummaryModal StrictMode click-through** (dev server) — the actual fix for the blocker gap G-03-2
-2. **Not-found vs load-failed error copy** in the production preview (WINDOWS.md id 6)
-3. **Canvas-fill + share-link-round-trip-at-full-size** in the production preview (WINDOWS.md id 7)
+1. **SurveySummaryModal StrictMode click-through under `npm run dev`** (WINDOWS.md id 8) — 03-07-PLAN.md's own Task 2 `<human-check>` was never performed (no browser automation tool available in the executing environment). This is the actual real-browser confirmation of the G-03-5 fix; the automated `dialogLifecycle.test.ts` proves the extracted mechanism but not the live component/browser/StrictMode integration.
+2. **G-03-6 fresh re-test** — a UAT-reported regression (not-found vs load-failed misclassification) that two debug passes could not reproduce through any available method (curl, Node fetch, 4/4 real headless-Chrome end-to-end runs, and this verification's own independent server-level spot check). Needs either a clean re-test from a fresh terminal/tab, or a Network-tab observation if it still reproduces.
+
+The remaining five (not-found/load-failed production-preview check, canvas-fill + share-link-round-trip-at-full-size, the already-passed tracer/header/dictionary checks) are carried forward unchanged from the previous verification round, per open `WINDOWS.md` ledger entries.
 
 ### Gaps Summary
 
-No gaps found. All four UAT-reported gaps (G-03-2, G-03-2b, G-03-4, G-03-4b) have code-level fixes present in the current codebase, independently confirmed in this verification run — not merely accepted from SUMMARY.md's narrative:
-- G-03-2 and G-03-4b were confirmed by direct code reading against the diagnosed root causes (both debug sessions traced the defect into the installed `@kanaries/graphic-walker` package's own source, and the fixes address exactly those mechanisms).
-- G-03-4 was confirmed by both a live unit test run (19/19 `shareLink.test.ts` assertions, including 4 new regression tests) and by reading the shelf-scoping/allowlist implementation directly.
-- G-03-2b was confirmed by reading the `Promise.allSettled` fixed-priority classification and confirming the distinct copy constants and `tsc -b` exhaustiveness gate.
+No gaps found (no FAILED truth, no MISSING/STUB artifact, no NOT_WIRED key link, no blocker anti-pattern). G-03-5, the blocker that made the previous UAT round fail, is closed at the code level with a genuinely strong automated regression test — independently re-run in this verification, including its meta-test proving the test harness would have caught 03-04's original (broken) fix. This is real, new evidentiary weight, not a restatement of SUMMARY.md's claims.
 
-The subsequent code review's 5 in-scope findings (CR-01, WR-01, WR-02, WR-03, WR-04) were also independently reproduced in this run: the three `shareLink.ts` fixes were proven by directly executing `decodeShareLink` against hand-crafted hostile payloads (not by reading the fix report), and the two `SurveySummaryModal.tsx` fixes were confirmed by code reading.
+The phase stays at `human_needed` rather than `passed` for two reasons:
 
-All automated checks (build, lint, 25/25 unit tests, both production-build fidelity scripts, and the compiled-CSS proof of the height fix) pass live in this run.
-
-The phase remains at `human_needed` rather than `passed` because six of its must-have truths are genuinely behavior-dependent — a StrictMode dev-only mount/cleanup-ordering invariant with no DOM test environment in this repo, a two-promise race/priority-ordering invariant with no ExplorerPage test file, real drag-and-drop interaction inside a third-party library's canvas, real visual chart sizing, a real clipboard round trip across two browser tabs, and real image export/download. None of these can be proven by grep/build/test alone, and no new gap was discovered beyond what the executors already flagged in `WINDOWS.md` (ids 2-7) — this verification independently confirms the underlying code is correct and non-stubbed for all of them, closing the actionable gaps while leaving the genuinely un-automatable behavioral confirmations open for a human.
+1. **Six behavior-dependent truths** (drag-and-drop, real visual chart sizing, real clipboard round trip, real image export, and now the real-browser confirmation of the modal fix) genuinely cannot be proven by grep/build/test alone and were not exercised by a browser this round — no new gap, same category as the previous verification round, minus one (G-03-5's mechanism now has automated proof) plus a materially different piece of un-automatable work (the actual click-through, which the plan itself scheduled as a human-check and which was not run).
+2. **G-03-6 remains genuinely open.** It was discovered by UAT after the previous `03-VERIFICATION.md` ran, so this is the first verification pass to account for it. No code fix was applied because the debug investigation, run twice with escalating rigor (culminating in 4/4 clean real-Chrome end-to-end reproductions), could not find a reproducible defect in the current code — independently corroborated again in this verification's own server-level spot check. The honest state is "code appears correct, one real user report has not been re-confirmed either way" — not a confirmed regression, but not something this verifier can close on the reporter's behalf either.
 
 ---
 
-_Verified: 2026-08-27T23:20:00Z_
+_Verified: 2026-08-28T19:15:00Z_
 _Verifier: Claude (gsd-verifier)_
