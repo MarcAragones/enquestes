@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
-updated: 2026-08-28T00:15:00Z
+updated: 2026-08-28T01:30:00Z
 ---
 
 ## Current Test
@@ -176,10 +176,15 @@ blocked: 0
   reason: "User reported: the modal closes immediately (regression — this is the exact same blocker G-03-2 already diagnosed and supposedly fixed by 03-04-PLAN.md; the StrictMode-idempotent lifecycle effect fix did not resolve the real-browser behavior)"
   severity: blocker
   test: 5
-  root_cause: ""     # Filled by diagnosis
-  artifacts: []      # Filled by diagnosis
-  missing: []        # Filled by diagnosis
-  debug_session: ""  # Filled by diagnosis
+  root_cause: "Commit 90ca09d's G-03-2 fix rests on an incorrect assumption about <dialog>'s native `close` event timing. Per the WHATWG spec, `close()` only QUEUES the close event as a separate browser task rather than dispatching it synchronously. React StrictMode's dev-only mount double-invoke (setup -> cleanup -> setup) runs entirely synchronously within one effect-flush, well before that queued task fires. Sequence: (1) setup #1 attaches handlerA, showModal(); (2) StrictMode's synchronous simulated-unmount cleanup removes handlerA then calls close() — closes synchronously but only QUEUES the close event for later; (3) StrictMode's synchronous remount setup #2 attaches a NEW live handlerB wired to the real onClose, showModal() again; (4) later, when the browser finally fires the event queued in step 2, handlerB (attached in step 3) receives it and invokes the real onClose(), deleting the ?enquesta= param that is the sole thing keeping the modal mounted. The fix's cleanup-ordering defense only guards against a SYNCHRONOUS close-event dispatch into the OLD listener; it does nothing against the actual ASYNCHRONOUS dispatch reaching the NEW listener re-attached in the interim. Same root mechanism as G-03-2 (StrictMode's simulated unmount producing a real, persistent onClose side effect) — one layer deeper than what 03-04 addressed, not a different cause. Confirmed no later commit (0965305, 3012a49, b4e9382) touched the dialog lifecycle effect, ruling out 'fix was undone'."
+  artifacts:
+    - path: "src/components/SurveySummaryModal.tsx"
+      issue: "The single dialog-lifecycle effect (lines ~66-95) re-attaches a live close listener on every effect setup, including the StrictMode remount setup, before the previous close() call's asynchronously-queued event has a chance to fire into the old (removed) listener"
+  missing:
+    - "Stop relying on listener-removal-ordering relative to close() — that defense only works against a synchronous event, which this is not"
+    - "Option (a): a ref/flag that distinguishes 'this close() call is a StrictMode-cleanup close, ignore the resulting event' from a genuine user dismissal"
+    - "Option (b): do not call dialog.close() in the mount effect's cleanup at all (the DOM node is being removed from the document anyway on a genuine unmount) — verify Escape/backdrop/Tanca dismissal still work correctly afterward"
+  debug_session: ".planning/debug/g-03-5-modal-still-closes.md"
 
 - gap_id: G-03-6
   truth: "Visiting /enquesta/{invalid-id} shows the ExplorerPage's not-found copy ('No s'ha trobat aquesta enquesta.'), not a load-failed message (03-06's gap-closure fix for G-03-2b, re-verified)"
@@ -187,10 +192,14 @@ blocked: 0
   reason: "User reported: got \"No s'han pogut carregar les dades d'aquesta enquesta.\" instead of the not-found copy — the load-failed branch fires instead of the not-found branch for a nonexistent survey id in the production preview (regression — this is the same class of misclassification G-03-2b already diagnosed and supposedly fixed by 03-06-PLAN.md)"
   severity: major
   test: 6
-  root_cause: ""     # Filled by diagnosis
-  artifacts: []      # Filled by diagnosis
-  missing: []        # Filled by diagnosis
-  debug_session: ""  # Filled by diagnosis
+  status_note: "unresolved — inconclusive after two debug passes; awaiting user re-test before any fix plan"
+  root_cause: "Investigation inconclusive after two independent passes. Pass 1 hypothesized the wrong preview server (plain `npm run preview` vs `npm run preview:pages`) — REFUTED by the user, who confirmed they used `npm run preview:pages`. Pass 2 then verified, three independent ways, that ExplorerPage.tsx's classification logic is correct and unchanged since the 331116f fix: (1) source + built-bundle inspection show the logic unmangled, (2) `scripts/gh-pages-preview.mjs` returns genuine HTTP 404 for the missing meta.json via curl, Node fetch, AND real headless Chrome fetch, (3) a full end-to-end run in real headless Chrome — real DuckDB-Wasm engine init, real fetch() calls for meta.json and the .parquet file — correctly rendered the not-found copy with no retry, reproduced cleanly 4/4 times with zero variance. Also ruled out: BASE_URL mismatch, a service worker (none exists in this codebase), a stale pre-fix dist/ build (the user's reported text is a character-for-character match of the CURRENT post-fix LOAD_FAILED_TITLE, not the old pre-fix wording), and a fixtures-file misconfiguration. No code defect could be found or reproduced. Remaining possibilities are local/session-state artifacts on the user's machine at UAT time (a stray leftover meta.json fixture file, or a second stale server process already bound to port 4173 serving an older dist/ snapshot) that cannot be reconstructed or confirmed from the repository checkout alone."
+  artifacts: []
+  missing:
+    - "User needs to re-run the exact repro in a FRESH terminal (kill any process that might already hold port 4173) and a fresh/incognito browser tab"
+    - "If it still reproduces: open the browser's Network tab and report the actual HTTP status + response body for the meta.json request — this single observation would confirm or refute the last remaining hypothesis"
+    - "If it does NOT reproduce on a clean re-test: close G-03-6 as a transient local environment state, not a code gap"
+  debug_session: ".planning/debug/g-03-6-not-found-still-wrong.md"
 
 Two backstop truths from the plans have no automatable test and no held-out fixture, and are not part of the 4 tests above since they require assets that don't exist yet:
 - Zero-row Parquet rendering GraphicWalker's own empty canvas (03-01-PLAN.md backstop truth) — no zero-row Parquet fixture exists in the repo.
