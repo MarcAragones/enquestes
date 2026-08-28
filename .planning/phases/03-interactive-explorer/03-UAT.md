@@ -1,14 +1,22 @@
 ---
-status: diagnosed
+status: testing
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
-updated: 2026-08-28T20:20:00Z
+updated: 2026-08-28T22:13:45Z
 ---
 
 ## Current Test
 
-[testing complete]
+number: 10
+name: G-03-7 visual centering confirmation
+expected: |
+  Run `npm run dev`, click a survey card, confirm the modal is centered (equal dimmed
+  backdrop on all four sides, not hugging the top-left). Toggle dark mode with it open.
+  Narrow to ~375px and confirm no horizontal overflow and both "Tanca" and "Explorar
+  dades interactives" stay visible/clickable. Repeat the centering check against
+  `npm run build && npm run preview:pages`.
+awaiting: user response
 
 ## Tests
 
@@ -107,12 +115,44 @@ expected: |
   observation would finally confirm a real cause.
 result: pass
 
+### 10. G-03-7 visual centering confirmation (03-08-PLAN.md Task 1 human-check; WINDOWS.md id 9)
+expected: |
+  Run `npm run dev`, click a survey card, confirm the modal is centered (equal dimmed
+  backdrop on all four sides, not hugging the top-left). Toggle dark mode with it open.
+  Narrow to ~375px and confirm no horizontal overflow and both "Tanca" and "Explorar
+  dades interactives" stay visible/clickable. Repeat the centering check against
+  `npm run build && npm run preview:pages`.
+result: [pending]
+
+### 11. Two remaining G-03-5 re-test sub-steps (WINDOWS.md id 8)
+expected: |
+  Under `npm run dev`: reopen the modal, click "Explorar dades interactives", confirm it
+  navigates to /enquesta/:id AND the explorer responds to scroll/back-link/data-dictionary
+  clicks (not inert). Then `npm run build && npm run preview:pages` and repeat the
+  open/wait-2s/Escape check there. (Note: the core dismissal-once behavior — 2s wait x5,
+  Escape/backdrop/Tanca each exactly once — already has a passing result on record from
+  test 8; only these two narrower sub-steps remain open.)
+result: [pending]
+
+### 12. Color/Size/Filter shelf drag-and-drop (EXPL-03)
+expected: |
+  Open /enquesta/mostra-sintetica, drag canal onto Color and add a territori filter,
+  alongside X/Y fields already confirmed working. Chart re-renders reflecting the Color
+  encoding and the filter, with no console errors.
+result: [pending]
+
+### 13. Chart image export (EXPL-10)
+expected: |
+  Build a chart, use GraphicWalker's own toolbar export control, confirm a valid image
+  file (PNG or SVG) downloads and opens correctly.
+result: [pending]
+
 ## Summary
 
-total: 9
+total: 13
 passed: 4
 issues: 3
-pending: 0
+pending: 4
 skipped: 2
 blocked: 0
 
