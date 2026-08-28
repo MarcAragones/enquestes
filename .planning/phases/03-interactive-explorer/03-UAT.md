@@ -3,19 +3,17 @@ status: testing
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
-updated: 2026-08-28T22:13:45Z
+updated: 2026-08-29T00:12:00Z
 ---
 
 ## Current Test
 
-number: 10
-name: G-03-7 visual centering confirmation
+number: 12
+name: Color/Size/Filter shelf drag-and-drop
 expected: |
-  Run `npm run dev`, click a survey card, confirm the modal is centered (equal dimmed
-  backdrop on all four sides, not hugging the top-left). Toggle dark mode with it open.
-  Narrow to ~375px and confirm no horizontal overflow and both "Tanca" and "Explorar
-  dades interactives" stay visible/clickable. Repeat the centering check against
-  `npm run build && npm run preview:pages`.
+  Open /enquesta/mostra-sintetica, drag canal onto Color and add a territori filter,
+  alongside X/Y fields already confirmed working. Chart re-renders reflecting the Color
+  encoding and the filter, with no console errors.
 awaiting: user response
 
 ## Tests
@@ -122,7 +120,7 @@ expected: |
   Narrow to ~375px and confirm no horizontal overflow and both "Tanca" and "Explorar
   dades interactives" stay visible/clickable. Repeat the centering check against
   `npm run build && npm run preview:pages`.
-result: [pending]
+result: pass
 
 ### 11. Two remaining G-03-5 re-test sub-steps (WINDOWS.md id 8)
 expected: |
@@ -132,7 +130,7 @@ expected: |
   open/wait-2s/Escape check there. (Note: the core dismissal-once behavior — 2s wait x5,
   Escape/backdrop/Tanca each exactly once — already has a passing result on record from
   test 8; only these two narrower sub-steps remain open.)
-result: [pending]
+result: pass
 
 ### 12. Color/Size/Filter shelf drag-and-drop (EXPL-03)
 expected: |
@@ -150,9 +148,9 @@ result: [pending]
 ## Summary
 
 total: 13
-passed: 4
+passed: 6
 issues: 3
-pending: 4
+pending: 2
 skipped: 2
 blocked: 0
 

@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 9
+open_count: 7
 waived_count: 0
-fixed_count: 0
+fixed_count: 2
 total_count: 9
-last_updated: 2026-08-28T21:57:37.376Z
+last_updated: 2026-08-28T22:28:44.907Z
 ---
 
 # Broken Windows Ledger
@@ -22,8 +22,8 @@ last_updated: 2026-08-28T21:57:37.376Z
 | 5 | 03 | unrun-verify | .planning/phases/03-interactive-explorer/03-03-PLAN.md |  | Task 3 human-check (image export via GraphicWalker's own toolbar, copy-link/Copiat! swap with address bar untouched, pasted-link exact-reproduction round trip including active filter, three hostile-link variants landing silently blank, cross-survey link safety, narrow-viewport header layout) not performed in this sequential-executor run; all automated verify steps (vitest, build, lint, verify:explorer, verify:pages, structural asserts) passed, harvested to end-of-phase UAT per human_verify_mode: end-of-phase | open |  | 2026-08-26T22:11:32.321Z |  |
 | 6 | 03 | unrun-verify | src/pages/ExplorerPage.tsx |  | 03-06 Task 1 human-check not run (no browser tool in this environment): confirm /enquesta/no-existeix-aquesta and a malformed id both show the not-found heading with no retry button, and mostra-sintetica still loads normally in the production preview | open |  | 2026-08-27T20:39:42.217Z |  |
 | 7 | 03 | unrun-verify | src/pages/ExplorerPage.tsx |  | 03-06 Task 2 human-check not run (no browser tool in this environment): confirm a newly built chart visually fills the canvas, the share-link round trip restores a large chart, malformed/truncated/cross-survey chart params fail soft, and the layout holds at ~375px/~768px and in dark mode | open |  | 2026-08-27T20:39:42.403Z |  |
-| 8 | 03 | unrun-verify | src/components/SurveySummaryModal.tsx |  | Task 2 <human-check> (8-step npm run dev StrictMode click-through + preview:pages spot check) not run — no browser automation tool available in executing environment; recorded in 03-07-SUMMARY.md for phase verifier | open |  | 2026-08-28T16:57:10.695Z |  |
-| 9 | 03 | unrun-verify | src/components/SurveySummaryModal.tsx |  | 03-08 Task 1 <human-check> (visual centering confirmation, ~375px + dark-mode reachability, G-03-5 no-regression, explorer-interactive-after-navigate, production preview:pages re-run) not run — no browser automation tool available in executing environment; also intended to clear WINDOWS.md id 8's outstanding sub-steps but could not be executed | open |  | 2026-08-28T21:57:37.376Z |  |
+| 8 | 03 | unrun-verify | src/components/SurveySummaryModal.tsx |  | Task 2 <human-check> (8-step npm run dev StrictMode click-through + preview:pages spot check) not run — no browser automation tool available in executing environment; recorded in 03-07-SUMMARY.md for phase verifier | fixed |  | 2026-08-28T16:57:10.695Z | 2026-08-28T22:28:44.907Z |
+| 9 | 03 | unrun-verify | src/components/SurveySummaryModal.tsx |  | 03-08 Task 1 <human-check> (visual centering confirmation, ~375px + dark-mode reachability, G-03-5 no-regression, explorer-interactive-after-navigate, production preview:pages re-run) not run — no browser automation tool available in executing environment; also intended to clear WINDOWS.md id 8's outstanding sub-steps but could not be executed | fixed |  | 2026-08-28T21:57:37.376Z | 2026-08-28T22:28:44.636Z |
 
 ````json
 [
@@ -118,10 +118,10 @@ last_updated: 2026-08-28T21:57:37.376Z
     "file": "src/components/SurveySummaryModal.tsx",
     "line": null,
     "description": "Task 2 <human-check> (8-step npm run dev StrictMode click-through + preview:pages spot check) not run — no browser automation tool available in executing environment; recorded in 03-07-SUMMARY.md for phase verifier",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-08-28T16:57:10.695Z",
-    "resolved_at": null
+    "resolved_at": "2026-08-28T22:28:44.907Z"
   },
   {
     "id": 9,
@@ -130,10 +130,10 @@ last_updated: 2026-08-28T21:57:37.376Z
     "file": "src/components/SurveySummaryModal.tsx",
     "line": null,
     "description": "03-08 Task 1 <human-check> (visual centering confirmation, ~375px + dark-mode reachability, G-03-5 no-regression, explorer-interactive-after-navigate, production preview:pages re-run) not run — no browser automation tool available in executing environment; also intended to clear WINDOWS.md id 8's outstanding sub-steps but could not be executed",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-08-28T21:57:37.376Z",
-    "resolved_at": null
+    "resolved_at": "2026-08-28T22:28:44.636Z"
   }
 ]
 ````
