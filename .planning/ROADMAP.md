@@ -88,7 +88,7 @@ Plans:
   4. User can view field descriptions (data dictionary) from `meta.json` inside the explorer, and export the current chart as an image (PNG/SVG)
   5. User can generate and copy a link that reproduces the exact current visualization (fields and active filters) via query params
 
-**Plans**: 6/6 plans executed (3 gap-closure plans added after UAT)
+**Plans**: 7 plans (6 executed; 4 gap-closure plans added after UAT, 03-07 pending)
 
 Plans:
 **Wave 1**
@@ -111,6 +111,10 @@ Plans:
 **Gap closure (post-UAT) — Wave 2** *(blocked on 03-05)*
 
 - [x] 03-06-PLAN.md — G-03-2b + G-03-4b (minor): distinct not-found vs. load-failure error copy on ExplorerPage, and a GraphicWalker `defaultConfig` plus a definite-height wrapper so charts fill the canvas (EXPL-02, EXPL-03, EXPL-06, EXPL-11)
+
+**Gap closure (post-UAT re-test) — Wave 1**
+
+- [ ] 03-07-PLAN.md — G-03-5 (blocker, second attempt at the G-03-2 symptom): extract the `<dialog>` lifecycle into a testable module with a suppression counter that absorbs StrictMode-initiated closes regardless of whether the native `close` event is dispatched synchronously or as a queued task, plus a node-environment reproduction test that fails against 03-04's implementation (HOME-03, HOME-04)
 
 **UI hint**: yes
 
