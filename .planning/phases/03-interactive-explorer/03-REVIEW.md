@@ -1,166 +1,130 @@
 ---
 phase: 03-interactive-explorer
-reviewed: 2026-08-27T23:10:00Z
+reviewed: 2026-08-28T17:06:13Z
 depth: standard
-files_reviewed: 4
+files_reviewed: 17
 files_reviewed_list:
+  - package-lock.json
+  - package.json
+  - scripts/gh-pages-preview.mjs
+  - scripts/verify-explorer-assets.mjs
+  - src/App.tsx
+  - src/components/DataDictionary.tsx
+  - src/components/ErrorState.tsx
+  - src/components/ExplorerHeader.tsx
   - src/components/SurveySummaryModal.tsx
+  - src/lib/dialogLifecycle.test.ts
+  - src/lib/dialogLifecycle.ts
+  - src/lib/graphicWalkerFields.test.ts
+  - src/lib/graphicWalkerFields.ts
   - src/lib/shareLink.test.ts
   - src/lib/shareLink.ts
   - src/pages/ExplorerPage.tsx
+  - src/services/duckdb.ts
+  - vite.config.ts
 findings:
-  critical: 1
-  warning: 4
-  info: 2
-  total: 7
+  critical: 0
+  warning: 3
+  info: 3
+  total: 6
 status: issues_found
 ---
 
 # Phase 03: Code Review Report
 
-**Reviewed:** 2026-08-27T23:10:00Z
+**Reviewed:** 2026-08-28T17:06:13Z
 **Depth:** standard
-**Files Reviewed:** 4
+**Files Reviewed:** 17
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the four files touched by the G-03-2 / G-03-4 / G-03-2b / G-03-4b gap-closure fixes. The `SurveySummaryModal` StrictMode lifecycle fix (listener-detach-before-close ordering) is correct and well-reasoned; I traced the mount → simulated-unmount → remount sequence and it behaves exactly as documented. The `ExplorerPage` not-found/load-failed classification (G-03-2b) and the `defaultConfig.layout.size.mode: 'full'` canvas fix (G-03-4b) are both implemented correctly and match the root causes identified in the corresponding debug reports.
+Focused review of the G-03-5 dialog-lifecycle gap-closure module (`src/lib/dialogLifecycle.ts`) plus the full listed file set. `npx vitest run` (46/46 passing across 3 files), `npx tsc -b --noEmit` (clean), and `npx eslint .` (clean) were all re-run as part of this review rather than trusted at face value.
 
-However, the G-03-4 schema-drift narrowing in `shareLink.ts` (restricting the known-field check to shelf channels only) introduced a validation gap in the same function: `decodeShareLink`'s existing shape guard (`isChartLike`, added for the prior phase's CR-01) does not actually enforce that the returned value matches the array shape `ExplorerPage.tsx` casts it to (`as IChart[] | undefined`) — a single, non-array chart-shaped payload is validated as if wrapped in an array but then returned unwrapped, silently violating the contract every caller relies on. I verified this and two related edge cases (an empty top-level array, and an array-typed `encodings`) by actually exercising `decodeShareLink` against the installed module rather than only reading the source. I also found a stale-state bug in `SurveySummaryModal` (not fixed by G-03-2, and not part of the original phase review's scope, since this file wasn't reviewed then) and a text-duplication defect in `ExplorerPage`'s engine-error message.
+**`src/lib/dialogLifecycle.ts` — no defect found.** I traced the suppression-counter design by hand against all three dispatch-timing schedulers (immediate/microtask/macrotask) the test file already exercises, plus two scenarios the tests don't cover directly (a real user dismissal racing the still-pending StrictMode-artifact dispatch; a genuine unmount with no subsequent remount). Both traces resolve correctly: the counter always drains to exactly zero across a StrictMode double-invoke, and a genuine-unmount's non-zero leftover counter is inert because the ref (and the whole component instance) is discarded with it. The fix's core claim — ordering the increment before `close()`, and reading a shared caller-owned counter rather than the listener identity, makes the fix independent of *when* the browser dispatches the queued `close` event — holds under manual trace. This is solid, well-reasoned, and well-tested work; I found nothing to fault here after deliberately trying to break it.
 
-## Critical Issues
-
-### CR-01: `decodeShareLink` can return a non-array value that violates the `IChart[]` contract every caller relies on
-
-**File:** `src/lib/shareLink.ts:238,266` (also affects `src/pages/ExplorerPage.tsx:94`)
-**Issue:**
-Step 6 wraps a non-array `parsed` value in `[parsed]` *only* to run it through `isChartLike`/the shelf-field check:
-```ts
-const charts: Record<string, unknown>[] = Array.isArray(parsed) ? parsed : [parsed]
-if (!charts.every(isChartLike)) {
-  return undefined
-}
-```
-but step 8 returns the original `parsed` value verbatim, not `charts`:
-```ts
-return parsed
-```
-So a `?chart=` payload whose JSON is a single chart-shaped object (not wrapped in an array) — e.g. `{"visId":"v1","encodings":{"rows":[{"fid":"edat"}]}}` — passes validation (because `[parsed]` satisfies `isChartLike`) but is returned as that bare object, not an array. I confirmed this directly against the built module:
-```
-decoded is array? false {"visId":"v1","encodings":{"rows":[{"fid":"edat"}]}}
-```
-`ExplorerPage.tsx:94` then does an unchecked cast:
-```ts
-return decodeShareLink(rawChartParam, knownFieldNames) as IChart[] | undefined
-```
-and passes the result straight to `<GraphicWalker chart={decodedChart} />`, which requires `IChart[] | IVisSpec[]` (always an array — every real caller in this codebase only ever produces it via `VizSpecStore.exportCode(): IChart[]`). Handing GraphicWalker a bare object where it expects an array is exactly the class of defect the doc comment on `isChartLike` says it exists to prevent (CR-01 from the prior review), and it is reachable with a hand-typed URL, no special tooling — the client-side source (`visId`/`encodings` field names) is fully visible in the shipped bundle. In production this is currently caught by `ChartErrorBoundary` (degrades to a friendly error message instead of a blank crash), but the underlying decode function still violates its own return-type contract, and any future caller that doesn't wrap the render in an error boundary reintroduces the original CR-01 crash.
-**Fix:** Always return the normalized array, not the raw `parsed` value:
-```ts
-// step 8
-return charts
-```
-(and drop the "a bare single chart-shaped object is also accepted" allowance from the doc comment, or explicitly wrap it — but either way, the returned value must always be an array so it actually matches `IChart[] | undefined`.)
+The issues below are outside `dialogLifecycle.ts`, in the surrounding files: two real inconsistencies (a stale-cache correctness gap in `duckdb.ts`, and a lockfile/manifest range mismatch introduced by this phase's `package.json` diff) and one UX/error-classification gap that mirrors a pattern this codebase otherwise cares about (G-03-2b) but misses one case of it.
 
 ## Warnings
 
-### WR-01: `isChartLike` accepts an array-typed `encodings`, silently disabling the T-03-11 schema-drift check for that payload
+### WR-01: `resetDb()` does not clear the stale Parquet file-registration cache
 
-**File:** `src/lib/shareLink.ts:84-88`
-**Issue:** `isChartLike` only checks `typeof candidate.encodings === 'object' && candidate.encodings !== null`. Since `typeof [] === 'object'`, a payload like `{"visId":"v1","encodings":[]}` passes this guard even though `DraggableFieldState` (the type the comment says is being validated) is never an array. Because `collectShelfFieldReferences` iterates `SHELF_CHANNEL_KEYS` with `key in encodings`, and none of those string keys are own properties of an array, the shelf-field-reference check silently finds zero references and lets the payload through with no field validation at all. I confirmed this directly:
-```
-array-encodings decoded -> [{"visId":"v1","encodings":[]}]
-```
-This is exactly the kind of decoded value the function's own doc comment says must never reach GraphicWalker unchecked. It's mitigated by `ChartErrorBoundary`, but the dedicated shape guard added to close this gap doesn't actually close it for this input class.
+**File:** `src/services/duckdb.ts:54-56` (cache populated at `src/services/duckdb.ts:69-84`)
+**Issue:** `resetDb()` clears the module-level `dbPromise` singleton so the next `getDb()` call spins up a fresh `AsyncDuckDB` + `Worker`. But `registrationPromises` — the separate module-level cache keyed by virtual filename, used by `ensureRegistered()` to skip re-calling `registerFileURL` — is never cleared. If `resetDb()` is ever called *after* a virtual file has already been successfully registered against the old `AsyncDuckDB`/worker pair, the next `queryParquet()` call reuses the cached (already-resolved) registration promise and skips `registerFileURL` entirely on the *new* db/worker, which never actually has that file registered. The resulting `read_parquet('<virtualName>')` query would fail against the new engine with a "file not found"-class error, and the only recourse exposed to the visitor is the same retry button that just triggered the problem.
+
+Today this is not reachable through the shipped UI: `resetDb()` is only invoked from `onEngineRetry` in `ExplorerPage.tsx`, which is only rendered while `engineState.status === 'error'` — a state that, by construction, precedes any successful `queryParquet()` call (phase 2 / registration only runs after phase 1 succeeds). So no registration can exist in the cache at the moment `resetDb()` is currently called. This is a latent inconsistency between two caches that are supposed to be describing the same underlying resource, not an active bug — but it will silently misbehave the moment either (a) the retry UX is extended (e.g. a "reset explorer engine" affordance reachable after a successful load), or (b) engine-failure detection is added for a *previously working* engine (e.g. a crashed worker).
+
 **Fix:**
 ```ts
-function isChartLike(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) return false
-  const candidate = value as Record<string, unknown>
-  return (
-    typeof candidate.visId === 'string' &&
-    typeof candidate.encodings === 'object' &&
-    candidate.encodings !== null &&
-    !Array.isArray(candidate.encodings)
-  )
+export function resetDb(): void {
+  dbPromise = null
+  registrationPromises.clear()
 }
 ```
 
-### WR-02: A top-level empty array (`?chart=v1.W10`, i.e. base64 of `"[]"`) is accepted as a valid decoded chart instead of falling back to `undefined`
+### WR-02: `package.json` and `package-lock.json` disagree on the `styled-components` version range
 
-**File:** `src/lib/shareLink.ts:238-241`
-**Issue:** `charts.every(isChartLike)` on an empty array is vacuously `true` (`Array.prototype.every` returns `true` for an empty array), so `parsed = []` sails through step 6 with zero elements checked, and step 8 returns `[]`. I confirmed:
+**File:** `package.json:25`, `package-lock.json:14` (root manifest `dependencies.styled-components`)
+**Issue:** This phase's diff adds `"styled-components": "^6.1.19"` to `package.json` (matching the range recorded in the phase's own task notes: "styled-components@^6.1.19"), but the corresponding lockfile entry added in the same diff records `"styled-components": "^6.5.3"` in `package-lock.json`'s root package manifest, and the resolved package is pinned at `6.5.3`. Verified independently:
 ```
-empty array decoded -> []
+package.json declares:       ^6.1.19
+package-lock.json declares:  ^6.5.3
+resolved node_modules version: 6.5.3
 ```
-This is a real, trivially-reachable URL (`?chart=v1.W10`) and it is a different outcome from `undefined`: `ExplorerPage` distinguishes "no/invalid share param → let GraphicWalker create its own default chart" (`decodedChart === undefined`) from "a specific chart to restore" — the doc comment's design intent is explicit that a malformed/stale link should behave like there was no link at all. An empty array instead sets `chart={[]}`, which is neither of those two intended states and produces a survey view with zero chart tabs instead of a fresh default chart.
-**Fix:** Reject an empty top-level array explicitly:
+`6.5.3` does satisfy `^6.1.19`, so `npm ci` currently succeeds (verified locally with a clean `npm ci` run) and CI is not currently broken by this. But the lockfile does not actually reflect what `package.json` asks for — someone ran `npm install styled-components` (grabbing latest-matching-`^6`, `6.5.3`) and then hand-edited `package.json`'s range down to `^6.1.19` without regenerating the lockfile, or vice versa. This is a real, verifiable drift between the two files this phase's diff introduced together, and it will produce confusing/unexpected diffs the next time anyone runs a plain `npm install` locally (npm will try to reconcile the two disagreeing sources).
+**Fix:** Run `npm install` (or `npm install styled-components@^6.1.19`) and commit the regenerated `package-lock.json` so both files agree, or update `package.json` to `"styled-components": "^6.5.3"` if `6.5.3` was the intended floor.
+
+### WR-03: `ExplorerPage`'s `load-failed` data error offers a Retry button even for a permanently-malformed `meta.json`
+
+**File:** `src/pages/ExplorerPage.tsx:172-182`, retry button at `:225-230`
+**Issue:** The Phase-2 classifier explicitly special-cases a `meta.json` 404 as `kind: 'not-found'` (no retry offered — "retrying a survey that does not exist cannot succeed", per the comment at line 221) specifically *because* G-03-2b already established that offering a retry for a permanent failure misleads the visitor. But the same classifier collapses a *different* permanent failure into the generic `'load-failed'` kind, which *does* render a Retry button:
 ```ts
-if (charts.length === 0 || !charts.every(isChartLike)) {
-  return undefined
+try {
+  const meta = parseEnquestaMeta(metaResult.value)
+  setDataState({ status: 'success', data: { meta, rows: rowsResult.value } })
+} catch {
+  setDataState({ status: 'error', kind: 'load-failed' })   // <-- retry offered
 }
 ```
-
-### WR-03: `SurveySummaryModal`'s fetch effect never resets `state` to `loading` when `enquestaId` changes, so a previous survey's summary can render as stale content
-
-**File:** `src/components/SurveySummaryModal.tsx:69-98`
-**Issue:** The data-fetch effect (`[enquestaId, idValid]`) only transitions `state` on success or failure — it never sets `{ status: 'loading' }` synchronously when `enquestaId` changes. `HomePage.tsx:88` renders `<SurveySummaryModal enquestaId={openEnquestaId} onClose={onCloseSummary} />` without a `key={openEnquestaId}`, so if `enquestaId` changes while the component instance stays mounted (e.g. the visitor uses the browser Back/Forward buttons to move between two different `?enquesta=A` / `?enquesta=B` history entries created by two separate `onSelect` calls — each `onSelect` pushes a new search-param via `setSearchParams`), the modal keeps displaying survey A's already-fetched title/description/KPIs while the fetch for survey B is in flight, instead of showing the loading skeleton. If the fetch for B later fails, the stale content for A is eventually replaced by the error state, but there is a window where the visitor is looking at the wrong survey's data under the new URL/dialog.
-**Fix:** Reset to loading synchronously whenever the effect re-runs for a new id:
+If `metaResult.value` is valid JSON but fails `parseEnquestaMeta`'s schema validation (a genuinely malformed/corrupt published `meta.json` — e.g. a bad hand-edit, a broken publish step), that is exactly as permanent a failure as the 404 case: retrying will re-fetch the same malformed file and fail identically every time, forever. The visitor is shown "Comprova la connexió i torna-ho a provar" (check your connection and try again) and a working-looking retry button for a failure that has nothing to do with connectivity and can never be resolved by retrying.
+**Fix:** Add a third `DataErrorKind` (e.g. `'invalid-data'`) for the schema-validation-failure branch specifically, and don't pass `onRetry` for it — mirroring exactly the treatment already given to `'not-found'`:
 ```ts
-useEffect(() => {
-  if (!idValid) return
-  setState({ status: 'loading' })
-  let cancelled = false
-  fetch(metaUrl(enquestaId))
-    // ...
+type DataErrorKind = 'not-found' | 'load-failed' | 'invalid-data'
+// ...
+try {
+  const meta = parseEnquestaMeta(metaResult.value)
+  setDataState({ status: 'success', data: { meta, rows: rowsResult.value } })
+} catch {
+  setDataState({ status: 'error', kind: 'invalid-data' })
+}
+// ...
+content = dataState.kind === 'not-found' || dataState.kind === 'invalid-data'
+  ? <ErrorState title={NOT_FOUND_TITLE} message={LOAD_FAILED_MESSAGE} />
+  : <ErrorState title={LOAD_FAILED_TITLE} message={LOAD_FAILED_MESSAGE} onRetry={onDataRetry} />
 ```
-
-### WR-04: `SurveySummaryModal` shows the same generic error message for "survey not found" and "load failed", reproducing the exact conflation G-03-2b fixed elsewhere
-
-**File:** `src/components/SurveySummaryModal.tsx:86-92`
-**Issue:** The fetch `.catch()` always sets `message: "No s'ha pogut carregar el resum d'aquesta enquesta."`, regardless of whether the fetch failed because the survey genuinely doesn't exist (`metaUrl` 404, e.g. a stale `?enquesta=` link to a removed survey) or because of a transient network failure. This is the identical pattern the `g-03-2b-wrong-error-copy.md` root-cause investigation diagnosed and fixed in `ExplorerPage` (distinct `not-found` vs `load-failed` kinds, per `DataErrorKind`), but the fix was scoped only to `ExplorerPage` — `SurveySummaryModal`, which hits the exact same `metaUrl(id)` endpoint, was never updated and still conflates the two cases.
-**Fix:** Mirror `ExplorerPage`'s `DataErrorKind` classification here (distinguish `res.status === 404` and skip surfacing a misleading generic message for a survey that doesn't exist).
 
 ## Info
 
-### IN-01: Engine-init error state renders the same sentence twice (title + message both start identically)
+### IN-01: Array index used as React `key` for the KPI grid
 
-**File:** `src/pages/ExplorerPage.tsx:129,213`
-**Issue:** The caught error sets:
-```ts
-message: "No s'ha pogut inicialitzar el motor de consultes. Comprova la connexió i torna-ho a provar."
-```
-and the render branch passes:
-```tsx
-<ErrorState title="No s'ha pogut inicialitzar el motor de consultes." message={engineState.message} onRetry={onEngineRetry} />
-```
-`ErrorState` renders `title` in bold above `message` — so the visitor sees "No s'ha pogut inicialitzar el motor de consultes." twice in a row (once as the heading, then again verbatim as the first sentence of the body text) before the actually-new "Comprova la connexió..." sentence.
-**Fix:** Drop the duplicated lead sentence from the `message`, e.g. `message: "Comprova la connexió i torna-ho a provar."`.
+**File:** `src/components/SurveySummaryModal.tsx:180-185`
+**Issue:** `state.data.kpis.map((kpi, i) => (<div key={i} ...>`. Each KPI has a stable, unique `label` already available; using the array index as the key is a well-known React footgun if the list is ever filtered/reordered/spliced (stale DOM state attached to the wrong item). Not currently exploitable since the KPI array is static per fetch, but it's a one-line fix and a common source of subtle bugs if this component is extended later.
+**Fix:** `key={kpi.label}` (or `${kpi.label}-${i}` if labels aren't guaranteed unique).
 
-### IN-02: `shareLink.test.ts` has no coverage for the shape edge cases that WR-01/WR-02/CR-01 exploit
+### IN-02: Transitive dependency tree carries 10 known high-severity advisories
 
-**File:** `src/lib/shareLink.test.ts`
-**Issue:** The hostile/stale-input test suite (`decodeShareLink hostile/stale input handling`) is thorough for the base64/JSON/version-tag/length layers and for shelf-field rejection, but it never exercises: a top-level empty array (`[]`), an `encodings` value that is itself an array, or a top-level single chart-shaped object rather than an array. All three are exactly the cases where the current implementation misbehaves (see CR-01, WR-01, WR-02) — none of the three fail a test today, so a regression here would ship silently.
-**Fix:** Add cases such as:
-```ts
-it('returns undefined for a top-level empty array', () => {
-  const encoded = encodeShareLink([])!
-  expect(decodeShareLink(encoded, KNOWN_FIELDS)).toBeUndefined()
-})
-it('returns undefined for a chart with a non-object (array) encodings', () => {
-  const encoded = encodeShareLink([{ visId: 'v1', encodings: [] }])!
-  expect(decodeShareLink(encoded, KNOWN_FIELDS)).toBeUndefined()
-})
-it('normalizes a bare single chart object into an array, not returned as-is', () => {
-  const spec = makeSpec()[0]
-  const encoded = encodeShareLink(spec)!
-  const decoded = decodeShareLink(encoded, KNOWN_FIELDS)
-  expect(Array.isArray(decoded)).toBe(true)
-})
-```
+**File:** `package.json` / `package-lock.json` (via `@kanaries/graphic-walker` → `vega`/`vega-functions`/`vega-lite`/`vega-expression` → `nanoid`, and `vega-webgl-renderer` → `d3-color`)
+**Issue:** `npm audit --omit=dev` reports 10 high-severity advisories, all transitive from the mandated `@kanaries/graphic-walker` dependency: a `d3-color` ReDoS, three `vega`-family XSS-via-`toString`-under-`VEGA_DEBUG` advisories, and a `nanoid` predictable-output advisory. These are not introduced by a choice this phase's author made — `@kanaries/graphic-walker` is a project-mandated dependency and no non-breaking upgrade path exists yet (`npm audit fix --force` would downgrade `@kanaries/graphic-walker` to `0.2.18`, a breaking change). The `VEGA_DEBUG`-gated XSS advisories are not exploitable in this app as shipped (the app never sets that global). Flagging for tracking/awareness only — worth revisiting when `@kanaries/graphic-walker` publishes a release with patched `vega`/`nanoid` transitive versions.
+**Fix:** No action required now; track upstream `@kanaries/graphic-walker` releases and re-run `npm audit` after future version bumps.
+
+### IN-03: Hardcoded exact byte-length assertion in the asset-verification script
+
+**File:** `scripts/verify-explorer-assets.mjs:109-113`
+**Issue:** `if (parquetBody.byteLength !== 5597) throw ...` asserts the fixture Parquet file is *exactly* 5597 bytes. This is a deliberate, narrow verification (proving the file is served byte-identical, not truncated/corrupted by the build+serve pipeline), but it's brittle: regenerating the fixture with a different Parquet writer version, compression setting, or even row-group metadata ordering would change the byte count by a few bytes and fail this script even though nothing is actually broken.
+**Fix:** No change required for correctness, but consider deriving the expected size from a checked-in fixture stat (e.g. read the size of `public/data/enquestes/mostra-sintetica_respostes.parquet` from disk before the build) rather than a bare literal, so the assertion tracks the fixture instead of needing manual updates whenever it's regenerated.
 
 ---
 
-_Reviewed: 2026-08-27T23:10:00Z_
+_Reviewed: 2026-08-28T17:06:13Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
