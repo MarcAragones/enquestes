@@ -1,20 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
-updated: 2026-08-29T00:12:00Z
+updated: 2026-08-29T00:16:00Z
 ---
 
 ## Current Test
 
-number: 12
-name: Color/Size/Filter shelf drag-and-drop
-expected: |
-  Open /enquesta/mostra-sintetica, drag canal onto Color and add a territori filter,
-  alongside X/Y fields already confirmed working. Chart re-renders reflecting the Color
-  encoding and the filter, with no console errors.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -137,20 +131,20 @@ expected: |
   Open /enquesta/mostra-sintetica, drag canal onto Color and add a territori filter,
   alongside X/Y fields already confirmed working. Chart re-renders reflecting the Color
   encoding and the filter, with no console errors.
-result: [pending]
+result: pass
 
 ### 13. Chart image export (EXPL-10)
 expected: |
   Build a chart, use GraphicWalker's own toolbar export control, confirm a valid image
   file (PNG or SVG) downloads and opens correctly.
-result: [pending]
+result: pass
 
 ## Summary
 
 total: 13
-passed: 6
+passed: 8
 issues: 3
-pending: 2
+pending: 0
 skipped: 2
 blocked: 0
 
