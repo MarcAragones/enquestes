@@ -1,23 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
-updated: 2026-08-27T23:51:52Z
+updated: 2026-08-28T00:15:00Z
 ---
 
 ## Current Test
 
-number: 5
-name: SurveySummaryModal StrictMode lifecycle + fresh content on id change
-expected: |
-  1. Run `npm run dev`. On the homepage, click a survey card. The modal opens and STAYS open (no immediate flash-close).
-  2. With the modal open, press Escape — it closes and the `?enquesta=` param is removed.
-  3. Reopen it, click the backdrop (outside the dialog) — it closes the same way.
-  4. Reopen it, click "Tanca" — it closes the same way.
-  5. Navigate so two different `?enquesta=` history entries exist, then use the browser Back/Forward buttons to switch between them while the modal stays mounted — the modal should show a loading state for the new id, never the previous survey's stale content.
-  6. Repeat step 1 against the production build (`npm run build && npm run preview:pages`) to confirm no regression there.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -32,9 +23,8 @@ expected: |
   3. Toggling dark mode restyles the header and, if GraphicWalker's appearance prop was found, the canvas too — no light-panel-inside-dark-page mismatch.
   4. Narrow the window to ~375px and then ~768px: the header wraps or truncates but the back-link and toggle stay reachable and nothing overflows horizontally.
   5. Visit /enquesta/no-existeix-aquesta — the header still renders and the back-link still works alongside the "No s'ha trobat aquesta enquesta." copy.
-result: issue
-reported: "Veig dos errors. 1. Critic. Quan vaig a la pàgina inicial i clico una enquesta, s'obre el pop-up però es tanca immediatament. 2. Petit. Quan vaig a l'enllaç d'una enquesta que no existeix, l'error que surt és \"No s'han pogut carregar les enquestes\". Sembla que està intentant carregar una cosa que no existeix."
-severity: blocker
+result: skipped
+reason: "Superseded — both reported defects (G-03-2, G-03-2b) were diagnosed, fixed by gap-closure plans 03-04/03-06, and code-reviewed; re-verification of the exact same behavior is carried by tests 5 and 6 below."
 
 ### 3. Data dictionary panel — collapse/expand, field rendering, keyboard operability, narrow viewport, production build
 expected: |
@@ -57,9 +47,8 @@ expected: |
   6. Truncate the chart parameter to a few characters and load it. Same silent blank result.
   7. Paste a link built for a different survey id and confirm it opens that survey's explorer without applying a spec referencing fields that survey does not have.
   8. At ~375px width the header still wraps or truncates without pushing the Copy-link button off-screen.
-result: issue
-reported: "1. Si copio l'enllaç, no veig la gràfica que havia fet prèviament. 2. El bar chart no ocupa tot l'espai. Queda reduit a una petita part. Hauria de ser mes gran"
-severity: major
+result: skipped
+reason: "Superseded — both reported defects (G-03-4, G-03-4b) were diagnosed, fixed by gap-closure plans 03-05/03-06, and code-reviewed (plus an additional CR-01/WR-01/WR-02 decodeShareLink fix pass); re-verification of the exact same behavior is carried by test 7 below."
 
 ### 5. SurveySummaryModal StrictMode lifecycle + fresh content on id change (G-03-2, WR-03 gap-closure fix)
 expected: |
@@ -69,14 +58,18 @@ expected: |
   4. Reopen it, click "Tanca" — it closes the same way.
   5. Navigate so two different `?enquesta=` history entries exist, then use the browser Back/Forward buttons to switch between them while the modal stays mounted — the modal should show a loading state for the new id, never the previous survey's stale content.
   6. Repeat step 1 against the production build (`npm run build && npm run preview:pages`) to confirm no regression there.
-result: pending
+result: issue
+reported: "The modal closes immediately"
+severity: blocker
 
 ### 6. Not-found vs load-failed error copy (G-03-2b gap-closure fix)
 expected: |
   1. In the production preview, visit `/enquesta/no-existeix-aquesta` and a malformed id. Both should show "No s'ha trobat aquesta enquesta." with NO retry button.
   2. Confirm `mostra-sintetica` still loads normally (no regression).
   3. If you can force a genuine transient load failure (e.g. offline/throttled network on a valid id), confirm it still shows the load-failed heading WITH a working "Torna-ho a provar" retry — distinct from the not-found copy in step 1.
-result: pending
+result: issue
+reported: "1. I got \"No s'han pogut carregar les dades d'aquesta enquesta.\" 2. mostra-sintetica loads normally"
+severity: major
 
 ### 7. Chart canvas fill + share-link round trip at full size (G-03-4, G-03-4b gap-closure fixes)
 expected: |
@@ -85,15 +78,15 @@ expected: |
   2. Click "Copia l'enllaç", paste into a fresh tab. Confirm it reproduces the EXACT same chart (same fields/shelves/mark type) AND renders it at full size (not shrunk).
   3. Hand-edit the pasted URL's chart parameter to garbage, truncate it, and try a link built for a different survey id — each should land on a silent, blank, usable explorer with no error.
   4. At ~375px and ~768px widths, confirm the header, data dictionary, and canvas all stay reachable with no horizontal overflow, in both light and dark mode.
-result: pending
+result: pass
 
 ## Summary
 
 total: 7
-passed: 2
+passed: 3
 issues: 2
-pending: 3
-skipped: 0
+pending: 0
+skipped: 2
 blocked: 0
 
 ## Deferred Follow-Ups
@@ -105,8 +98,10 @@ blocked: 0
 ## Gaps
 
 - gap_id: G-03-2
+  status: resolved
+  resolved_by: 03-04-PLAN.md
+  resolved_at: 2026-08-28
   truth: "Clicking a survey card on the homepage opens SurveySummaryModal and it stays open until the user dismisses it"
-  status: failed
   reason: "User reported: the popup opens then closes immediately when clicking a survey from the homepage"
   severity: blocker
   test: 2
@@ -121,8 +116,10 @@ blocked: 0
   debug_session: ".planning/debug/g-03-2-modal-closes-immediately.md"
 
 - gap_id: G-03-2b
+  status: resolved
+  resolved_by: 03-06-PLAN.md
+  resolved_at: 2026-08-28
   truth: "Visiting /enquesta/{invalid-id} shows the ExplorerPage's invalid-id copy ('No s'ha trobat aquesta enquesta.'), not the HomePage's list-load-failure copy"
-  status: failed
   reason: "User reported: visiting a non-existent survey link shows \"No s'han pogut carregar les enquestes\" (the homepage's survey-list load-failure message) instead of the expected not-found message — looks like it's trying to fetch something that doesn't exist"
   severity: minor
   test: 2
@@ -138,8 +135,10 @@ blocked: 0
   debug_session: ".planning/debug/g-03-2b-wrong-error-copy.md"
 
 - gap_id: G-03-4
+  status: resolved
+  resolved_by: 03-05-PLAN.md
+  resolved_at: 2026-08-28
   truth: "Pasting a copied share link into a fresh tab opens on the identical visualization the sharer had built (EXPL-11)"
-  status: failed
   reason: "User reported: after copying the link, the chart they had previously built is not shown when the link is opened"
   severity: major
   test: 4
@@ -155,8 +154,10 @@ blocked: 0
   debug_session: ".planning/debug/g-03-4-share-link-restore.md"
 
 - gap_id: G-03-4b
+  status: resolved
+  resolved_by: 03-06-PLAN.md
+  resolved_at: 2026-08-28
   truth: "The GraphicWalker chart canvas fills the available space rather than rendering small"
-  status: failed
   reason: "User reported: the bar chart doesn't occupy all the space — it's reduced to a small part, should be bigger"
   severity: minor
   test: 4
@@ -168,6 +169,28 @@ blocked: 0
     - "Pass defaultConfig={{ layout: { size: { mode: 'full', width: 0, height: 0 } } }} (or equivalent) to <GraphicWalker> in ExplorerPage.tsx"
     - "Note: only affects newly-created charts — a chart restored via the chart={decodedChart} share-link prop carries its own serialized layout.size, so interacts with gap G-03-4's fix"
   debug_session: ".planning/debug/g-03-4b-graphicwalker-small-canvas.md"
+
+- gap_id: G-03-5
+  truth: "Clicking a survey card on the homepage opens SurveySummaryModal and it stays open until the visitor dismisses it (03-04's gap-closure fix for G-03-2, re-verified)"
+  status: failed
+  reason: "User reported: the modal closes immediately (regression — this is the exact same blocker G-03-2 already diagnosed and supposedly fixed by 03-04-PLAN.md; the StrictMode-idempotent lifecycle effect fix did not resolve the real-browser behavior)"
+  severity: blocker
+  test: 5
+  root_cause: ""     # Filled by diagnosis
+  artifacts: []      # Filled by diagnosis
+  missing: []        # Filled by diagnosis
+  debug_session: ""  # Filled by diagnosis
+
+- gap_id: G-03-6
+  truth: "Visiting /enquesta/{invalid-id} shows the ExplorerPage's not-found copy ('No s'ha trobat aquesta enquesta.'), not a load-failed message (03-06's gap-closure fix for G-03-2b, re-verified)"
+  status: failed
+  reason: "User reported: got \"No s'han pogut carregar les dades d'aquesta enquesta.\" instead of the not-found copy — the load-failed branch fires instead of the not-found branch for a nonexistent survey id in the production preview (regression — this is the same class of misclassification G-03-2b already diagnosed and supposedly fixed by 03-06-PLAN.md)"
+  severity: major
+  test: 6
+  root_cause: ""     # Filled by diagnosis
+  artifacts: []      # Filled by diagnosis
+  missing: []        # Filled by diagnosis
+  debug_session: ""  # Filled by diagnosis
 
 Two backstop truths from the plans have no automatable test and no held-out fixture, and are not part of the 4 tests above since they require assets that don't exist yet:
 - Zero-row Parquet rendering GraphicWalker's own empty canvas (03-01-PLAN.md backstop truth) — no zero-row Parquet fixture exists in the repo.
