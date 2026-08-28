@@ -132,11 +132,20 @@ export function SurveySummaryModal({ enquestaId, onClose }: SurveySummaryModalPr
 
   const handleExplore = () => navigate(`/enquesta/${encodeURIComponent(enquestaId)}`)
 
+  // `m-auto` restores the browser's own `dialog:modal { margin: auto }`
+  // centering, which Tailwind v4 Preflight's universal `*, ::backdrop
+  // { margin: 0 }` reset destroys: an author-origin rule always outranks a
+  // user-agent rule regardless of specificity, so Preflight's base-layer
+  // margin reset silently wins over the UA stylesheet without this. This
+  // utility-layer class is what wins the resulting author-vs-author fight,
+  // since Tailwind declares its layers `theme, base, components, utilities`
+  // in that order. Load-bearing, not decorative — see G-03-7 /
+  // tailwindlabs/tailwindcss#16372.
   return (
     <dialog
       ref={dialogRef}
       onClick={handleBackdropClick}
-      className="w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 text-zinc-900 backdrop:bg-black/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+      className="m-auto w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 text-zinc-900 backdrop:bg-black/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
     >
       {!idValid && (
         <div className="rounded-lg border border-red-300 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
