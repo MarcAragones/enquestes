@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
-updated: 2026-08-28T20:10:00Z
+updated: 2026-08-28T20:20:00Z
 ---
 
 ## Current Test
@@ -221,10 +221,13 @@ blocked: 0
   reason: "User reported (during the G-03-5 re-test): the modal renders pinned to the top-left of the screen instead of centered"
   severity: cosmetic
   test: 8
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Tailwind v4 Preflight's universal margin-reset rule (`*, ::before, ::after, ::backdrop { margin: 0 }`, node_modules/tailwindcss/preflight.css:7-16, pulled in unconditionally by `@import \"tailwindcss\";` in src/index.css:6) is an author-origin normal-priority CSS rule. Author-origin normal rules always beat user-agent-origin normal rules in the CSS cascade regardless of selector specificity — origin/importance is resolved before specificity is compared. This unconditionally overrides the browser's built-in `dialog:modal { position: fixed; inset-block: 0; margin: auto; }` UA-stylesheet rule — specifically its `margin: auto`, the sole mechanism that auto-centers a native <dialog> opened via showModal(). The <dialog>'s className has no m-auto/centering utility to counteract Preflight, so it's left `margin: 0` while still `position: fixed; inset-block: 0`, collapsing it to the top-left of the viewport. Confirmed present in the production build's compiled CSS too (not dev-only). Not introduced by 03-07 (git show a4cb543 confirms the <dialog> JSX/className is byte-identical before/after — 03-07 only touched the lifecycle effect bodies); pre-existing since the element was first created, invisible until now because G-03-5 made the dialog self-close before anyone could observe its resting position. Matches a known, previously-filed upstream Tailwind issue (tailwindlabs/tailwindcss#16372, discussion #13298, analogous issue #17593 for [popover] elements)."
+  artifacts:
+    - path: "src/components/SurveySummaryModal.tsx"
+      issue: "<dialog> element's className (lines ~136-139) is missing an m-auto (or equivalent) centering utility to counteract Tailwind Preflight's margin reset"
+  missing:
+    - "Add m-auto to the <dialog> element's className in SurveySummaryModal.tsx — as an author-origin utility-layer rule it wins the author-vs-author cascade fight against Preflight's @layer base rule (utilities are declared after base in Tailwind's @layer theme, base, components, utilities; order), restoring native dialog centering"
+  debug_session: ".planning/debug/g-03-7-modal-not-centered.md"
 
 - gap_id: G-03-6
   truth: "Visiting /enquesta/{invalid-id} shows the ExplorerPage's not-found copy ('No s'ha trobat aquesta enquesta.'), not a load-failed message (03-06's gap-closure fix for G-03-2b, re-verified)"
