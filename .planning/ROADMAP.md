@@ -88,7 +88,7 @@ Plans:
   4. User can view field descriptions (data dictionary) from `meta.json` inside the explorer, and export the current chart as an image (PNG/SVG)
   5. User can generate and copy a link that reproduces the exact current visualization (fields and active filters) via query params
 
-**Plans**: 7 plans (6 executed; 4 gap-closure plans added after UAT, 03-07 pending)
+**Plans**: 8 plans (7 executed; 5 gap-closure plans added after UAT, 03-08 pending)
 
 Plans:
 **Wave 1**
@@ -114,7 +114,11 @@ Plans:
 
 **Gap closure (post-UAT re-test) — Wave 1**
 
-- [ ] 03-07-PLAN.md — G-03-5 (blocker, second attempt at the G-03-2 symptom): extract the `<dialog>` lifecycle into a testable module with a suppression counter that absorbs StrictMode-initiated closes regardless of whether the native `close` event is dispatched synchronously or as a queued task, plus a node-environment reproduction test that fails against 03-04's implementation (HOME-03, HOME-04)
+- [x] 03-07-PLAN.md — G-03-5 (blocker, second attempt at the G-03-2 symptom): extract the `<dialog>` lifecycle into a testable module with a suppression counter that absorbs StrictMode-initiated closes regardless of whether the native `close` event is dispatched synchronously or as a queued task, plus a node-environment reproduction test that fails against 03-04's implementation (HOME-03, HOME-04)
+
+**Gap closure (post-UAT re-verification) — Wave 1**
+
+- [ ] 03-08-PLAN.md — G-03-7 (cosmetic): restore the `<dialog>`'s native `showModal()` centering with an author-origin auto-margin utility, which Tailwind v4 Preflight's universal `margin: 0` base reset had been overriding, and assert the utility reaches the compiled production CSS (HOME-03, HOME-04)
 
 **UI hint**: yes
 
