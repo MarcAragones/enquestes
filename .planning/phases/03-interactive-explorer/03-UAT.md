@@ -1,26 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
-updated: 2026-08-28T19:15:00Z
+updated: 2026-08-28T20:10:00Z
 ---
 
 ## Current Test
 
-number: 8
-name: SurveySummaryModal StrictMode lifecycle click-through under `npm run dev` (G-03-5 gap-closure re-test, WINDOWS.md id 8)
-expected: |
-  1. Run `npm run dev`. Click a survey card. The modal opens. WAIT at least 2 full seconds without touching anything — the modal and `?enquesta=` must both still be present.
-  2. Repeat step 1 four more times with different cards (5 total, 2s wait each) — the race is timing-dependent, so one success is not evidence.
-  3. With the modal open, press Escape — closes, `?enquesta=` disappears, wait 2s, nothing else changes.
-  4. Reopen, click the backdrop — same result.
-  5. Reopen, click "Tanca" — same result.
-  6. Reopen, click "Explorar dades interactives" — navigates to `/enquesta/:id`, and the explorer page must be fully interactive (scroll, back-link, data dictionary click).
-  7. Browser Back from the explorer to homepage, click a card again, wait 2s — still open.
-  8. No new console errors/warnings across all of the above.
-  9. Then `npm run build && npm run preview:pages`, repeat steps 1 and 3 only (production/no-StrictMode regression check).
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -103,7 +91,9 @@ expected: |
   7. Browser Back from the explorer to homepage, click a card again, wait 2s — still open.
   8. No new console errors/warnings across all of the above.
   9. Then `npm run build && npm run preview:pages`, repeat steps 1 and 3 only (production/no-StrictMode regression check).
-result: pending
+result: issue
+reported: "G-03-5 core regression CONFIRMED FIXED: modal stays open through the 2s waits, and Escape/backdrop/'Tanca' each close it correctly. New defect found: the modal renders pinned to the top-left of the screen instead of centered ('Despres veig que el modal es veu a dalt a l'esquerra de tot. No hauria d'estar al centre de la pantalla?'). Catalog only has 1 seed survey (mostra-sintetica), so the 5-different-cards step was substituted with 5 repeats on the same card, per plan intent — not itself a defect. 'Explorar dades interactives' unmount-while-open path and the production-preview regression check (step 9) were not explicitly re-confirmed this round."
+severity: cosmetic
 
 ### 9. G-03-6 fresh re-test — not-found vs load-failed error copy, clean environment
 expected: |
@@ -115,14 +105,14 @@ expected: |
   (curl, Node fetch, 4/4 real headless-Chrome end-to-end runs) could not reproduce a code defect,
   so a clean re-test would close this as transient environment state, while a Network-tab
   observation would finally confirm a real cause.
-result: pending
+result: pass
 
 ## Summary
 
 total: 9
-passed: 3
-issues: 2
-pending: 2
+passed: 4
+issues: 3
+pending: 0
 skipped: 2
 blocked: 0
 
@@ -208,8 +198,10 @@ blocked: 0
   debug_session: ".planning/debug/g-03-4b-graphicwalker-small-canvas.md"
 
 - gap_id: G-03-5
+  status: resolved
+  resolved_by: 03-07-PLAN.md
+  resolved_at: 2026-08-28
   truth: "Clicking a survey card on the homepage opens SurveySummaryModal and it stays open until the visitor dismisses it (03-04's gap-closure fix for G-03-2, re-verified)"
-  status: failed
   reason: "User reported: the modal closes immediately (regression — this is the exact same blocker G-03-2 already diagnosed and supposedly fixed by 03-04-PLAN.md; the StrictMode-idempotent lifecycle effect fix did not resolve the real-browser behavior)"
   severity: blocker
   test: 5
@@ -223,13 +215,26 @@ blocked: 0
     - "Option (b): do not call dialog.close() in the mount effect's cleanup at all (the DOM node is being removed from the document anyway on a genuine unmount) — verify Escape/backdrop/Tanca dismissal still work correctly afterward"
   debug_session: ".planning/debug/g-03-5-modal-still-closes.md"
 
+- gap_id: G-03-7
+  truth: "SurveySummaryModal's <dialog> is horizontally and vertically centered on the viewport when opened via showModal(), matching the browser's native top-layer centering behavior"
+  status: failed
+  reason: "User reported (during the G-03-5 re-test): the modal renders pinned to the top-left of the screen instead of centered"
+  severity: cosmetic
+  test: 8
+  root_cause: ""
+  artifacts: []
+  missing: []
+  debug_session: ""
+
 - gap_id: G-03-6
   truth: "Visiting /enquesta/{invalid-id} shows the ExplorerPage's not-found copy ('No s'ha trobat aquesta enquesta.'), not a load-failed message (03-06's gap-closure fix for G-03-2b, re-verified)"
-  status: failed
+  status: resolved
+  resolved_by: "clean re-test (test 9) — closed as transient local environment state, not a code gap, per this gap's own documented next step"
+  resolved_at: 2026-08-28
   reason: "User reported: got \"No s'han pogut carregar les dades d'aquesta enquesta.\" instead of the not-found copy — the load-failed branch fires instead of the not-found branch for a nonexistent survey id in the production preview (regression — this is the same class of misclassification G-03-2b already diagnosed and supposedly fixed by 03-06-PLAN.md)"
   severity: major
   test: 6
-  status_note: "unresolved — inconclusive after two debug passes; awaiting user re-test before any fix plan"
+  status_note: "Resolved 2026-08-28: fresh terminal + fresh tab re-test (UAT test 9) against `npm run build && npm run preview:pages` came back clean — not-found copy shown correctly, no retry button, mostra-sintetica unaffected. Confirms the two debug passes' conclusion that no code defect exists; the original report was local/session-state noise."
   root_cause: "Investigation inconclusive after two independent passes. Pass 1 hypothesized the wrong preview server (plain `npm run preview` vs `npm run preview:pages`) — REFUTED by the user, who confirmed they used `npm run preview:pages`. Pass 2 then verified, three independent ways, that ExplorerPage.tsx's classification logic is correct and unchanged since the 331116f fix: (1) source + built-bundle inspection show the logic unmangled, (2) `scripts/gh-pages-preview.mjs` returns genuine HTTP 404 for the missing meta.json via curl, Node fetch, AND real headless Chrome fetch, (3) a full end-to-end run in real headless Chrome — real DuckDB-Wasm engine init, real fetch() calls for meta.json and the .parquet file — correctly rendered the not-found copy with no retry, reproduced cleanly 4/4 times with zero variance. Also ruled out: BASE_URL mismatch, a service worker (none exists in this codebase), a stale pre-fix dist/ build (the user's reported text is a character-for-character match of the CURRENT post-fix LOAD_FAILED_TITLE, not the old pre-fix wording), and a fixtures-file misconfiguration. No code defect could be found or reproduced. Remaining possibilities are local/session-state artifacts on the user's machine at UAT time (a stray leftover meta.json fixture file, or a second stale server process already bound to port 4173 serving an older dist/ snapshot) that cannot be reconstructed or confirmed from the repository checkout alone."
   artifacts: []
   missing:
