@@ -1,14 +1,26 @@
 ---
-status: diagnosed
+status: testing
 phase: 03-interactive-explorer
 source: [03-VERIFICATION.md]
 started: 2026-08-27T00:40:00Z
-updated: 2026-08-28T01:30:00Z
+updated: 2026-08-28T19:15:00Z
 ---
 
 ## Current Test
 
-[testing complete]
+number: 8
+name: SurveySummaryModal StrictMode lifecycle click-through under `npm run dev` (G-03-5 gap-closure re-test, WINDOWS.md id 8)
+expected: |
+  1. Run `npm run dev`. Click a survey card. The modal opens. WAIT at least 2 full seconds without touching anything — the modal and `?enquesta=` must both still be present.
+  2. Repeat step 1 four more times with different cards (5 total, 2s wait each) — the race is timing-dependent, so one success is not evidence.
+  3. With the modal open, press Escape — closes, `?enquesta=` disappears, wait 2s, nothing else changes.
+  4. Reopen, click the backdrop — same result.
+  5. Reopen, click "Tanca" — same result.
+  6. Reopen, click "Explorar dades interactives" — navigates to `/enquesta/:id`, and the explorer page must be fully interactive (scroll, back-link, data dictionary click).
+  7. Browser Back from the explorer to homepage, click a card again, wait 2s — still open.
+  8. No new console errors/warnings across all of the above.
+  9. Then `npm run build && npm run preview:pages`, repeat steps 1 and 3 only (production/no-StrictMode regression check).
+awaiting: user response
 
 ## Tests
 
@@ -80,12 +92,37 @@ expected: |
   4. At ~375px and ~768px widths, confirm the header, data dictionary, and canvas all stay reachable with no horizontal overflow, in both light and dark mode.
 result: pass
 
+### 8. SurveySummaryModal StrictMode lifecycle click-through under `npm run dev` (G-03-5 gap-closure re-test, 03-07-PLAN.md Task 2 human-check, WINDOWS.md id 8)
+expected: |
+  1. Run `npm run dev`. Click a survey card. The modal opens. WAIT at least 2 full seconds without touching anything — the modal and `?enquesta=` must both still be present.
+  2. Repeat step 1 four more times with different cards (5 total, 2s wait each) — the race is timing-dependent, so one success is not evidence.
+  3. With the modal open, press Escape — closes, `?enquesta=` disappears, wait 2s, nothing else changes.
+  4. Reopen, click the backdrop — same result.
+  5. Reopen, click "Tanca" — same result.
+  6. Reopen, click "Explorar dades interactives" — navigates to `/enquesta/:id`, and the explorer page must be fully interactive (scroll, back-link, data dictionary click).
+  7. Browser Back from the explorer to homepage, click a card again, wait 2s — still open.
+  8. No new console errors/warnings across all of the above.
+  9. Then `npm run build && npm run preview:pages`, repeat steps 1 and 3 only (production/no-StrictMode regression check).
+result: pending
+
+### 9. G-03-6 fresh re-test — not-found vs load-failed error copy, clean environment
+expected: |
+  In a FRESH terminal (kill anything already bound to port 4173) and a fresh/incognito tab, run
+  `npm run build && npm run preview:pages`, visit `/enquesta/no-existeix-aquesta` and a malformed id.
+  Confirm both show "No s'ha trobat aquesta enquesta." with no retry button, and mostra-sintetica
+  still loads normally. If it still reproduces the load-failed copy, open DevTools Network tab and
+  report the actual HTTP status/body for the meta.json request — two independent debug passes
+  (curl, Node fetch, 4/4 real headless-Chrome end-to-end runs) could not reproduce a code defect,
+  so a clean re-test would close this as transient environment state, while a Network-tab
+  observation would finally confirm a real cause.
+result: pending
+
 ## Summary
 
-total: 7
+total: 9
 passed: 3
 issues: 2
-pending: 0
+pending: 2
 skipped: 2
 blocked: 0
 
