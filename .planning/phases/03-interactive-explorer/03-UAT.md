@@ -257,7 +257,9 @@ blocked: 0
 
 - gap_id: G-03-7
   truth: "SurveySummaryModal's <dialog> is horizontally and vertically centered on the viewport when opened via showModal(), matching the browser's native top-layer centering behavior"
-  status: failed
+  status: resolved
+  resolved_by: 03-08-PLAN.md
+  resolved_at: 2026-08-29
   reason: "User reported (during the G-03-5 re-test): the modal renders pinned to the top-left of the screen instead of centered"
   severity: cosmetic
   test: 8
