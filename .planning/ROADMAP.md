@@ -88,7 +88,7 @@ Plans:
   4. User can view field descriptions (data dictionary) from `meta.json` inside the explorer, and export the current chart as an image (PNG/SVG)
   5. User can generate and copy a link that reproduces the exact current visualization (fields and active filters) via query params
 
-**Plans**: 8 plans (7 executed; 5 gap-closure plans added after UAT, 03-08 pending)
+**Plans**: 8/8 plans executed (7 executed; 5 gap-closure plans added after UAT, 03-08 pending)
 
 Plans:
 **Wave 1**
@@ -118,7 +118,7 @@ Plans:
 
 **Gap closure (post-UAT re-verification) — Wave 1**
 
-- [ ] 03-08-PLAN.md — G-03-7 (cosmetic): restore the `<dialog>`'s native `showModal()` centering with an author-origin auto-margin utility, which Tailwind v4 Preflight's universal `margin: 0` base reset had been overriding, and assert the utility reaches the compiled production CSS (HOME-03, HOME-04)
+- [x] 03-08-PLAN.md — G-03-7 (cosmetic): restore the `<dialog>`'s native `showModal()` centering with an author-origin auto-margin utility, which Tailwind v4 Preflight's universal `margin: 0` base reset had been overriding, and assert the utility reaches the compiled production CSS (HOME-03, HOME-04)
 
 **UI hint**: yes
 
@@ -131,4 +131,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Foundation & Survey Listing | 3/3 | Complete    | 2026-08-26 |
 | 2. Offline Data Pipeline | 3/3 | Complete    | 2026-08-26 |
-| 3. Interactive Explorer | 6/6 | In Progress|  |
+| 3. Interactive Explorer | 8/8 | In Progress|  |
