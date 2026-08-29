@@ -18,11 +18,12 @@ Qualsevol persona pot explorar interactivament (arrossegar X/Y/Color/Mida/Filtre
 - ✓ Script Python de conversió (`scripts/convert_enquesta.py`): dades reals crues (CSV/TSV/Excel exportat) → `[id]_respostes.parquet` + `[id]_meta.json` + entrada a `enquestes_index.json`, amb checklist de privacitat block-by-default (quasi-identificadors per nom, k-anonimitat per grup petit, ràtio d'unicitat) i exclusió incondicional de text lliure — Phase 2, validat contra l'export real de l'usuari (2000 files × 320 columnes)
 - ✓ Script Python de mock (`scripts/generate_mock_parquet.py`) que genera un Parquet d'exemple sense dades reals, reutilitzant els mateixos mòduls d'inferència/validació que la conversió real — Phase 2
 - ✓ Primer dataset real publicat a `public/data/` (`mostra-sintetica`, sintètic i etiquetat com a tal) — Phase 2
+- ✓ Servei DuckDB-Wasm (Singleton, `src/services/duckdb.ts`) que inicialitza al navegador sense bloquejar la UI i exposa un helper per consultar `.parquet` — Phase 3
+- ✓ Pàgina d'exploració (`/enquesta/:id`): carrega `[id]_respostes.parquet` via DuckDB-Wasm i el connecta a `<GraphicWalker />` per exploració visual lliure amb drag-and-drop X/Y/Color/Mida/Filtres, diccionari de dades, exportació d'imatge i enllaç compartible de gràfic — Phase 3
 
 ### Active
 
-- [ ] Servei DuckDB-Wasm (Singleton, `src/services/duckdb.ts`) que inicialitza al navegador sense bloquejar la UI i exposa un helper per consultar `.parquet`
-- [ ] Pàgina d'exploració (`/enquesta/:id`): carrega `[id]_respostes.parquet` via DuckDB-Wasm i el connecta a `<GraphicWalker />` per exploració visual lliure (Phase 1 la deixa amb un estat honest "encara no disponible")
+*Cap requeriment actiu — totes les fases del milestone actual estan completades.*
 
 ### Out of Scope
 
@@ -60,6 +61,11 @@ Qualsevol persona pot explorar interactivament (arrossegar X/Y/Color/Mida/Filtre
 | Llindars de privacitat: `MIN_GROUP_SIZE = 5`, `UNIQUENESS_RATIO_THRESHOLD = 0.9` (`scripts/pipeline/privacy.py`) | Valors raonables per defecte, no derivats de l'export real fins que n'hi hagués un disponible (RESEARCH A1/A2) | ✓ Validats a Phase 2 UAT contra l'export real de l'usuari sense feedback negatiu — es mantenen sense canvis |
 | Detecció automàtica del delimitador CSV (`,` vs `;`) a `load_table`, amb avís visible quan s'usa `;` | L'export real de l'usuari usava `;` (convenció d'exportació de fulls de càlcul en locale espanyol/català), cosa que trencava el parser fixat en `,` | ✓ Afegit a Phase 2 arran d'un bug real trobat en UAT (gap G-02-3), amb 4 tests de regressió |
 | D-02 (exclusió de columnes de text lliure) és un valor per defecte permanent, sense flag per reactivar-lo | Publicar text lliure de respondents és el vector de reidentificació més obvi; cap configuració hauria de poder-lo desactivar per accident | ✓ Implementat a Phase 2 (plan 02-01), verificat sense excepcions a cap plan posterior |
+| Assets DuckDB-Wasm autoallotjats via imports `?url` de Vite (bundle `eh` de fil únic, sense CDN de tercers) | GitHub Pages no pot configurar les capçaleres COOP/COEP que calen per al bundle multifil; l'autoallotjament evita aquesta dependència per complet | ✓ Implementat a Phase 3 (plan 03-01), verificat sense referències CDN a `src/` |
+| Estat de gràfic compartible via `?chart=` amb una seqüència de decodificació defensiva que mai llança excepció (límit de mida → tag de versió → base64url/UTF-8 → JSON → validació de camps contra el catàleg de la pròpia enquesta) | Un enllaç compartit és entrada totalment controlada pel visitant/atacant; calia una defensa en profunditat sense servidor per validar-lo | ✓ Implementat a Phase 3 (plans 03-03/03-05/03-06), verificat amb 19 tests i auditoria de seguretat (T-03-10/11/12, CR-01) |
+| Cicle de vida del `<dialog>` natiu del modal resum encapsulat a `openDialogLifecycle` amb un comptador de supressió propietat del cridant | React StrictMode dispara un muntatge/desmuntatge/remuntatge simulat que fa que l'esdeveniment `close` natiu (assíncron) del cicle anterior arribi al nou listener i tanqui el modal real — calien dos intents (G-03-2, G-03-5) per trobar l'arrel del problema | ✓ Implementat a Phase 3 (plan 03-07), amb tests directes per als 3 timings de despatx de l'esdeveniment |
+| Restaurar `margin: auto` a la capa `utilities` de Tailwind (no `base`) per centrar un `<dialog>` natiu | Tailwind v4 Preflight declara `margin: 0` d'origen "author" a `@layer base`, que sempre guanya la regla `margin: auto` d'origen "user-agent" del navegador independentment de l'especificitat — només una regla d'origen "author" a `utilities` (declarada després de `base`) ho pot vèncer | ✓ Implementat a Phase 3 (plan 03-08, gap G-03-7), verificat contra el CSS de producció compilat |
+| Risc acceptat: l'id de l'enquesta de la URL es reflecteix a la capçalera de pàgina fins i tot quan l'enquesta no existeix (`ExplorerHeader`'s `<h1 title={id}>`) | Necessari perquè la capçalera es mantingui visible en tots els estats (EXPL-07); sense XSS (React escapa el valor) i l'id és una entrada coneguda per l'atacant, no un secret | ✓ Acceptat a Phase 3 durant `/gsd-verify-work` (auditoria de seguretat, AR-03-10), documentat a `03-SECURITY.md` |
 
 ## Evolution
 
@@ -79,4 +85,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-26 after Phase 2*
+*Last updated: 2026-08-29 after Phase 3*
