@@ -3,6 +3,10 @@ status: diagnosed
 trigger: "G-03-5: SurveySummaryModal still closes immediately after clicking a survey card on the homepage, even after plan 03-04 (commit 90ca09d) supposedly fixed this exact bug (previously diagnosed as G-03-2, a StrictMode double-invoke dialog lifecycle bug). Goal: find_root_cause_only."
 created: 2026-08-28T00:00:00Z
 updated: 2026-08-28T00:10:00Z
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-08-29
+  status: diagnosed
 ---
 
 ## Current Focus
@@ -15,6 +19,7 @@ next_action: return ROOT CAUSE FOUND to caller; do not fix
 reasoning_checkpoint:
   hypothesis: "The 90ca09d fix's cleanup ordering (removeEventListener BEFORE dialog.close()) is built on a synchronous mental model of the dialog's native 'close' event, but the WHATWG spec mandates that close() queues the 'close' event as a TASK on the 'user interaction task source' — i.e. it fires asynchronously, not during the close() call itself. React StrictMode's dev-only mount->cleanup->remount double-invoke for a component's effects runs fully synchronously (setup, cleanup, setup all execute back-to-back within the same effect-flush pass, before any browser-queued task can run). So during the simulated unmount: cleanup removes the OLD listener and calls close() (which queues a close-event task for LATER, listener-agnostic — it doesn't matter the old listener was already removed, because the eventual dispatch just fires 'close' at the dialog element, to whatever listener happens to be attached WHEN the queued task actually runs); then, still synchronously, setup runs again and attaches a NEW listener and reopens the dialog. Only AFTER all of that completes does the browser get to run the queued close-event task from the earlier close() call — and by then the NEW listener is attached, so it receives the event and calls onClose() for real, deleting the ?enquesta= param and unmounting the modal for real. The fix's ordering defense (listener-off-before-close) only prevents a SYNCHRONOUS re-entry into the SAME listener instance; it does nothing against a listener re-attached before an asynchronously-queued event fires."
   confirming_evidence:
+
     - "WHATWG HTML spec (interactive-elements.html, dialog close() steps) text confirmed via search: dialog.close() 'queue[s] an element task on the user interaction task source given the subject element to fire an event named close at subject' — the close event is a queued task, not a synchronous side effect of calling close()."
     - "React's own documentation and multiple independent sources describe StrictMode's double-invoke sequence for a component's effects as 'setup runs, cleanup runs immediately, then setup runs again' — i.e. synchronous back-to-back execution within a single effect-flush pass, with no yield back to the browser's task queue in between."
     - "React's official docs use the EXACT showModal()/close() <dialog> pairing as their own canonical example of what StrictMode's double-invoke does to a dialog element ('your Effect will call showModal(), then immediately close(), and then showModal() again') — confirming this app's mount sequence (setup->cleanup->setup, all before any queued browser task runs) is the expected/documented StrictMode behavior, not an unusual edge case."
@@ -24,6 +29,7 @@ reasoning_checkpoint:
   fix_rationale: "n/a — goal is find_root_cause_only; a separate gap-closure plan should implement the fix. (Any correct fix must stop RELYING on listener-removal ordering relative to close(), since that defense is void once the event is known to be asynchronous — e.g. track a boolean/generation-ref distinguishing a StrictMode-cleanup-triggered close from a genuine user dismissal, or avoid calling dialog.close() in the mount effect's cleanup entirely, since the dialog DOM node is being removed from the document anyway when the component genuinely unmounts.)"
   blind_spots: "Could not execute a live browser click-through in this session either (claude-in-chrome extension not connected/set up; no jsdom/happy-dom/Playwright installed in the repo or available via npx without a network install that was blocked). The diagnosis rests on: (1) a primary-source spec citation (WHATWG's 'queue an element task... to fire an event named close' wording) obtained via WebSearch summarization rather than a direct WebFetch of the spec page's raw text, and (2) React's own documented StrictMode timing model, rather than a captured console/network trace of THIS app reproducing the failure live. The exact scheduling primitive React uses to flush passive effects (MessageChannel-based macrotask vs. microtask) was not independently pinned down, but the conclusion holds under either interpretation since the effect flush's setup->cleanup->setup sequence is universally described as completing before any effect's queued side-external-task (like the dialog's browser-level close event) can be observed to interleave partway through it."
   candidate_causes:
+
     - "code: SurveySummaryModal.tsx's dialog lifecycle effect re-attaches a live, action-invoking 'close' listener on every StrictMode remount setup, before the PRIOR close() call's asynchronously-queued 'close' event has had a chance to fire — the ordering-based fix only addresses a synchronous race, not the actual asynchronous one."
     - "environment/spec: The browser's dialog 'close' event is specified as a queued task (asynchronous), which is a non-obvious, easy-to-miss detail that both the original G-03-2 diagnosis and the 03-04 fix's own code comments implicitly assumed to be synchronous ('detach the listener BEFORE closing... that simulated close() fires into nothing')."
   and_gate: "No — a single condition (the interaction between React StrictMode's synchronous double-invoke and the dialog's asynchronously-queued close event) fully explains why the fix appeared correct on paper yet did not resolve the real-browser symptom. This is a deeper layer of the SAME root mechanism as G-03-2 (StrictMode's simulated unmount triggering the modal's own onClose), not a second, independent contributing cause — the 90ca09d fix mitigated the symptom's most obvious trigger (synchronous listener re-entry) but left the actual async trigger unaddressed."
@@ -77,6 +83,7 @@ started: |
   checked: current src/components/SurveySummaryModal.tsx in full (post all 4 commits: 90ca09d, 0965305, 3012a49, b4e9382)
   found: |
     Component now has, in render-body order:
+
     1. `dialogRef`, `onCloseRef` refs.
     2. `state` (FetchState) via useState.
     3. `trackedEnquestaId` state + render-time bailout: `if (enquestaId !== trackedEnquestaId) { setTrackedEnquestaId(enquestaId); setState({status:'loading'}) }` — a render-phase setState (WR-03 fix), runs on EVERY render where enquestaId differs from trackedEnquestaId (i.e., only the first render after enquestaId prop changes).
@@ -144,13 +151,16 @@ root_cause: |
   effect-flush pass, before the browser gets a chance to run any separately queued task.
 
   Sequence during the very first (StrictMode-doubled) mount of SurveySummaryModal:
+
     1. Effect setup #1: addEventListener('close', handlerA); dialog.showModal().
     2. StrictMode's simulated-unmount cleanup (runs immediately, synchronously): removeEventListener
        (removes handlerA); dialog.close() — this synchronously closes the dialog but only QUEUES
        the 'close' event for later; it does not fire it now.
+
     3. StrictMode's remount setup #2 (runs immediately, synchronously, still before the queued
        event fires): addEventListener('close', handlerB) [a live listener wired to real onClose
        via onCloseRef]; dialog.showModal() again (dialog.open was false after step 2's close()).
+
     4. LATER, when the browser actually processes the task queued in step 2, it fires 'close' on
        the dialog element. The only listener currently attached is handlerB (from step 3) — it
        fires, calling onCloseRef.current() (the real onClose), which deletes the `?enquesta=`

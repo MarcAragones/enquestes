@@ -3,6 +3,10 @@ status: diagnosed
 trigger: "UAT re-verification (2026-08-28), test 8, gap G-03-7: SurveySummaryModal's <dialog> opens pinned to the top-left of the viewport instead of centered, under npm run dev (and confirmed also present in a production `vite build`)."
 created: 2026-08-28T00:00:00Z
 updated: 2026-08-28T00:00:00Z
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-08-29
+  status: diagnosed
 ---
 
 ## Current Focus

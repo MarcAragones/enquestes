@@ -3,6 +3,10 @@ status: inconclusive
 trigger: "G-03-6 (03-UAT.md): Visiting /enquesta/{nonexistent-id} in the production preview still shows the load-failed message instead of not-found copy, even after 03-06 (commit 331116f) supposedly fixed this exact bug (G-03-2b) — goal: find_root_cause_only. Second pass: user confirmed npm run preview:pages was used, refuting the first pass's 'wrong server' conclusion — re-investigated to find the actual browser-vs-synthetic discrepancy."
 created: 2026-08-28T00:00:00Z
 updated: 2026-08-28T06:45:00Z
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-08-29
+  status: inconclusive
 ---
 
 ## Current Focus
@@ -17,6 +21,7 @@ bug_class: re-classified — insufficient evidence to call this a Bohrbug (deter
 reasoning_checkpoint_2 (second pass, supersedes the first — the AND-gate in the original reasoning_checkpoint below is now itself REFUTED by the user's explicit confirmation of preview:pages):
   hypothesis: "There is no discoverable code-level or browser-runtime discrepancy between the synthetic (curl/Node fetch) reproduction and real Chrome browser behavior for this exact scenario. The classification code, the metaUrl() construction, and gh-pages-preview.mjs's 404 semantics are all provably correct against a REAL Chrome browser's own fetch() implementation and a REAL end-to-end app run (genuine DuckDB-Wasm engine, genuine Worker, genuine WASM compile, genuine fetch()) — not just Node/curl proxies for browser behavior."
   confirming_evidence:
+
     - "Built a real Chrome-executed probe page (served from the actual running preview:pages instance) that runs ExplorerPage.tsx's EXACT phase-2 fetch+classify code (SurveyNotFoundError, Promise.allSettled, instanceof check, fixed-priority classifier) using the browser's OWN native fetch() — not curl, not Node's fetch. Result, captured via headless Chrome --dump-dom: 'meta fetch resolved: status=404 ok=false type=basic ... FINAL CLASSIFICATION=not-found'. This is the first evidence in this whole investigation using literal browser-native fetch() rather than a Node-side proxy for it."
     - "Ran the FULL real app end-to-end in real headless Google Chrome (not a synthetic script) against the actual running preview:pages server: full SPA-redirect dance (404.html -> query-string redirect -> index.html -> replaceState -> React mount) all observed via server request log; the real DuckDB-Wasm engine genuinely initialized (duckdb-eh-*.wasm fetched and compiled, 652ms); real fetch() calls for meta.json and the .parquet file both correctly received 404 from the server. Final rendered DOM (--dump-dom) showed 'No s'ha trobat aquesta enquesta.' with no retry button — the CORRECT not-found branch, not load-failed."
     - "Repeated the full end-to-end real-Chrome run 4 times consecutively: 4/4 correct (not-found). No intermittency/race observed — this rules out a Heisenbug/timing-race explanation for the classification path itself."
@@ -29,6 +34,7 @@ reasoning_checkpoint_2 (second pass, supersedes the first — the AND-gate in th
   fix_rationale: "n/a — find_root_cause_only mode, and no code defect was confirmed. See Resolution for the honest INCONCLUSIVE call and the recommended next step (re-verify with the user rather than changing code that has now been proven correct three independent ways: curl, Node fetch, and genuine real-Chrome end-to-end execution)."
   blind_spots: "Could not use claude-in-chrome (extension not connected in this environment) for a literal interactive click-through — relied on headless Google Chrome (real Chrome binary, not a simulation) driven via --dump-dom with a deliberate img-load-delay trick injected into dist/index.html (a build artifact, not source) to give the real DuckDB-Wasm engine genuine wall-clock time to fetch/compile/run before the page's load event (and therefore --dump-dom's capture point) fired. This is a real browser executing real code over real network calls to the real preview:pages server — about as close to 'real browser conditions' as achievable without an attached interactive session — but it is still headless, and it reuses a throwaway Chrome profile, so cannot fully rule out something specific to the human's own browser profile (a specific extension, a corporate proxy/DNS override, a locally-installed dev-tools override, or actual local disk contamination in their own dist/ or scripts/fixtures/ that isn't present in this repository checkout). Did not verify what happens if a SECOND server process (e.g. a lingering earlier `npm run preview:pages` or `npm run verify:pages` invocation) was already bound to port 4173 when the human ran the command a second time — Node would normally crash loudly on EADDRINUSE, but could not test this interactively without risking disruption to any of the user's own running processes."
   candidate_causes:
+
     - "environment (human's local disk state at UAT time): a leftover/stray file at dist/data/enquestes/no-existeix-aquesta_meta.json (or an unusual scripts/fixtures/ invocation) that briefly made the meta.json fetch resolve 200 instead of 404 — not present in this checkout's dist/ or scripts/fixtures/, so unverifiable retroactively"
     - "process (human's local session at UAT time): a second, different process was actually answering port 4173 for that one request (e.g., a stale background server from an earlier test run that hadn't been killed, serving an older dist/ snapshot) — this is a DIFFERENT and more specific variant of the already-refuted 'wrong preview command' theory: same command (preview:pages), but possibly not the process/dist/ the human thought was live"
   and_gate: "no (for this second pass) — I found no evidence of a code defect at all, so there is nothing for an environmental cause to combine WITH. Either candidate cause above is independently sufficient on its own to explain a transient 200-instead-of-404 for this one path, without any contributing code weakness (the code's exclusive reliance on res.status===404 is a known, already-flagged fragility from the first debug pass, but it functioned correctly in every reproduction here)."
@@ -36,6 +42,7 @@ reasoning_checkpoint_2 (second pass, supersedes the first — the AND-gate in th
 reasoning_checkpoint:
   hypothesis: "ExplorerPage.tsx's phase-2 not-found classification (`if (res.status === 404) throw new SurveyNotFoundError()`) is itself correct and matches the built bundle exactly, but it is silently contingent on the static file server returning a genuine HTTP 404 for a missing meta.json path. `npm run preview:pages` (the project's custom GH-Pages-404-emulating server, scripts/gh-pages-preview.mjs) DOES return a true 404 for this path, so the fix works there. Plain `npm run preview` (Vite's own built-in preview server) does NOT — it implements a blanket SPA fallback that serves index.html with HTTP 200 for ANY unmatched path, including a missing JSON asset — so `res.status === 404` never fires, `res.json()` throws a SyntaxError parsing HTML as JSON, and the fixed-priority classifier falls through to the generic 'load-failed' branch, reproducing the exact reported symptom. Both servers share the identical default port 4173 and are behaviorally indistinguishable for every other URL in the app, making it an easy mistake to run the wrong one and believe the fix regressed."
   confirming_evidence:
+
     - "Direct curl test against `npm run preview:pages` (scripts/gh-pages-preview.mjs, dist/ freshly rebuilt from current HEAD): `curl .../data/enquestes/no-existeix-aquesta_meta.json` -> HTTP 404, content-type text/html (404.html body) — genuine 404 status."
     - "Node script replicating ExplorerPage.tsx's exact phase-2 classification logic (fetch -> status===404 check -> SurveyNotFoundError -> Promise.allSettled -> instanceof check) run against the live preview:pages server: metaResult.status = 'rejected', reason instanceof SurveyNotFoundError = true. The not-found branch IS correctly reached when the server returns a true 404."
     - "Direct curl test against plain `npm run preview` (`vite preview`, same dist/, same base /enquestes/, same default port 4173): same meta.json URL -> HTTP 200, content-type text/html, body is index.html (Vite's own SPA fallback). Not a 404 at all."
@@ -46,6 +53,7 @@ reasoning_checkpoint:
   fix_rationale: "n/a — find_root_cause_only mode. Two independent directions exist for a follow-up plan: (a) process/verification fix — ensure the human-check/automation always launches scripts/gh-pages-preview.mjs specifically (e.g. rename or guard against confusing it with vite preview, or have `npm run preview:pages` fail fast if port 4173 is already occupied by a different process, or print a distinguishing banner), and (b) code robustness fix — make ExplorerPage.tsx's classification resilient regardless of which static server is used, e.g. also treat a non-JSON content-type (or a successful parse that doesn't match EnquestaMeta's shape via parseEnquestaMeta) on the meta fetch as evidence of 'this path doesn't exist' rather than only trusting res.status === 404, since real hosting quirks (misconfigured CDNs, SPA-fallback servers, some static hosts that 200 everything) can't be fully ruled out even in production."
   blind_spots: "Did not execute a real end-to-end browser session (claude-in-chrome unavailable in this environment, same limitation noted in 03-06-SUMMARY.md) — relied on curl + a Node script that replicates the exact classification code and confirmed the built bundle's minified logic matches the source verbatim, which is strong but not a literal live-browser click-through. Cannot confirm with certainty which command the human tester actually ran for UAT Test 6 (no terminal history available) — the 'wrong preview server' explanation is the most parsimonious and fully falsifiable mechanism found, but it is inferred from the shared-port/confusable-command evidence rather than directly observed tester behavior. Did not test the REAL deployed GitHub Pages URL (out of scope / not yet deployed for this milestone) — relies on scripts/verify-pages.mjs's own long-standing assertion (and well-established GH Pages behavior) that GH Pages returns true 404 status for missing files, which is what `gh-pages-preview.mjs` was purpose-built to emulate."
   candidate_causes:
+
     - "code: ExplorerPage.tsx's not-found classification trusts `res.status === 404` exclusively, with no fallback/defence for a server that returns 200 for a missing asset (content-type/shape sniffing would make the classification independent of server behavior)"
     - "environment/process: two near-identical npm scripts (`preview` vs `preview:pages`) bind the identical default port 4173 and are behaviorally indistinguishable for every URL except this one 404 edge case, making it easy to run/trust the wrong one during manual verification and misreport a regression that isn't in the code"
   and_gate: "yes — reproducing the exact reported symptom requires BOTH conditions simultaneously: (1) the classification code makes its not-found/load-failed decision based solely on HTTP status (a reasonable, working design against the correct server) AND (2) the server actually serving the request during verification does not provide genuine 404 semantics for a missing JSON path (true of plain `vite preview`, false of `scripts/gh-pages-preview.mjs` and of real GitHub Pages). Neither factor alone reproduces the bug: status-only classification against the correct server works fine (confirmed); and a wrong/fallback-everything server wouldn't matter if the classification didn't hinge on status. This is a genuine two-category (code design assumption x environment/tooling ambiguity) root cause, not a single-cause code defect."
@@ -212,20 +220,24 @@ root_cause: |
   - A real Google Chrome browser (not curl, not Node) executing
     ExplorerPage.tsx's exact classification code against the live
     preview:pages server correctly classifies not-found.
+
   - A full, unmodified, end-to-end run of the real production app in real
     Chrome — genuine DuckDB-Wasm engine actually initializing, genuine
     Worker, genuine WASM compilation, genuine fetch() calls for both
     meta.json and the .parquet file — correctly reaches the not-found
     render. Repeated 4/4 times with zero variance; no race condition found.
+
   - The runtime URL construction (import.meta.env.BASE_URL -> literal
     '/enquestes/') is confirmed byte-identical between the built bundle and
     every synthetic test.
+
   - The user's verbatim reported text is a character-for-character match of
     the CURRENT (post-331116f) LOAD_FAILED_TITLE constant, not the
     differently-worded pre-fix generic error text — proving the human was
     running current, correct code, and that dataState.kind was genuinely
     (and incorrectly, for them) evaluated as 'load-failed' rather than
     'not-found'. This positively rules out a stale build.
+
   - No fixtures mechanism, no service worker, and no BASE_URL mismatch can
     explain an unexpected 200 for this path in this repository's current
     state.
@@ -263,6 +275,7 @@ real DuckDB-Wasm engine, 4/4 clean runs). Before planning any code change:
    bug still reproduces now. If it does not reproduce, this was a
    transient local-state issue at UAT time (candidate causes above) and
    G-03-6 should be closed as not-a-bug / could-not-reproduce.
+
 2. If it still reproduces for the user: ask them to open browser DevTools
    Network tab, filter for `no-existeix-aquesta_meta.json`, and report the
    actual HTTP status code and response body they see. That single
@@ -270,6 +283,7 @@ real DuckDB-Wasm engine, 4/4 clean runs). Before planning any code change:
    fulfilled with 200" mechanism this investigation deduced but could not
    directly witness on their machine, and would be the fastest path to
    a confirmed root cause if the bug is genuinely still live for them.
+
 3. Optional defensive hardening (not required by evidence found here, but
    flagged by both debug passes as a good belt-and-suspenders investment
    regardless of root cause): make the not-found classification resilient
