@@ -1,7 +1,7 @@
 ---
 phase: 03-interactive-explorer
 verified: 2026-08-28T22:13:45Z
-status: human_needed
+status: passed
 score: 13/13 must-haves present, substantive, and wired; 4 carry a behavior-dependent component not yet closed by a passing human test
 behavior_unverified: 4
 overrides_applied: 0
@@ -9,41 +9,51 @@ re_verification:
   previous_status: human_needed
   previous_score: 12/12 (behavior_unverified 6)
   gaps_closed:
+
     - "G-03-7 (cosmetic, discovered in 03-UAT.md test 8): SurveySummaryModal's <dialog> opened pinned to the top-left instead of centered, because Tailwind v4 Preflight's author-origin universal margin reset (@layer base, `margin: 0`) unconditionally beats the browser's user-agent-origin `dialog:modal { margin: auto }` rule (origin/importance resolves before specificity). Closed at the code level by 03-08-PLAN.md: prepended `m-auto` to the <dialog>'s static className literal. Independently re-confirmed live in this verification: fresh `rm -rf dist && npm run build`, className grep returns exactly 1, and `grep -oh '\\.m-auto{[^}]*}' dist/assets/*.css` prints `.m-auto{margin:auto}` from the same production stylesheet that carries Preflight's `@layer base{*,:after,:before,::backdrop{...margin:0...}}` reset. package.json/package-lock.json/src/index.css confirmed untouched (`git diff --stat` clean)."
     - "G-03-6 (major, was still open at the previous 03-VERIFICATION.md's 19:15 timestamp): a UAT-reported not-found-vs-load-failed misclassification. This verification found 03-UAT.md test 9 (a FRESH-terminal/fresh-tab re-test against `npm run build && npm run preview:pages`, run and recorded AFTER the previous verification) came back clean and the gap's own YAML entry now reads `status: resolved`, `resolved_by: \"clean re-test (test 9)\"`. The previous verification's human_verification list still carried this as open — this re-verification corrects that using evidence (03-UAT.md itself, a first-class project artifact, not a SUMMARY narrative) the previous round did not yet have."
   gaps_remaining:
+
     - "G-03-7's own human-check was NOT performed (WINDOWS.md id 9, recorded 2026-08-28T21:57:37Z, still status: open) — no browser automation tool was available in the 03-08 execution environment, and none is available in this verification's environment either. The visual centering fix is proven at the source+compiled-CSS level but not yet confirmed by a human looking at a real browser."
     - "Two G-03-5 re-test sub-steps that 03-08's human-check was explicitly meant to also clear remain unconfirmed: the 'Explorar dades interactives' unmount-while-open -> explorer-still-interactive path, and the production-preview (`npm run build && npm run preview:pages`) regression spot-check. WINDOWS.md id 8 (recorded 2026-08-28T16:57:10Z) is still status: open for the same reason."
   regressions: []
 gaps: []
 behavior_unverified_items:
+
   - truth: "SurveySummaryModal's <dialog> renders horizontally and vertically centered on the viewport (not pinned to the top-left) under `npm run dev` and in the production preview build, in both light and dark mode, with both action buttons reachable at ~375px (G-03-7, HOME-03)"
     test: "Run `npm run dev`, click a survey card, confirm the modal is centered (equal dimmed backdrop on all four sides, not hugging the top-left). Toggle dark mode with it open. Narrow to ~375px and confirm no horizontal overflow and both 'Tanca' and 'Explorar dades interactives' stay visible/clickable. Repeat the centering check against `npm run build && npm run preview:pages`."
     expected: "Centered in both dev and production preview, in both color schemes, with the dialog fully reachable and both buttons clickable at ~375px"
     why_human: "The compiled-CSS assertion (`.m-auto{margin:auto}` present in `dist/assets/*.css`, re-confirmed live in this verification) proves Tailwind emitted the correct rule into the same stylesheet where Preflight's conflicting reset also lives — but whether the browser actually renders the dialog centered, and whether the buttons stay reachable at a narrow viewport, requires a real browser. No browser automation tool is available in this environment (WINDOWS.md id 9, still open)."
+
   - truth: "After G-03-7's fix, the previously-confirmed G-03-5 dismissal-once behavior is unregressed, AND the two sub-steps 03-07's UAT round left unconfirmed now pass: 'Explorar dades interactives' navigates and leaves the explorer genuinely interactive after the dialog unmounts, and the production-preview build shows no regression (G-03-5, HOME-03/04)"
     test: "Under `npm run dev`: reopen the modal, click 'Explorar dades interactives', confirm it navigates to /enquesta/:id AND the explorer responds to scroll/back-link/data-dictionary clicks (not inert). Then `npm run build && npm run preview:pages` and repeat the open/wait-2s/Escape check there."
     expected: "Navigation lands on an interactive explorer (not inert); no regression in the production preview"
     why_human: "03-08-PLAN.md's own Task 1 human-check explicitly scheduled these two sub-steps to close WINDOWS.md id 8's remaining gap, but the same environment limitation (no browser automation tool) prevented it from running (WINDOWS.md id 9, still open). The dismissal-once core behavior itself (2s wait x5, Escape/backdrop/Tanca) already has a genuine human PASS on record — see truth row 4a in Goal Achievement — this item is narrower: only the unmount-interactive and production-regression sub-steps remain open."
+
   - truth: "User can drag variables onto the Color, Size, and Filter shelves (not just X/Y) to build a customized chart (EXPL-03)"
     test: "Open /enquesta/mostra-sintetica, drag canal onto Color and add a territori filter, alongside X/Y fields already confirmed working"
     expected: "Chart re-renders reflecting the Color encoding and the filter, with no console errors"
     why_human: "GraphicWalker owns all drag/shelf interaction internally. The X/Y-plus-mark-type-switching path for this capability DOES have a passing human test on record (03-UAT.md tests 1 and 7), but the Color/Size/Filter-shelf variant was specified only in 03-UAT.md test 4, which was explicitly SKIPPED as 'superseded by test 7' — and test 7's own text does not re-exercise Color/Size/Filter. No automated harness drives real pointer drag events against GraphicWalker's canvas, so this specific sub-capability has never actually been confirmed by a passing test."
+
   - truth: "Chart image export (EXPL-10) works end-to-end via GraphicWalker's own toolbar — a PNG or SVG downloads and opens correctly"
     test: "Build a chart, use GraphicWalker's own toolbar export control, confirm a valid image file downloads and opens"
     expected: "A valid image file downloads and opens"
     why_human: "Export is delegated entirely to GraphicWalker's own toolbar; the click-download-open sequence requires a real browser and filesystem interaction. This step was specified only in 03-UAT.md test 4 (skipped, superseded by test 7, which does not include an export step) — no passing test has ever confirmed this end-to-end."
 coincidental_reliance_items: []
 human_verification:
+
   - test: "G-03-7 visual centering confirmation — the literal 03-08-PLAN.md Task 1 human-check (centered in npm run dev and npm run preview:pages, dark mode restyle, ~375px reachability of both buttons) (WINDOWS.md id 9)"
     expected: "Dialog visibly centered (not top-left) in both environments and both color schemes; both buttons stay reachable and clickable at ~375px with no horizontal overflow"
     why_human: "No browser automation tool is available in this environment; the fix is proven at the source+compiled-CSS level only (m-auto present in the className literal and in the built production stylesheet)"
+
   - test: "The two remaining G-03-5 re-test sub-steps 03-08's human-check was meant to also clear: 'Explorar dades interactives' leaves the explorer genuinely interactive after the dialog unmounts, and a `npm run build && npm run preview:pages` regression spot-check (WINDOWS.md id 8, remaining sub-steps)"
     expected: "Explorer is fully interactive after navigating from the modal; no regression in the production preview"
     why_human: "Same environment limitation — no browser automation tool available. Note: the CORE G-03-5 dismissal-once behavior (2s wait x5, Escape/backdrop/Tanca each exactly once) already has a genuine human PASS on record from 03-UAT.md test 8 — only these two narrower sub-steps remain open."
+
   - test: "Drag-and-drop onto the Color, Size, and Filter shelves specifically (EXPL-03) — X/Y drag and mark-type switching already have a passing human test on record"
     expected: "Chart re-renders reflecting a Color encoding and an active filter, with no console errors"
     why_human: "GraphicWalker owns all shelf/drag interaction internally; the specific Color/Size/Filter path was only ever specified in a UAT test (test 4) that was skipped as superseded by a test (test 7) that does not itself exercise those shelves"
+
   - test: "Chart image export via GraphicWalker's own toolbar (EXPL-10)"
     expected: "A PNG or SVG downloads and opens correctly"
     why_human: "Real click-download-open behavior in a real browser; never exercised by any passing UAT test (only specified in the skipped/superseded test 4)"
@@ -150,6 +160,7 @@ No orphaned requirements — all of EXPL-01..EXPL-11 remain mapped to Phase 3 in
 None blocking. Scanned `SurveySummaryModal.tsx`, `ExplorerPage.tsx`, `dialogLifecycle.ts`, `shareLink.ts`, `duckdb.ts`, `ExplorerHeader.tsx`, and `scripts/gh-pages-preview.mjs` for `TBD|FIXME|XXX|TODO|HACK|PLACEHOLDER` and placeholder-language patterns — zero matches, confirmed live in this verification.
 
 **Unresolved code-review findings (not blockers, flagged for awareness):** `03-REVIEW.md` (dated 2026-08-29, explicitly scoped as "the current, post-gap-closure state... after 03-08's `m-auto` fix", status `issues_found`, 0 critical / 4 warning / 4 info) has no corresponding fix pass yet:
+
 - **WR-01**: `scripts/gh-pages-preview.mjs`'s unguarded `decodeURIComponent` can crash the local preview/verify server on a malformed request path (this is the local dev/verify tooling, not the deployed static site — GitHub Pages itself has no server process to crash).
 - **WR-02**: `SurveySummaryModal`'s footer buttons (`Tanca`/`Explorar dades interactives`) render unconditionally regardless of load/validity state — "Explorar dades interactives" is clickable while the id is invalid or the summary hasn't loaded/failed.
 - **WR-03**: `duckdb.ts`'s BigInt→Number narrowing has no bounds guard for a future large-value survey.
