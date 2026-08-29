@@ -22,7 +22,7 @@ current_phase: 03
 See: .planning/PROJECT.md (updated 2026-08-29)
 
 **Core value:** Qualsevol persona pot explorar interactivament (arrossegar X/Y/Color/Mida/Filtres i crear gràfics propis) les dades d'una enquesta directament al navegador, sense servidor ni cost.
-**Current focus:** Milestone complete — all 3 phases shipped
+**Current focus:** v1.0 shipped — planning next milestone (candidates: DISC-01/DISC-02, publishing real survey data; see PROJECT.md "Next Milestone Goals")
 
 ## Current Position
 
