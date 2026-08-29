@@ -8,22 +8,36 @@ Un web estàtic en React (cost 0€, allotjat a GitHub Pages) per explorar de ma
 
 Qualsevol persona pot explorar interactivament (arrossegar X/Y/Color/Mida/Filtres i crear gràfics propis) les dades d'una enquesta directament al navegador, sense servidor ni cost, i amb consultes SQL ultra ràpides sobre el fitxer Parquet corresponent.
 
+## Current State
+
+**Shipped: v1.0 MVP (2026-08-29)**
+
+The full v1 flow works end-to-end: browse the survey catalog on the homepage, open a quick KPI summary, jump into `/enquesta/:id`, and freely drag-and-drop X/Y/Color/Mida/Filtres over real Parquet data queried live via DuckDB-Wasm — including a data dictionary, PNG/SVG chart export, and a shareable `?chart=` link. One synthetic demo dataset (`mostra-sintetica`) is published; the offline Python pipeline is ready to convert the user's real survey exports whenever they're published.
+
+## Next Milestone Goals
+
+No v1.1/v2.0 scope has been defined yet — run `/gsd-new-milestone` to start that cycle. Known candidates carried over from `REQUIREMENTS.md`'s v2 section (archived at `.planning/milestones/v1.0-REQUIREMENTS.md`):
+
+- **DISC-01** — Cerca/filtre/etiquetatge entre enquestes, rellevant quan el catàleg superi ~12-15 enquestes
+- **DISC-02** — Estratègies per a datasets grans (pre-agregació, chunking de Parquet), només si una enquesta concreta resulta massa gran per al navegador
+- Publicar la primera enquesta amb dades reals de l'usuari (el pipeline ja hi és, falta l'export real revisat i convertit)
+
 ## Requirements
 
 ### Validated
 
-- ✓ Projecte Vite + React + TypeScript + Tailwind CSS, desplegable com a SPA estàtica — Phase 1
-- ✓ Pàgina principal (`/`): llegeix `enquestes_index.json` i mostra una graella de targetes (data, descripció, nombre de participants); clicar una targeta mostra un resum ràpid des de `[id]_meta.json` (KPIs generals, amb divulgació de mostra i supressió per mostra insuficient) amb botó "Explorar dades interactives" — Phase 1
-- ✓ GitHub Actions (`.github/workflows/deploy.yml`) que fa build i desplegament a GitHub Pages a cada push a `main` — Phase 1
-- ✓ Script Python de conversió (`scripts/convert_enquesta.py`): dades reals crues (CSV/TSV/Excel exportat) → `[id]_respostes.parquet` + `[id]_meta.json` + entrada a `enquestes_index.json`, amb checklist de privacitat block-by-default (quasi-identificadors per nom, k-anonimitat per grup petit, ràtio d'unicitat) i exclusió incondicional de text lliure — Phase 2, validat contra l'export real de l'usuari (2000 files × 320 columnes)
-- ✓ Script Python de mock (`scripts/generate_mock_parquet.py`) que genera un Parquet d'exemple sense dades reals, reutilitzant els mateixos mòduls d'inferència/validació que la conversió real — Phase 2
-- ✓ Primer dataset real publicat a `public/data/` (`mostra-sintetica`, sintètic i etiquetat com a tal) — Phase 2
-- ✓ Servei DuckDB-Wasm (Singleton, `src/services/duckdb.ts`) que inicialitza al navegador sense bloquejar la UI i exposa un helper per consultar `.parquet` — Phase 3
-- ✓ Pàgina d'exploració (`/enquesta/:id`): carrega `[id]_respostes.parquet` via DuckDB-Wasm i el connecta a `<GraphicWalker />` per exploració visual lliure amb drag-and-drop X/Y/Color/Mida/Filtres, diccionari de dades, exportació d'imatge i enllaç compartible de gràfic — Phase 3
+- ✓ Projecte Vite + React + TypeScript + Tailwind CSS, desplegable com a SPA estàtica — Phase 1 (v1.0)
+- ✓ Pàgina principal (`/`): llegeix `enquestes_index.json` i mostra una graella de targetes (data, descripció, nombre de participants); clicar una targeta mostra un resum ràpid des de `[id]_meta.json` (KPIs generals, amb divulgació de mostra i supressió per mostra insuficient) amb botó "Explorar dades interactives" — Phase 1 (v1.0)
+- ✓ GitHub Actions (`.github/workflows/deploy.yml`) que fa build i desplegament a GitHub Pages a cada push a `main` — Phase 1 (v1.0)
+- ✓ Script Python de conversió (`scripts/convert_enquesta.py`): dades reals crues (CSV/TSV/Excel exportat) → `[id]_respostes.parquet` + `[id]_meta.json` + entrada a `enquestes_index.json`, amb checklist de privacitat block-by-default (quasi-identificadors per nom, k-anonimitat per grup petit, ràtio d'unicitat) i exclusió incondicional de text lliure — Phase 2 (v1.0), validat contra l'export real de l'usuari (2000 files × 320 columnes)
+- ✓ Script Python de mock (`scripts/generate_mock_parquet.py`) que genera un Parquet d'exemple sense dades reals, reutilitzant els mateixos mòduls d'inferència/validació que la conversió real — Phase 2 (v1.0)
+- ✓ Primer dataset real publicat a `public/data/` (`mostra-sintetica`, sintètic i etiquetat com a tal) — Phase 2 (v1.0)
+- ✓ Servei DuckDB-Wasm (Singleton, `src/services/duckdb.ts`) que inicialitza al navegador sense bloquejar la UI i exposa un helper per consultar `.parquet` — Phase 3 (v1.0)
+- ✓ Pàgina d'exploració (`/enquesta/:id`): carrega `[id]_respostes.parquet` via DuckDB-Wasm i el connecta a `<GraphicWalker />` per exploració visual lliure amb drag-and-drop X/Y/Color/Mida/Filtres, diccionari de dades, exportació d'imatge i enllaç compartible de gràfic — Phase 3 (v1.0)
 
 ### Active
 
-*Cap requeriment actiu — totes les fases del milestone actual estan completades.*
+*Cap requeriment actiu — pendent de definir amb `/gsd-new-milestone`. Vegeu "Next Milestone Goals" més avall per als candidats coneguts.*
 
 ### Out of Scope
 
@@ -37,6 +51,8 @@ Qualsevol persona pot explorar interactivament (arrossegar X/Y/Color/Mida/Filtre
 - Audiència: públic general (qualsevol amb el link hi pot accedir i explorar)
 - Nom del repositori GitHub: `enquestes` — determina el `base` path de Vite/GitHub Pages (`usuari.github.io/enquestes/`)
 - Les dades que es publiquin han de ser no sensibles (sense camps identificatius com noms o emails), ja que `public/data/` és totalment públic i descarregable
+- v1.0 shipped 2026-08-25 → 2026-08-29 (4 dies): 3 fases, 14 plans, 32 tasques, ~3.755 línies TS/TSX/Python, 148 fitxers tocats
+- Deute tècnic/riscos coneguts a l'entrada de milestone (v1.0): 8 sessions de debug de Phase 3 reconciliades i tancades (7 diagnosticades i corregides via gap-closure plans 03-04..03-08; 1 inconclusiva — G-03-6, cap defecte de codi confirmat després de reproducció exhaustiva en Chrome real); risc acceptat que l'id d'enquesta de la URL es reflecteix a `<h1 title={id}>` de `ExplorerHeader` fins i tot quan l'enquesta no existeix (sense XSS, id conegut per l'atacant — vegeu Key Decisions)
 
 ## Constraints
 
@@ -85,4 +101,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-29 after Phase 3*
+*Last updated: 2026-08-29 after v1.0 milestone*
