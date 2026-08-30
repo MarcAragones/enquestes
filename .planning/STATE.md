@@ -1,18 +1,16 @@
 ---
 gsd_state_version: 1.0
-status: Awaiting next milestone
-stopped_at: Phase 03 complete — all phases complete
-last_updated: "2026-08-29T07:10:16.430Z"
-last_activity: 2026-08-29
-last_activity_desc: Milestone v1.0 completed and archived
-state_head: 7ab08cca1dc0020fe952f718b67fab9ff56f2828
+milestone: v1.1
+milestone_name: Publish Real Survey Data
+status: planning
+last_updated: "2026-08-30T10:55:28.117Z"
+last_activity: 2026-08-30
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
-current_phase: 03
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -22,14 +20,14 @@ current_phase: 03
 See: .planning/PROJECT.md (updated 2026-08-29)
 
 **Core value:** Qualsevol persona pot explorar interactivament (arrossegar X/Y/Color/Mida/Filtres i crear gràfics propis) les dades d'una enquesta directament al navegador, sense servidor ni cost.
-**Current focus:** v1.0 shipped — planning next milestone (candidates: DISC-01/DISC-02, publishing real survey data; see PROJECT.md "Next Milestone Goals")
+**Current focus:** v1.1 Publish Real Survey Data — defining requirements and roadmap (see PROJECT.md "Current Milestone")
 
 ## Current Position
 
-Phase: Milestone v1.0 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-08-29 — Milestone v1.0 completed and archived
+Status: Defining requirements
+Last activity: 2026-08-30 — Milestone v1.1 started
 
 ## Performance Metrics
 
@@ -122,4 +120,4 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Define v1.1 requirements and roadmap, then `/gsd-plan-phase [N]`

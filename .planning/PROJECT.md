@@ -14,13 +14,17 @@ Qualsevol persona pot explorar interactivament (arrossegar X/Y/Color/Mida/Filtre
 
 The full v1 flow works end-to-end: browse the survey catalog on the homepage, open a quick KPI summary, jump into `/enquesta/:id`, and freely drag-and-drop X/Y/Color/Mida/Filtres over real Parquet data queried live via DuckDB-Wasm — including a data dictionary, PNG/SVG chart export, and a shareable `?chart=` link. One synthetic demo dataset (`mostra-sintetica`) is published; the offline Python pipeline is ready to convert the user's real survey exports whenever they're published.
 
-## Next Milestone Goals
+## Current Milestone: v1.1 Publish Real Survey Data
 
-No v1.1/v2.0 scope has been defined yet — run `/gsd-new-milestone` to start that cycle. Known candidates carried over from `REQUIREMENTS.md`'s v2 section (archived at `.planning/milestones/v1.0-REQUIREMENTS.md`):
+**Goal:** Replace the synthetic demo dataset with 2-5 of the user's real surveys, converted through the existing offline pipeline and privacy-reviewed, fixing whatever the pipeline can't yet handle about real exports.
 
-- **DISC-01** — Cerca/filtre/etiquetatge entre enquestes, rellevant quan el catàleg superi ~12-15 enquestes
-- **DISC-02** — Estratègies per a datasets grans (pre-agregació, chunking de Parquet), només si una enquesta concreta resulta massa gran per al navegador
-- Publicar la primera enquesta amb dades reals de l'usuari (el pipeline ja hi és, falta l'export real revisat i convertit)
+**Target features:**
+- Convertir i publicar 2-5 enquestes reals de l'usuari (exports ja disponibles) via el pipeline existent, amb revisió de privacitat
+- Retirar el dataset sintètic (`mostra-sintetica`) del catàleg un cop les enquestes reals estiguin publicades
+- Corregir qualsevol bug del pipeline (format, encoding, tipus de columna) que sorgeixi en processar les exportacions reals
+- Verificar que el catàleg i l'explorador es comporten correctament amb múltiples enquestes reals simultànies
+
+**Deferred (not this milestone):** DISC-01 (cerca/filtre de catàleg) — encara no rellevant amb només 2-5 enquestes; DISC-02 (datasets grans) — sense evidència encara que calgui.
 
 ## Requirements
 
@@ -37,7 +41,10 @@ No v1.1/v2.0 scope has been defined yet — run `/gsd-new-milestone` to start th
 
 ### Active
 
-*Cap requeriment actiu — pendent de definir amb `/gsd-new-milestone`. Vegeu "Next Milestone Goals" més avall per als candidats coneguts.*
+- [ ] Convertir i publicar 2-5 enquestes reals de l'usuari via el pipeline existent, amb revisió de privacitat
+- [ ] Retirar el dataset sintètic (`mostra-sintetica`) un cop les enquestes reals estiguin publicades
+- [ ] Corregir bugs del pipeline que sorgeixin en processar les exportacions reals
+- [ ] Verificar catàleg i explorador amb múltiples enquestes reals simultànies
 
 ### Out of Scope
 
@@ -101,4 +108,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-29 after v1.0 milestone*
+*Last updated: 2026-08-30 after starting v1.1 milestone*
