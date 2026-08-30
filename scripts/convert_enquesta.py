@@ -18,6 +18,7 @@ del desenvolupador, no en aquest script.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -334,9 +335,16 @@ def main(argv: list | None = None) -> int:
 
     # 10. Compute and validate the upserted index BEFORE any write touches
     #     disk -- a malformed existing sibling entry must never be persisted
-    #     as a "successful" partial write.
-    new_index = index_mod.compute_upserted_index(index_path, index_entry)
-    schema.validate_index(new_index)
+    #     as a "successful" partial write. A corrupted or malformed existing
+    #     enquestes_index.json (invalid JSON, or valid JSON that isn't a list
+    #     of dicts) is reported as a clean ERROR here instead of an unhandled
+    #     traceback (WR-01).
+    try:
+        new_index = index_mod.compute_upserted_index(index_path, index_entry)
+        schema.validate_index(new_index)
+    except (json.JSONDecodeError, schema.SchemaError) as exc:
+        print(f"ERROR: {index_path} és invàlid: {exc}", file=sys.stderr)
+        return 1
 
     # 11. Write the three artifacts.
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
