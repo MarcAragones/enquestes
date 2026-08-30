@@ -14,6 +14,8 @@ Run with `uv run scripts/pipeline_selftest.py -v`.
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import shutil
 import unittest
@@ -31,6 +33,7 @@ FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 GOLDEN_INDEX = FIXTURES_DIR / "enquestes_index.json"
 GOLDEN_META = FIXTURES_DIR / "enquestes" / "demo-2024_meta.json"
 RAW_TRACER_CSV = FIXTURES_DIR / "raw" / "mostra-tracer.csv"
+RAW_PRIVACITAT_CSV = FIXTURES_DIR / "raw" / "mostra-privacitat.csv"
 
 
 class UpsertIndexEntryTests(unittest.TestCase):
@@ -414,6 +417,205 @@ class EndToEndConversionTests(unittest.TestCase):
             # satisfaccio and segment: both well under the cutoff.
             self.assertIn("satisfaccio", columns)
             self.assertIn("segment", columns)
+
+
+class IsHighCardinalityColumnTests(unittest.TestCase):
+    def test_twenty_values_is_not_high_cardinality(self):
+        series = pd.Series(list(range(20)))
+        self.assertFalse(infer.is_high_cardinality_column(series))
+
+    def test_twenty_one_values_is_high_cardinality(self):
+        series = pd.Series(list(range(21)))
+        self.assertTrue(infer.is_high_cardinality_column(series))
+
+    def test_rating_scale_with_dont_know_option_survives(self):
+        """Worked example from 04-CONTEXT.md: 0-10 rating (11 values) plus
+        'no ho sé' (12th value) stays well under the cutoff."""
+        series = pd.Series(list(range(11)) + ["no ho sé"])
+        self.assertFalse(infer.is_high_cardinality_column(series))
+
+    def test_custom_max_distinct_is_honoured(self):
+        series = pd.Series(list(range(6)))
+        self.assertTrue(infer.is_high_cardinality_column(series, max_distinct=5))
+        self.assertFalse(infer.is_high_cardinality_column(series, max_distinct=6))
+
+    def test_nulls_are_not_counted_as_a_distinct_value(self):
+        series = pd.Series(list(range(20)) + [None] * 5)
+        self.assertFalse(infer.is_high_cardinality_column(series))
+
+
+class HighCardinalityColumnsTests(unittest.TestCase):
+    def test_returns_only_qualifying_columns(self):
+        df = pd.DataFrame(
+            {
+                "alta": list(range(25)),
+                "baixa": ["A", "B"] * 12 + ["A"],
+            }
+        )
+        self.assertEqual(infer.high_cardinality_columns(df), {"alta": 25})
+
+    def test_exempt_name_is_absent_despite_exceeding_threshold(self):
+        df = pd.DataFrame({"alta": list(range(25))})
+        self.assertEqual(infer.high_cardinality_columns(df, exempt=["alta"]), {})
+
+    def test_exempt_none_behaves_as_empty_exemption_set(self):
+        df = pd.DataFrame({"alta": list(range(25))})
+        self.assertEqual(
+            infer.high_cardinality_columns(df, exempt=None),
+            infer.high_cardinality_columns(df),
+        )
+
+    def test_frame_with_nothing_above_threshold_returns_empty_mapping(self):
+        df = pd.DataFrame({"baixa": ["A", "B", "C"] * 5})
+        self.assertEqual(infer.high_cardinality_columns(df), {})
+
+
+class FormatHighCardinalityReportTests(unittest.TestCase):
+    def test_nothing_dropped_states_threshold_and_no_drop(self):
+        report = infer.format_high_cardinality_report({}, max_distinct=20)
+        self.assertIn("20", report)
+        self.assertIn("Cap columna descartada", report)
+
+    def test_dropped_column_name_and_count_appear(self):
+        report = infer.format_high_cardinality_report({"alta": 25}, max_distinct=20)
+        self.assertIn("alta", report)
+        self.assertIn("25", report)
+        self.assertIn("20", report)
+
+    def test_report_never_leaks_cell_values(self):
+        sentinel_a = "SENTINELA-UNICA-1234"
+        sentinel_b = "SENTINELA-UNICA-5678"
+        df = pd.DataFrame({"alta": [sentinel_a, sentinel_b] + [f"valor-{i}" for i in range(25)]})
+        dropped = infer.high_cardinality_columns(df, max_distinct=20)
+        report = infer.format_high_cardinality_report(dropped, max_distinct=20)
+        self.assertNotIn(sentinel_a, report)
+        self.assertNotIn(sentinel_b, report)
+
+
+class ColumnSelectionIntegrationTests(unittest.TestCase):
+    def _run(self, argv):
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            exit_code = convert_enquesta.main(argv)
+        return exit_code, stdout.getvalue()
+
+    def test_include_columns_keeps_high_cardinality_column(self):
+        with TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            exit_code, _ = self._run(
+                [
+                    str(RAW_TRACER_CSV),
+                    "--id",
+                    "inc-alta",
+                    "--title",
+                    "T",
+                    "--description",
+                    "D",
+                    "--date",
+                    "2026-01-01",
+                    "--out-dir",
+                    str(out_dir),
+                    "--include-columns",
+                    "id_resposta",
+                    "--confirm-privacy-review",
+                ]
+            )
+            self.assertEqual(exit_code, 0)
+            parquet_path, _, _ = convert_enquesta._resolve_output_paths(out_dir, "inc-alta")
+            written = pd.read_parquet(parquet_path)
+            self.assertIn("id_resposta", written.columns)
+
+    def test_include_columns_cannot_resurrect_free_text_column(self):
+        with TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            exit_code, _ = self._run(
+                [
+                    str(RAW_TRACER_CSV),
+                    "--id",
+                    "inc-text",
+                    "--title",
+                    "T",
+                    "--description",
+                    "D",
+                    "--date",
+                    "2026-01-01",
+                    "--out-dir",
+                    str(out_dir),
+                    "--include-columns",
+                    "comentari_lliure",
+                    "--confirm-privacy-review",
+                ]
+            )
+            self.assertEqual(exit_code, 0)
+            parquet_path, _, _ = convert_enquesta._resolve_output_paths(out_dir, "inc-text")
+            written = pd.read_parquet(parquet_path)
+            self.assertNotIn("comentari_lliure", written.columns)
+
+    def test_unknown_include_column_returns_exit_code_one(self):
+        with TemporaryDirectory() as tmp:
+            exit_code, _ = self._run(
+                [
+                    str(RAW_TRACER_CSV),
+                    "--id",
+                    "inc-unknown",
+                    "--title",
+                    "T",
+                    "--description",
+                    "D",
+                    "--date",
+                    "2026-01-01",
+                    "--out-dir",
+                    tmp,
+                    "--include-columns",
+                    "no-existeix",
+                ]
+            )
+            self.assertEqual(exit_code, 1)
+
+    def test_all_columns_above_cutoff_returns_cardinality_specific_error(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "totes-altes.csv"
+            rows = "\n".join(f"unica{i}" for i in range(25))
+            path.write_text(f"id\n{rows}\n", encoding="utf-8")
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                exit_code, _ = self._run(
+                    [
+                        str(path),
+                        "--id",
+                        "totes-altes",
+                        "--title",
+                        "T",
+                        "--description",
+                        "D",
+                        "--date",
+                        "2026-01-01",
+                        "--out-dir",
+                        tmp,
+                    ]
+                )
+            self.assertEqual(exit_code, 1)
+            self.assertIn("cardinalitat", stderr.getvalue())
+            self.assertNotIn("text lliure", stderr.getvalue())
+
+    def test_privacy_gate_untouched_by_new_filter(self):
+        with TemporaryDirectory() as tmp:
+            exit_code, _ = self._run(
+                [
+                    str(RAW_PRIVACITAT_CSV),
+                    "--id",
+                    "priv-gate",
+                    "--title",
+                    "T",
+                    "--description",
+                    "D",
+                    "--date",
+                    "2026-01-01",
+                    "--out-dir",
+                    tmp,
+                ]
+            )
+            self.assertEqual(exit_code, 2)
 
 
 def _base_meta(**overrides) -> dict:
