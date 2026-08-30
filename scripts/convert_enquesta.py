@@ -95,6 +95,10 @@ def _parse_args(argv: list) -> argparse.Namespace:
         ),
     )
     args = parser.parse_args(argv)
+    try:
+        datetime.strptime(args.date, "%Y-%m-%d")
+    except ValueError:
+        parser.error(f"--date '{args.date}' ha de tenir el format YYYY-MM-DD i ser una data vàlida")
     if not args.list_columns:
         missing = [
             flag

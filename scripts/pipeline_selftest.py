@@ -434,6 +434,27 @@ class LoadTableTests(unittest.TestCase):
 
 
 class EndToEndConversionTests(unittest.TestCase):
+    def test_invalid_date_value_is_rejected_before_any_work(self):
+        """WR-05 regression: --date must be a real YYYY-MM-DD date, not just
+        digit-shaped (e.g. '2026-13-40' has an invalid month AND day)."""
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            with self.assertRaises(SystemExit) as ctx:
+                convert_enquesta.main(
+                    [
+                        str(RAW_TRACER_CSV),
+                        "--id",
+                        "prova-data-invalida",
+                        "--title",
+                        "T",
+                        "--description",
+                        "D",
+                        "--date",
+                        "2026-13-40",
+                    ]
+                )
+            self.assertEqual(ctx.exception.code, 2)
+
     def test_full_conversion_drops_high_cardinality_columns_by_default(self):
         """Proves the whole path: load -> D-02 free-text -> D-01 cardinality
         -> field inference -> privacy checklist -> all three artifact
