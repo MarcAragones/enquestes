@@ -38,9 +38,33 @@ def _parse_args(argv: list) -> argparse.Namespace:
     )
     parser.add_argument("input_csv", type=Path, help="Camí a l'export CSV, TSV o Excel (.xlsx)")
     parser.add_argument("--id", help="Identificador de l'enquesta")
-    parser.add_argument("--columns", help="Llista de columnes permeses, separades per comes")
+    parser.add_argument(
+        "--columns",
+        help=(
+            "Llista de columnes permeses, separades per comes (opcional: si "
+            "no s'indica, es conserven totes les columnes carregades abans "
+            "dels filtres de text lliure i cardinalitat)"
+        ),
+    )
     parser.add_argument("--title", help="Títol de l'enquesta")
     parser.add_argument("--description", help="Descripció de l'enquesta")
+    parser.add_argument(
+        "--max-cardinality",
+        type=int,
+        default=infer.MAX_DISTINCT_VALUES,
+        help=(
+            "Llindar de valors distints per sobre del qual una columna es "
+            f"descarta automàticament (D-01); per defecte {infer.MAX_DISTINCT_VALUES}"
+        ),
+    )
+    parser.add_argument(
+        "--include-columns",
+        help=(
+            "Llista de columnes a mantenir malgrat superar el llindar de "
+            "cardinalitat, separades per comes (D-04); no evita mai "
+            "l'exclusió incondicional de columnes de text lliure (D-02)"
+        ),
+    )
     parser.add_argument(
         "--date",
         default=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
@@ -64,7 +88,6 @@ def _parse_args(argv: list) -> argparse.Namespace:
             flag
             for flag, value in (
                 ("--id", args.id),
-                ("--columns", args.columns),
                 ("--title", args.title),
                 ("--description", args.description),
             )
@@ -139,18 +162,48 @@ def main(argv: list | None = None) -> int:
             )
         return 0
 
-    # 5. Reduce to the allow-list, then unconditionally drop free-text columns (D-02).
-    requested_columns = [c.strip() for c in args.columns.split(",") if c.strip()]
-    missing_columns = [c for c in requested_columns if c not in df.columns]
-    if missing_columns:
-        print(f"ERROR: columnes no trobades a l'export: {', '.join(missing_columns)}", file=sys.stderr)
-        return 1
-    duplicate_columns = sorted({c for c in requested_columns if requested_columns.count(c) > 1})
-    if duplicate_columns:
-        print(f"ERROR: columnes duplicades a --columns: {', '.join(duplicate_columns)}", file=sys.stderr)
-        return 1
-    df = df[requested_columns].copy()
+    # 5. Reduce to the allow-list when --columns is given (optional since this
+    #    phase: absent means every loaded column carries forward into the
+    #    free-text and cardinality filters below). Then validate
+    #    --include-columns against whatever frame survives that reduction,
+    #    before any drop takes effect. Then unconditionally drop free-text
+    #    columns (D-02).
+    if args.columns:
+        requested_columns = [c.strip() for c in args.columns.split(",") if c.strip()]
+        missing_columns = [c for c in requested_columns if c not in df.columns]
+        if missing_columns:
+            print(f"ERROR: columnes no trobades a l'export: {', '.join(missing_columns)}", file=sys.stderr)
+            return 1
+        duplicate_columns = sorted({c for c in requested_columns if requested_columns.count(c) > 1})
+        if duplicate_columns:
+            print(f"ERROR: columnes duplicades a --columns: {', '.join(duplicate_columns)}", file=sys.stderr)
+            return 1
+        df = df[requested_columns].copy()
 
+    include_columns = (
+        [c.strip() for c in args.include_columns.split(",") if c.strip()] if args.include_columns else []
+    )
+    unknown_include_columns = [c for c in include_columns if c not in df.columns]
+    if unknown_include_columns:
+        print(
+            f"ERROR: columnes desconegudes a --include-columns: {', '.join(unknown_include_columns)}",
+            file=sys.stderr,
+        )
+        return 1
+    duplicate_include_columns = sorted({c for c in include_columns if include_columns.count(c) > 1})
+    if duplicate_include_columns:
+        print(
+            f"ERROR: columnes duplicades a --include-columns: {', '.join(duplicate_include_columns)}",
+            file=sys.stderr,
+        )
+        return 1
+
+    # D-02 free-text drop runs BEFORE the D-01 cardinality filter below.
+    # Free-text columns are typically also high cardinality; running
+    # free-text first guarantees every free-text column is attributed to
+    # D-02 in the printed output, never appears in the D-04 cardinality
+    # report, and can never be resurrected by --include-columns -- which is
+    # what keeps D-02's no-opt-out contract intact under the new override.
     dropped_free_text = [c for c in df.columns if infer.is_free_text_column(df[c])]
     if dropped_free_text:
         print(
@@ -163,6 +216,23 @@ def main(argv: list | None = None) -> int:
         print(
             "ERROR: cap columna sobreviu després de descartar les de text lliure "
             "(D-02); tria un --columns amb almenys una columna no-text-lliure.",
+            file=sys.stderr,
+        )
+        return 1
+
+    # 5b. D-01 cardinality filter: drop every column above --max-cardinality
+    # distinct values, except any name listed in --include-columns (D-04).
+    # The exclusion report is ALWAYS printed, even when nothing is dropped.
+    dropped_high_cardinality = infer.high_cardinality_columns(df, args.max_cardinality, exempt=include_columns)
+    print(infer.format_high_cardinality_report(dropped_high_cardinality, args.max_cardinality, exempt=include_columns))
+    if dropped_high_cardinality:
+        df = df.drop(columns=list(dropped_high_cardinality.keys()))
+
+    if df.shape[1] == 0:
+        print(
+            "ERROR: cap columna sobreviu després del filtre de cardinalitat alta "
+            "(D-01); usa --include-columns per mantenir-ne alguna concreta o "
+            "--max-cardinality per pujar el llindar.",
             file=sys.stderr,
         )
         return 1

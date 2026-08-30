@@ -22,6 +22,7 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 
+import convert_enquesta
 from pipeline import index as index_mod
 from pipeline import infer, privacy, schema
 from pipeline import load as load_mod
@@ -369,6 +370,50 @@ class LoadTableTests(unittest.TestCase):
             with self.assertRaises(ValueError) as ctx:
                 load_mod.load_table(path)
             self.assertIn("línia", str(ctx.exception))
+
+
+class EndToEndConversionTests(unittest.TestCase):
+    def test_full_conversion_drops_high_cardinality_columns_by_default(self):
+        """Proves the whole path: load -> D-02 free-text -> D-01 cardinality
+        -> field inference -> privacy checklist -> all three artifact
+        writes, with no --columns hand-enumeration required.
+        """
+        with TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            exit_code = convert_enquesta.main(
+                [
+                    str(RAW_TRACER_CSV),
+                    "--id",
+                    "prova-tracer",
+                    "--title",
+                    "Prova tracer",
+                    "--description",
+                    "Prova end-to-end de la selecció automàtica per cardinalitat",
+                    "--date",
+                    "2026-01-01",
+                    "--out-dir",
+                    str(out_dir),
+                    "--confirm-privacy-review",
+                ]
+            )
+            self.assertEqual(exit_code, 0)
+
+            parquet_path, meta_path, index_path = convert_enquesta._resolve_output_paths(
+                out_dir, "prova-tracer"
+            )
+            self.assertTrue(parquet_path.exists())
+            self.assertTrue(meta_path.exists())
+            self.assertTrue(index_path.exists())
+
+            written = pd.read_parquet(parquet_path)
+            columns = set(written.columns)
+            # id_resposta: 24 distinct values over 24 rows -- above the cutoff.
+            self.assertNotIn("id_resposta", columns)
+            # comentari_lliure: free text -- dropped by D-02, not D-01.
+            self.assertNotIn("comentari_lliure", columns)
+            # satisfaccio and segment: both well under the cutoff.
+            self.assertIn("satisfaccio", columns)
+            self.assertIn("segment", columns)
 
 
 def _base_meta(**overrides) -> dict:
