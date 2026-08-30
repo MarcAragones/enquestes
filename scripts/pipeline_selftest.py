@@ -324,6 +324,18 @@ class LoadTableTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             load_mod.load_table(Path("data.json"))
 
+    def test_truly_duplicated_raw_header_is_detected(self):
+        """WR-04 regression: pandas auto-mangles a raw duplicate header
+        ('Q1','Q1' -> 'Q1','Q1.1') before df.columns is ever built, so a
+        duplicate check against df.columns alone can never catch this. The
+        raw pre-mangle header tokens must be scanned instead."""
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "dup_header.csv"
+            path.write_text("Q1,Q1,Q2\n1,2,3\n", encoding="utf-8")
+            df, warnings = load_mod.load_table(path)
+            self.assertEqual(list(df.columns), ["Q1", "Q1.1", "Q2"])
+            self.assertTrue(any("Q1" in w and "duplicat" in w for w in warnings))
+
     def test_semicolon_delimited_csv_is_detected_and_warned(self):
         """G-02-3 regression: Spanish/Catalan-locale exports using ';'."""
         with TemporaryDirectory() as tmp:

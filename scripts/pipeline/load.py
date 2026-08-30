@@ -31,13 +31,16 @@ def load_table(path: "Path", sheet: str | None = None) -> tuple:
     path = Path(path)
     suffix = path.suffix.lower()
     warnings: list = []
+    raw_header_tokens: list | None = None
 
     if suffix == ".csv":
         sep, sniff_warning = _detect_csv_delimiter(path)
         if sniff_warning:
             warnings.append(sniff_warning)
+        raw_header_tokens = _read_raw_header_tokens(path, sep)
         df, encoding_warning = _read_csv_with_fallback(path, sep=sep)
     elif suffix == ".tsv":
+        raw_header_tokens = _read_raw_header_tokens(path, "\t")
         df, encoding_warning = _read_csv_with_fallback(path, sep="\t")
     elif suffix == ".xlsx":
         df = pd.read_excel(path, sheet_name=sheet or 0, engine="openpyxl")
@@ -51,8 +54,28 @@ def load_table(path: "Path", sheet: str | None = None) -> tuple:
     if encoding_warning:
         warnings.append(encoding_warning)
 
-    warnings.extend(_shape_warnings(df))
+    warnings.extend(_shape_warnings(df, raw_header_tokens))
     return df, warnings
+
+
+def _read_raw_header_tokens(path: "Path", sep: str) -> list:
+    """Reads and quote-aware-splits the raw header line of a .csv/.tsv file,
+    before pandas has a chance to auto-mangle duplicate column names (e.g.
+    two raw 'Q1' headers becoming 'Q1' and 'Q1.1'). Used by `_shape_warnings`
+    to detect genuinely duplicated raw headers (WR-04) -- a check that is
+    unreachable once df.columns has already been disambiguated by pandas.
+    Reads with the same utf-8-then-cp1252 fallback used elsewhere.
+    """
+    try:
+        with open(path, "r", encoding="utf-8", newline="") as handle:
+            header_line = handle.readline()
+    except UnicodeDecodeError:
+        with open(path, "r", encoding="cp1252", newline="") as handle:
+            header_line = handle.readline()
+    try:
+        return next(csv.reader([header_line], delimiter=sep))
+    except StopIteration:
+        return []
 
 
 def _detect_csv_delimiter(path: "Path") -> tuple:
@@ -152,7 +175,18 @@ def _read_csv_or_raise(path: "Path", sep: str, encoding: str) -> "pd.DataFrame":
         ) from exc
 
 
-def _shape_warnings(df: "pd.DataFrame") -> list:
+def _count_names(names) -> dict:
+    """Counts occurrences of each non-blank stringified name."""
+    counts: dict = {}
+    for name in names:
+        name = str(name)
+        if name.strip() == "":
+            continue
+        counts[name] = counts.get(name, 0) + 1
+    return counts
+
+
+def _shape_warnings(df: "pd.DataFrame", raw_header_tokens: list | None = None) -> list:
     """Shape sanity warnings -- never errors. Never auto-strips anything;
     printed so a shifted header or a stray title/total row is caught on
     sight (RESEARCH Pitfall 5), the multi-format complexity D-04 rules out.
@@ -166,15 +200,18 @@ def _shape_warnings(df: "pd.DataFrame") -> list:
             + ", ".join(unnamed)
         )
 
-    seen: dict = {}
-    blank = []
-    for col in df.columns:
-        name = str(col)
-        if name.strip() == "":
-            blank.append(col)
-            continue
-        seen[name] = seen.get(name, 0) + 1
-    duplicated = [name for name, count in seen.items() if count > 1]
+    blank = [c for c in df.columns if str(c).strip() == ""]
+
+    # pandas auto-mangles duplicate header names (e.g. two raw 'Q1' headers
+    # become 'Q1' and 'Q1.1') before df.columns is ever built, so a
+    # duplicate check against df.columns can essentially never fire for a
+    # genuinely duplicated raw header (WR-04). When the raw, pre-mangle
+    # header tokens are available (CSV/TSV -- already read once for
+    # delimiter handling), scan those instead; only .xlsx falls back to the
+    # (largely unreachable, but harmless) df.columns-based check.
+    counts = _count_names(raw_header_tokens if raw_header_tokens is not None else df.columns)
+    duplicated = [name for name, count in counts.items() if count > 1]
+
     if blank or duplicated:
         offenders = [str(c) for c in blank] + duplicated
         warnings.append("Noms de columna buits o duplicats: " + ", ".join(offenders))
