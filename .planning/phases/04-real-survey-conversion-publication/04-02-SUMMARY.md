@@ -143,6 +143,31 @@ Each task was committed atomically:
 
 **Task 3 as originally written is therefore moot in its literal form** (there are no per-finding drop/accept/narrow resolutions to record, because the checklist was never computed) and was not executed as a `checkpoint:decision` loop over findings.
 
+## Operator-Supplied Metadata (verbatim, for plan 04-03)
+
+Recorded here character-for-character as the operator supplied them (D-05/D-06 — never drafted, translated, or inferred by an agent). Each `--date` was verified by the orchestrator to parse as `YYYY-MM-DD` and not be the conversion-day date.
+
+**REO1167**
+- path: `/Users/marcaragones/Downloads/REO1167_microdades_anonimitzades.csv`
+- `--id`: `REO1167`
+- `--title`: `Baròmetre d'Opinió Política. 1a onada 2026`
+- `--description`: `Recollir la percepció de la societat catalana sobre política, economia, mitjans de comunicació i comportament electoral, i de la valoració de líders polítics. Mostra 2.000.`
+- `--date`: `2026-07-09`
+
+**REO1151**
+- path: `/Users/marcaragones/Downloads/REO1151_microdades_anonimitzades.csv`
+- `--id`: `REO1151`
+- `--title`: `Enquesta longitudinal. 3a onada. 2025`
+- `--description`: `Mesurar al llarg dels anys els canvis en les opinions, actituds i comportament dels mateixos individus. Mostra: 6.706.`
+- `--date`: `2026-03-05`
+
+**REO1145**
+- path: `/Users/marcaragones/Downloads/REO1145_microdades_anonimitzades.csv`
+- `--id`: `REO1145`
+- `--title`: `Baròmetre d'Opinió Política. 3a onada 2025`
+- `--description`: `Recollir la percepció de la societat catalana sobre política, economia, mitjans de comunicació i comportament electoral, i de la valoració de líders polítics. Mostra: 2.000.`
+- `--date`: `2025-11-24`
+
 ## Per-Survey Conversion Results
 
 All three ran with no `--columns` (04-01 auto-selection default) and `--skip-privacy-review`, into the same `mktemp -d` scratch directory. All exited 0 in 3-5 seconds each.
