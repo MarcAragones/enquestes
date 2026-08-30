@@ -45,18 +45,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PUB-01 | TBD | Pending |
-| PUB-02 | TBD | Pending |
-| PUB-03 | TBD | Pending |
-| PUB-04 | TBD | Pending |
-| PUB-05 | TBD | Pending |
+| PUB-01 | Phase 4 | Pending |
+| PUB-02 | Phase 4 | Pending |
+| PUB-03 | Phase 5 | Pending |
+| PUB-04 | Phase 5 | Pending |
+| PUB-05 | Phase 4 | Pending |
 
 **Coverage:**
 
 - v1.1 requirements: 5 total
-- Mapped to phases: 0
-- Unmapped: 5 ⚠️ (roadmap creation pending)
+- Mapped to phases: 5
+- Unmapped: 0 ✓
+
+**Per phase:**
+
+- Phase 4 — Real Survey Conversion & Publication: PUB-01, PUB-02, PUB-05
+- Phase 5 — Catalog Cutover to Real Data: PUB-03, PUB-04
 
 ---
 *Requirements defined: 2026-08-30*
-*Last updated: 2026-08-30 after initial v1.1 definition*
+*Last updated: 2026-08-30 after v1.1 roadmap creation (traceability mapped)*
