@@ -26,6 +26,7 @@ from tempfile import TemporaryDirectory
 import pandas as pd
 
 import convert_enquesta
+import verify_publicacio
 from pipeline import index as index_mod
 from pipeline import infer, privacy, schema
 from pipeline import load as load_mod
@@ -736,6 +737,148 @@ class SkipPrivacyReviewTests(unittest.TestCase):
             self.assertEqual(exit_code, 2)
             self.assertIn("=== Revisió de privacitat ===", stdout)
             self.assertNotIn("Revisió de privacitat OMESA", stdout)
+
+
+class VerifyPublicacioTests(unittest.TestCase):
+    """Fail-first coverage for scripts/verify_publicacio.py (plan 04-03,
+    ROADMAP success criterion 3): each test builds a small synthetic
+    published set inside a TemporaryDirectory() and asserts the verifier's
+    exit code, proving the checker has teeth before it is trusted against
+    the real public/data/ set.
+    """
+
+    def _write_survey(self, enquestes_dir, survey_id, df, *, n=None, fields=None):
+        enquestes_dir.mkdir(parents=True, exist_ok=True)
+        parquet_path = enquestes_dir / f"{survey_id}_respostes.parquet"
+        df.to_parquet(parquet_path, engine="pyarrow", index=False)
+        if fields is None:
+            fields = infer.build_fields(df)
+        meta = {
+            "id": survey_id,
+            "title": f"Títol {survey_id}",
+            "date": "2026-01-01",
+            "description": f"Descripció {survey_id}",
+            "n": len(df) if n is None else n,
+            "kpis": [],
+            "fields": fields,
+        }
+        schema.write_json(enquestes_dir / f"{survey_id}_meta.json", meta)
+        return {
+            "id": survey_id,
+            "title": meta["title"],
+            "date": meta["date"],
+            "description": meta["description"],
+            "n": meta["n"],
+        }
+
+    def _write_index(self, data_dir, entries):
+        schema.write_json(data_dir / "enquestes_index.json", entries)
+
+    def test_consistent_set_returns_zero(self):
+        with TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            df = pd.DataFrame({"segment": ["A", "B", "A"], "valor": [1, 2, 3]})
+            entry = self._write_survey(data_dir / "enquestes", "prova-ok", df)
+            self._write_index(data_dir, [entry])
+            exit_code = verify_publicacio.main(["--data-dir", str(data_dir)])
+            self.assertEqual(exit_code, 0)
+
+    def test_duplicate_id_in_index_is_fail_first(self):
+        """Constructs an index containing the SAME id twice, pointing at real,
+        internally-consistent artifacts -- a verifier that skipped the
+        duplicate-id check specifically would otherwise see every other check
+        pass and wrongly return 0.
+        """
+        with TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            df = pd.DataFrame({"segment": ["A", "B"], "valor": [1, 2]})
+            entry = self._write_survey(data_dir / "enquestes", "dup", df)
+            self._write_index(data_dir, [entry, dict(entry)])
+            exit_code = verify_publicacio.main(["--data-dir", str(data_dir)])
+            self.assertEqual(exit_code, 1)
+
+    def test_meta_n_mismatch_with_parquet_row_count_returns_one(self):
+        with TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            df = pd.DataFrame({"segment": ["A", "B", "A"], "valor": [1, 2, 3]})
+            entry = self._write_survey(data_dir / "enquestes", "n-mismatch", df, n=999)
+            self._write_index(data_dir, [entry])
+            exit_code = verify_publicacio.main(["--data-dir", str(data_dir)])
+            self.assertEqual(exit_code, 1)
+
+    def test_meta_fields_mismatch_with_parquet_schema_returns_one(self):
+        with TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            df = pd.DataFrame({"segment": ["A", "B", "A"], "valor": [1, 2, 3]})
+            entry = self._write_survey(
+                data_dir / "enquestes",
+                "field-mismatch",
+                df,
+                fields=[{"name": "altra_columna", "type": "dimension"}],
+            )
+            self._write_index(data_dir, [entry])
+            exit_code = verify_publicacio.main(["--data-dir", str(data_dir)])
+            self.assertEqual(exit_code, 1)
+
+    def test_index_entry_with_missing_parquet_returns_one(self):
+        with TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            enquestes_dir = data_dir / "enquestes"
+            enquestes_dir.mkdir(parents=True)
+            meta = {
+                "id": "sense-parquet",
+                "title": "T",
+                "date": "2026-01-01",
+                "description": "D",
+                "n": 3,
+                "kpis": [],
+                "fields": [{"name": "x", "type": "measure"}],
+            }
+            schema.write_json(enquestes_dir / "sense-parquet_meta.json", meta)
+            entry = {"id": "sense-parquet", "title": "T", "date": "2026-01-01", "description": "D", "n": 3}
+            self._write_index(data_dir, [entry])
+            exit_code = verify_publicacio.main(["--data-dir", str(data_dir)])
+            self.assertEqual(exit_code, 1)
+
+    def test_orphan_parquet_with_no_index_entry_returns_one(self):
+        with TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            enquestes_dir = data_dir / "enquestes"
+            df = pd.DataFrame({"segment": ["A", "B"], "valor": [1, 2]})
+            entry = self._write_survey(enquestes_dir, "amb-entrada", df)
+            self._write_index(data_dir, [entry])
+            # Orphan: a second complete artifact pair with no index entry at all.
+            self._write_survey(enquestes_dir, "orfe", pd.DataFrame({"segment": ["C", "D"]}))
+            exit_code = verify_publicacio.main(["--data-dir", str(data_dir)])
+            self.assertEqual(exit_code, 1)
+
+    def test_expect_ids_naming_a_missing_id_returns_one(self):
+        with TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            df = pd.DataFrame({"segment": ["A", "B"], "valor": [1, 2]})
+            entry = self._write_survey(data_dir / "enquestes", "prova-expect", df)
+            self._write_index(data_dir, [entry])
+            exit_code = verify_publicacio.main(
+                ["--data-dir", str(data_dir), "--expect-ids", "un-altre-id"]
+            )
+            self.assertEqual(exit_code, 1)
+
+    def test_empty_data_dir_returns_one_not_a_clean_pass_over_zero_surveys(self):
+        with TemporaryDirectory() as tmp:
+            exit_code = verify_publicacio.main(["--data-dir", tmp])
+            self.assertEqual(exit_code, 1)
+
+    def test_report_never_leaks_a_cell_value(self):
+        with TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            sentinel = "SENTINELA-CEL-UNICA-9999"
+            df = pd.DataFrame({"segment": [sentinel, "B", "A"], "valor": [1, 2, 3]})
+            entry = self._write_survey(data_dir / "enquestes", "prova-sentinel", df)
+            self._write_index(data_dir, [entry])
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                verify_publicacio.main(["--data-dir", str(data_dir)])
+            self.assertNotIn(sentinel, stdout.getvalue())
 
 
 def _base_meta(**overrides) -> dict:
