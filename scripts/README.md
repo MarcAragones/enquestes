@@ -43,6 +43,7 @@ artefactes publicats.
 | `--sheet` | no | Nom del full a llegir en entrades `.xlsx` (per defecte: el primer full) |
 | `--list-columns` | no | Mode d'inspecció: només imprimeix columnes i surt |
 | `--confirm-privacy-review` | no | Requerit per escriure quan el checklist troba indicis |
+| `--skip-privacy-review` | no | Omet completament el càlcul del checklist de privacitat (no només el bloqueig); només per a fonts ja anonimitzades i verificades per l'operador. S'ha de passar explícitament a cada execució. |
 
 \* No obligatori en mode `--list-columns`.
 
@@ -62,7 +63,10 @@ que **sempre imprimeix** el seu informe (fins i tot quan no troba res —
 de poca cardinalitat amb un grup massa petit, **bloqueja l'escriptura** amb
 el codi de sortida `2` fins que es torni a executar amb
 `--confirm-privacy-review`. No hi ha manera de saltar-se aquest pas sense
-llegir l'informe primer.
+llegir l'informe primer, **tret que s'invoqui explícitament amb
+`--skip-privacy-review`** (vegeu la taula de flags): en aquest cas el
+checklist ni tan sols es calcula, i és responsabilitat exclusiva de
+l'operador haver-ne verificat la font per endavant.
 
 ### Fluxos de treball recomanat per a un export real
 
