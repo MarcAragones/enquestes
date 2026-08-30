@@ -2,9 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Publish Real Survey Data
+current_phase: 4
+current_phase_name: 1st of 2 phases in v1.1
 status: planning
-last_updated: "2026-08-30T00:00:00.000Z"
+stopped_at: Phase 4 context gathered
+last_updated: "2026-08-30T11:20:35.172Z"
 last_activity: 2026-08-30
+last_activity_desc: v1.1 roadmap created (Phases 4-5, PUB-01..PUB-05 mapped)
+state_head: b1a26643e1955e1a50d94901126919cbff9573e2
 progress:
   total_phases: 2
   completed_phases: 0
@@ -92,9 +97,9 @@ Full v1.0 deferred debug-session ledger: `.planning/milestones/` and `.planning/
 
 ## Session Continuity
 
-Last session: 2026-08-30
-Stopped at: v1.1 ROADMAP.md written (Phases 4-5), REQUIREMENTS.md traceability updated
-Resume file: None
+Last session: 2026-08-30T11:20:35.144Z
+Stopped at: Phase 4 context gathered
+Resume file: /Users/marcaragones/Github/enquestes/.planning/phases/04-real-survey-conversion-publication/04-CONTEXT.md
 
 ## Operator Next Steps
 
