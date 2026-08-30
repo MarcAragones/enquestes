@@ -12,6 +12,7 @@ never silent -- picking ';' over the default ',' always produces a warning.
 """
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 
 import pandas as pd
@@ -57,11 +58,18 @@ def load_table(path: "Path", sheet: str | None = None) -> tuple:
 def _detect_csv_delimiter(path: "Path") -> tuple:
     """Sniffs ',' vs ';' from the header line of a .csv file.
 
-    Returns (delimiter, warning_or_None). Counts occurrences of each
-    candidate in the header line and picks whichever occurs more often;
-    ties (including 0-vs-0) default to ','. Reads the header with the same
+    Returns (delimiter, warning_or_None). Reads the header with the same
     utf-8-then-cp1252 fallback as the real load, since a non-UTF-8 file's
     header would otherwise fail to decode here first.
+
+    Uses `csv.Sniffer` (quote-aware) restricted to the two candidate
+    delimiters, so a quoted free-text header cell containing the *other*
+    candidate character (e.g. a ';'-delimited export whose first header is
+    `"Q1: valora, en general, el servei"`) does not get miscounted the way
+    a raw `header_line.count(",")` would (WR-03). Falls back to the
+    previous raw-count heuristic (ties, including 0-vs-0, default to ',')
+    only if the sniffer can't determine a dialect at all (e.g. a
+    single-column header with neither delimiter present).
 
     Only sniffs ',' vs ';' -- not a general-purpose dialect detector -- per
     D-04 (this pipeline targets one known export convention, not arbitrary
@@ -74,9 +82,14 @@ def _detect_csv_delimiter(path: "Path") -> tuple:
         with open(path, "r", encoding="cp1252", newline="") as handle:
             header_line = handle.readline()
 
-    comma_count = header_line.count(",")
-    semicolon_count = header_line.count(";")
-    if semicolon_count > comma_count:
+    try:
+        delimiter = csv.Sniffer().sniff(header_line, delimiters=",;").delimiter
+    except csv.Error:
+        comma_count = header_line.count(",")
+        semicolon_count = header_line.count(";")
+        delimiter = ";" if semicolon_count > comma_count else ","
+
+    if delimiter == ";":
         warning = (
             "El fitxer sembla delimitat per ';' en lloc de ',' (convenció "
             "habitual d'exportació de fulls de càlcul en català/castellà); "
