@@ -132,6 +132,44 @@ Executa la suite `unittest` de la biblioteca estàndard sobre els mòduls
 purs de `scripts/pipeline/` (`schema`, `infer`, `index`, `privacy`) — sense
 tocar cap fitxer real ni escriure a `public/data/`.
 
+## `verify_publicacio.py` — integritat de la publicació
+
+```bash
+uv run scripts/verify_publicacio.py
+```
+
+Comprova que `enquestes_index.json`, cada `<id>_meta.json` i cada
+`<id>_respostes.parquet` sota `--data-dir` són mútuament consistents:
+l'esquema de l'índex (`schema.validate_index`), ids duplicats, presència
+dels dos fitxers per a cada entrada de l'índex, l'esquema de cada meta
+(`schema.validate_meta`) i que hi coincideix amb la seva entrada de
+l'índex, que `n` del meta coincideix amb el recompte de files del Parquet,
+que el conjunt de noms de `fields` del meta coincideix amb l'esquema de
+columnes del Parquet, i que no hi ha cap fitxer orfe (un `_respostes.parquet`
+o `_meta.json` sense entrada corresponent a l'índex). Reutilitza
+`pipeline.schema.validate_index`/`validate_meta` en comptes de
+reimplementar el contracte publicat, i només llegeix metadades de Parquet
+(recompte de files i noms de columnes) — mai cap valor de cel·la.
+
+### Flags
+
+| Flag | Descripció |
+|------|------------|
+| `--data-dir` | Directori que conté `enquestes_index.json` i el subdirectori `enquestes/` (per defecte: `public/data`) |
+| `--expect-ids` | Llista d'ids separats per comes que l'índex ha de contenir exactament, ni de més ni de menys (opcional) |
+
+### Codis de sortida
+
+| Codi | Significat |
+|------|------------|
+| `0` | Totes les comprovacions han passat |
+| `1` | Alguna comprovació ha fallat, o l'índex no existeix, no es pot llegir o no compleix l'esquema |
+
+Executa'l **després de qualsevol conversió que escrigui a `public/data/`, i
+abans de fer commit** — és la comprovació mecànica que l'upsert de l'índex
+no ha perdut ni duplicat cap entrada i que cada Parquet publicat encara
+coincideix amb el seu meta.
+
 ## On aterren els artefactes — i que són públics per sempre
 
 Els tres scripts anteriors escriuen (o llegeixen) dins de:
@@ -145,7 +183,9 @@ Per defecte, `<out-dir>` és `public/data/`. **Tot el que es comet sota
 serveix a qualsevol visitant del lloc de GitHub Pages des del següent
 desplegament.** No hi ha manera de "retirar" un fitxer publicat sense
 reescriure l'historial de git — tracta cada conversió cap a `public/data/`
-com una publicació irreversible.
+com una publicació irreversible. Executa `uv run scripts/verify_publicacio.py`
+per confirmar que el conjunt publicat és consistent abans que aquest commit
+esdevingui permanent.
 
 ## Visualitzar el resultat localment
 
