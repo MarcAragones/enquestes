@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import re
 from pathlib import Path
 from typing import Any, TypedDict, Union
@@ -148,5 +149,15 @@ def validate_meta(obj: Any) -> None:
 
 
 def write_json(path: Path, obj: Any) -> None:
-    """Writes UTF-8 JSON with literal accented characters (never \\uXXXX escapes)."""
-    path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    """Writes UTF-8 JSON with literal accented characters (never \\uXXXX escapes).
+
+    Writes atomically (temp file in the same directory, then os.replace()
+    onto the final path) so an interruption mid-write (Ctrl-C, disk full,
+    power loss) can never leave a truncated/corrupt meta.json or
+    enquestes_index.json on disk (WR-06) -- the final path either has the
+    old complete content or the new complete content, never a partial one.
+    """
+    path = Path(path)
+    tmp_path = path.with_name(path.name + ".tmp")
+    tmp_path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    os.replace(tmp_path, path)

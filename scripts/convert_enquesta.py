@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -350,9 +351,15 @@ def main(argv: list | None = None) -> int:
         print(f"ERROR: {index_path} és invàlid: {exc}", file=sys.stderr)
         return 1
 
-    # 11. Write the three artifacts.
+    # 11. Write the three artifacts. Each write is atomic (temp file in the
+    #     same directory, then os.replace() onto the final path) so an
+    #     interruption mid-write (Ctrl-C, disk full, power loss) can never
+    #     leave a truncated/corrupt artifact on disk (WR-06); schema.write_json()
+    #     already does this for meta/index, mirrored here for the Parquet write.
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(parquet_path, engine="pyarrow", index=False)
+    tmp_parquet_path = parquet_path.with_name(parquet_path.name + ".tmp")
+    df.to_parquet(tmp_parquet_path, engine="pyarrow", index=False)
+    os.replace(tmp_parquet_path, parquet_path)
     schema.write_json(meta_path, meta)
     schema.write_json(index_path, new_index)
 
