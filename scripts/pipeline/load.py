@@ -173,21 +173,24 @@ def _shape_warnings(df: "pd.DataFrame") -> list:
 
 
 def format_shape_report(df: "pd.DataFrame", warnings: list) -> str:
-    """Printable text: column names with dtypes, row count, first/last 3 rows.
+    """Printable text: column names with dtypes and row count only.
 
     This is the one place the pipeline surfaces whether D-01's one-row-per-
     respondent shape actually holds for the file in hand -- a human sanity
-    check printed on every run, not an automatic title/total-row stripper.
+    check printed on every run. It deliberately never prints raw cell
+    values (no head/tail row dump): this report runs before any privacy
+    screening (free-text drop, cardinality filter, privacy checklist) has
+    had a chance to run, on every conversion of real respondent data, and
+    this codebase's own established discipline (see
+    `pipeline/infer.py`'s `format_high_cardinality_report`) is to never
+    print sample/cell values precisely because this kind of console output
+    gets read, pasted, and committed into SUMMARY files.
     """
     lines = ["=== Forma de les dades carregades ==="]
     lines.append(f"Files: {len(df)}")
     lines.append("Columnes:")
     for col in df.columns:
         lines.append(f"  - {col}: {df[col].dtype}")
-    lines.append("Primeres files:")
-    lines.append(df.head(3).to_string())
-    lines.append("Últimes files:")
-    lines.append(df.tail(3).to_string())
     if warnings:
         lines.append("Avisos:")
         for warning in warnings:
