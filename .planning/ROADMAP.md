@@ -50,7 +50,12 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
   3. All approved surveys are present under `public/data/` and each has a correct entry (id, title, date, description, n) in `enquestes_index.json`, with no entry lost or duplicated by the upsert
   4. Every pipeline change made to accommodate a real export is covered by a regression case, and `scripts/pipeline_selftest.py` still passes end to end — v1.0's validated behaviour is unchanged
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Cardinality-based column auto-selection (D-01..D-04): cutoff, override flag, exclusion report, regression coverage, operator docs
+- [ ] 04-02-PLAN.md — Convert every real export to a scratch directory, fix format gaps reactively with a regression test each, resolve every privacy finding with the operator
+- [ ] 04-03-PLAN.md — Publish the approved surveys to `public/data/`, add and prove the publication integrity verifier, run the full build and preview gate
 
 ### Phase 5: Catalog Cutover to Real Data
 
@@ -80,5 +85,5 @@ Phases execute in numeric order: 4 → 5
 | 1. Foundation & Survey Listing | v1.0 | 3/3 | Complete | 2026-08-26 |
 | 2. Offline Data Pipeline | v1.0 | 3/3 | Complete | 2026-08-26 |
 | 3. Interactive Explorer | v1.0 | 8/8 | Complete | 2026-08-29 |
-| 4. Real Survey Conversion & Publication | v1.1 | 0/TBD | Not started | - |
+| 4. Real Survey Conversion & Publication | v1.1 | 0/3 | Planned | - |
 | 5. Catalog Cutover to Real Data | v1.1 | 0/TBD | Not started | - |
