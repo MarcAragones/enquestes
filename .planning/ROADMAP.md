@@ -53,8 +53,16 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
 **Plans**: 3 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 04-01-PLAN.md — Cardinality-based column auto-selection (D-01..D-04): cutoff, override flag, exclusion report, regression coverage, operator docs
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 04-02-PLAN.md — Convert every real export to a scratch directory, fix format gaps reactively with a regression test each, resolve every privacy finding with the operator
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 04-03-PLAN.md — Publish the approved surveys to `public/data/`, add and prove the publication integrity verifier, run the full build and preview gate
 
 ### Phase 5: Catalog Cutover to Real Data
