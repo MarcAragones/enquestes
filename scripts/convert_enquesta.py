@@ -172,15 +172,19 @@ def main(argv: list | None = None) -> int:
             non_null = series.dropna()
             distinct = series.nunique(dropna=True)
             ratio = (distinct / len(series)) if len(series) else 0.0
-            samples = list(non_null.astype(str).unique()[:3])
             marker = (
                 f"per sobre del llindar, es descartaria per defecte (>{args.max_cardinality})"
                 if distinct > args.max_cardinality
                 else f"dins del llindar (<={args.max_cardinality})"
             )
+            # No sample/cell values are printed here (see CR-02): this mode
+            # runs before any privacy screening (D-02 free-text drop, D-01
+            # cardinality filter, privacy checklist), matching the
+            # no-sample-values discipline already used by
+            # format_high_cardinality_report in pipeline/infer.py.
             print(
                 f"- {col}: dtype={series.dtype}, no-nuls={len(non_null)}, "
-                f"distints={distinct}, ratio-unicitat={ratio:.2f}, mostres={samples}, "
+                f"distints={distinct}, ratio-unicitat={ratio:.2f}, "
                 f"cardinalitat={marker}"
             )
         return 0
