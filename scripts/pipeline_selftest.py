@@ -663,6 +663,81 @@ class ColumnSelectionIntegrationTests(unittest.TestCase):
             self.assertEqual(exit_code, 2)
 
 
+class SkipPrivacyReviewTests(unittest.TestCase):
+    """Regression coverage for --skip-privacy-review (Rule 4 scope extension,
+    04-02 checkpoint: operator decision to bypass the checklist entirely for
+    already-anonymized, government-published sources -- see 04-02-SUMMARY.md).
+    """
+
+    def _run(self, argv):
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            exit_code = convert_enquesta.main(argv)
+        return exit_code, stdout.getvalue()
+
+    def test_skip_flag_converts_despite_findings_and_never_computes_checklist(self):
+        """mostra-privacitat.csv has a codi_postal column that ALWAYS fires a
+        quasi-identifier-name finding (name_hint_flags fires regardless of
+        cardinality) -- without --skip-privacy-review this exact fixture
+        blocks with exit code 2 (see test_privacy_gate_untouched_by_new_filter
+        above). With --skip-privacy-review, conversion must succeed (exit 0)
+        and the checklist computation itself -- not just the blocking exit
+        code -- must never run: the printed output must contain the skip
+        message and must NOT contain the checklist report header or any
+        finding line that report would have printed.
+        """
+        with TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            exit_code, stdout = self._run(
+                [
+                    str(RAW_PRIVACITAT_CSV),
+                    "--id",
+                    "priv-skip",
+                    "--title",
+                    "T",
+                    "--description",
+                    "D",
+                    "--date",
+                    "2026-01-01",
+                    "--out-dir",
+                    str(out_dir),
+                    "--skip-privacy-review",
+                ]
+            )
+            self.assertEqual(exit_code, 0)
+            self.assertIn("Revisió de privacitat OMESA (--skip-privacy-review)", stdout)
+            self.assertNotIn("=== Revisió de privacitat ===", stdout)
+            self.assertNotIn("quasi-identifier-name", stdout)
+
+            parquet_path, _, _ = convert_enquesta._resolve_output_paths(out_dir, "priv-skip")
+            self.assertTrue(parquet_path.exists())
+
+    def test_without_flag_block_by_default_behaviour_is_unchanged(self):
+        """Same fixture, no --skip-privacy-review: the pre-existing
+        block-by-default gate (exit code 2, checklist report printed) must be
+        completely unaffected by the new flag's existence.
+        """
+        with TemporaryDirectory() as tmp:
+            exit_code, stdout = self._run(
+                [
+                    str(RAW_PRIVACITAT_CSV),
+                    "--id",
+                    "priv-no-skip",
+                    "--title",
+                    "T",
+                    "--description",
+                    "D",
+                    "--date",
+                    "2026-01-01",
+                    "--out-dir",
+                    tmp,
+                ]
+            )
+            self.assertEqual(exit_code, 2)
+            self.assertIn("=== Revisió de privacitat ===", stdout)
+            self.assertNotIn("Revisió de privacitat OMESA", stdout)
+
+
 def _base_meta(**overrides) -> dict:
     meta = {
         "id": "x",

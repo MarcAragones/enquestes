@@ -82,6 +82,17 @@ def _parse_args(argv: list) -> argparse.Namespace:
         action="store_true",
         help="Requerit per escriure després de revisar el checklist de privacitat imprès",
     )
+    parser.add_argument(
+        "--skip-privacy-review",
+        action="store_true",
+        help=(
+            "Omet completament el càlcul del checklist de privacitat (no només "
+            "el bloqueig per codi de sortida): només per a fonts la font de les "
+            "quals ja és anonimitzada i verificada per l'operador. S'ha de "
+            "passar explícitament a cada execució; mai s'infereix d'altres "
+            "flags ni esdevé un valor per defecte."
+        ),
+    )
     args = parser.parse_args(argv)
     if not args.list_columns:
         missing = [
@@ -258,16 +269,32 @@ def main(argv: list | None = None) -> int:
     #    acknowledgement is read only from the parsed CLI namespace on this
     #    invocation: no os.environ lookup, no config file, no persisted
     #    state can pre-satisfy the gate.
-    findings, unevaluated = privacy.run_privacy_checklist(df, dimension_columns)
-    assessed_count = len(df.columns) - len(privacy.unevaluated_columns(df))
-    print(privacy.format_checklist_report(findings, unevaluated, assessed_count))
-    if findings and not args.confirm_privacy_review:
+    #
+    #    --skip-privacy-review bypasses the CHECKLIST COMPUTATION ITSELF, not
+    #    just the block-by-default exit code: small_group_flags scans every
+    #    2- and 3-column combination of dimension columns, which is
+    #    combinatorial in column count and measured at ~55-75 minutes per
+    #    real ~280-column export -- an unreasonable unattended runtime for a
+    #    source the operator has already judged pre-anonymized. This is an
+    #    explicit, one-run-at-a-time opt-in: it must never be inferred from
+    #    another flag and must never become a default (see 04-02-SUMMARY.md
+    #    for the recorded operator decision that motivated this flag).
+    if args.skip_privacy_review:
         print(
-            "ERROR: el checklist de privacitat ha trobat indicis. Revisa'ls i torna a "
-            "executar amb --confirm-privacy-review si vols continuar.",
-            file=sys.stderr,
+            "Revisió de privacitat OMESA (--skip-privacy-review): decisió de "
+            "l'operador registrada al resum del pla."
         )
-        return 2
+    else:
+        findings, unevaluated = privacy.run_privacy_checklist(df, dimension_columns)
+        assessed_count = len(df.columns) - len(privacy.unevaluated_columns(df))
+        print(privacy.format_checklist_report(findings, unevaluated, assessed_count))
+        if findings and not args.confirm_privacy_review:
+            print(
+                "ERROR: el checklist de privacitat ha trobat indicis. Revisa'ls i torna a "
+                "executar amb --confirm-privacy-review si vols continuar.",
+                file=sys.stderr,
+            )
+            return 2
 
     # 8. Build kpis, warn on small-sample KPIs, assemble the dicts.
     kpis = infer.build_kpis(df, fields)
