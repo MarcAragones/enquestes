@@ -1,0 +1,1180 @@
+{
+  "id": "REO1151",
+  "title": "Enquesta longitudinal. 3a onada. 2025",
+  "date": "2026-03-05",
+  "description": "Mesurar al llarg dels anys els canvis en les opinions, actituds i comportament dels mateixos individus. Mostra: 6.706.",
+  "n": 6706,
+  "kpis": [
+    {
+      "label": "REO",
+      "value": 1151.0,
+      "n": 6706
+    }
+  ],
+  "fields": [
+    {
+      "name": "REO",
+      "type": "measure"
+    },
+    {
+      "name": "IDENTIFICADOR_COMPLET",
+      "type": "dimension"
+    },
+    {
+      "name": "MODE_ADMIN",
+      "type": "dimension"
+    },
+    {
+      "name": "PANELISTA",
+      "type": "dimension"
+    },
+    {
+      "name": "PROVINCIA",
+      "type": "dimension"
+    },
+    {
+      "name": "HABITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "CLUSTER24",
+      "type": "dimension"
+    },
+    {
+      "name": "CLUSTER_RENDA",
+      "type": "dimension"
+    },
+    {
+      "name": "HORA_INI",
+      "type": "dimension"
+    },
+    {
+      "name": "HORA_FIN",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_ENQUESTA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX",
+      "type": "dimension"
+    },
+    {
+      "name": "CIUTADANIA",
+      "type": "dimension"
+    },
+    {
+      "name": "SEXE",
+      "type": "dimension"
+    },
+    {
+      "name": "EDAT_GR",
+      "type": "dimension"
+    },
+    {
+      "name": "EDAT_CEO",
+      "type": "dimension"
+    },
+    {
+      "name": "ESTUDIS_1_6",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_LAB_1_2",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_LAB_NO_ACTIU",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_LAB_ACTIU",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_ECO_CAT_1_7",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_ECO_PERSONAL_1_7",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_POL_CAT_1_7",
+      "type": "dimension"
+    },
+    {
+      "name": "CAT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "ESP_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "RELACIONS_CAT_ESP_V2",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_INDEPENDENCIA",
+      "type": "dimension"
+    },
+    {
+      "name": "CAT_NACIO",
+      "type": "dimension"
+    },
+    {
+      "name": "IDCAT_CAT",
+      "type": "dimension"
+    },
+    {
+      "name": "IDCAT_IDENTITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "IDESP_ESP",
+      "type": "dimension"
+    },
+    {
+      "name": "IDESP_IDENTITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "PARLAR_CANVI_CLIMATIC_ENTORN",
+      "type": "dimension"
+    },
+    {
+      "name": "ACORD_FRENAR_CANVI_CLIMATIC_V2",
+      "type": "dimension"
+    },
+    {
+      "name": "POSSIBILITAT_FRENAR_CANVI_CLIMATIC",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_FACEBOOK",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_INSTAGRAM",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_TWITTER",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_TIKTOK",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_LINKEDIN",
+      "type": "dimension"
+    },
+    {
+      "name": "NO_UTILITZA_XXSS",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_ALTRES",
+      "type": "dimension"
+    },
+    {
+      "name": "FONT_INFO_TV",
+      "type": "dimension"
+    },
+    {
+      "name": "FONT_INFO_TV_DIFERIT",
+      "type": "dimension"
+    },
+    {
+      "name": "FONT_INFO_RADIO",
+      "type": "dimension"
+    },
+    {
+      "name": "FONT_INFO_PREMSA",
+      "type": "dimension"
+    },
+    {
+      "name": "FONT_INFO_MITJA_DIGITAL",
+      "type": "dimension"
+    },
+    {
+      "name": "FONT_INFO_XXSS",
+      "type": "dimension"
+    },
+    {
+      "name": "FONT_INFO_PODCAST",
+      "type": "dimension"
+    },
+    {
+      "name": "FONT_INFO_YOUTUBE",
+      "type": "dimension"
+    },
+    {
+      "name": "FONT_INFO_WEBTVRADPREM",
+      "type": "dimension"
+    },
+    {
+      "name": "IMPACTE_XXSS_SOCIETAT",
+      "type": "dimension"
+    },
+    {
+      "name": "OPINIO_TECNOLOGIA_SOCIETAT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "OPINIO_TECNOLOGIA_TREBALL_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "IMMIGRACIO_ECONOMIA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "IMMIGRACIO_CULTURA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "IMMIGRACIO_CONVIVENCIA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_FILLS_NEGRA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_FILLS_LLATINA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_FILLS_ASIA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_FILLS_MAGRIBINA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_FILLS_GITANA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_FILLS_GAI_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_FILLS_TRANSEXUAL_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "PERCEPCIO_DISCRIMINACIO",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRIMINACIO_VIDA",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_CPELL",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_OETNIC",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_NACIONALITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_RELIGIO",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_LLENGUA",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_EDAT",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_SEXE_IG",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_ORIENTACIO_SEXUAL",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_SALUT",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_DISCAPACITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_FISIC",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_SIT_ECO",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCRI_ALTR",
+      "type": "dimension"
+    },
+    {
+      "name": "VALORS_FILLS_1",
+      "type": "dimension"
+    },
+    {
+      "name": "VIDA_PLENA_PARELLA",
+      "type": "dimension"
+    },
+    {
+      "name": "VIDA_PLENA_FILLS",
+      "type": "dimension"
+    },
+    {
+      "name": "VIDA_PLENA_FEINA",
+      "type": "dimension"
+    },
+    {
+      "name": "VIDA_PLENA_DINERS",
+      "type": "dimension"
+    },
+    {
+      "name": "VIDA_PLENA_LLEURE",
+      "type": "dimension"
+    },
+    {
+      "name": "VIDA_PLENA_CASA",
+      "type": "dimension"
+    },
+    {
+      "name": "NOMBRE_IDEAL_FILLS_PERSONAL",
+      "type": "dimension"
+    },
+    {
+      "name": "CAT_NAIX",
+      "type": "dimension"
+    },
+    {
+      "name": "OPINIO_TRANSNOB_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "OPINIO_LGTB_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "OPINIO_POLIAMOR_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SEXISME_MODERN_2",
+      "type": "dimension"
+    },
+    {
+      "name": "SEXISME_MODERN_3",
+      "type": "dimension"
+    },
+    {
+      "name": "SEXISME_MODERN_4",
+      "type": "dimension"
+    },
+    {
+      "name": "DESIGUALTATS_GENERE_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "DESIGUALTATS_CAT",
+      "type": "dimension"
+    },
+    {
+      "name": "REDUCCIO_DESIGUALTATS",
+      "type": "dimension"
+    },
+    {
+      "name": "MOBILITAT_SOCIAL1",
+      "type": "dimension"
+    },
+    {
+      "name": "MOBILITAT_SOCIAL2",
+      "type": "dimension"
+    },
+    {
+      "name": "ECON_IGUALITARISME_1_10",
+      "type": "dimension"
+    },
+    {
+      "name": "COMPETENCIES_UE",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_UE_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_XINA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_USA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_RUSSIA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "PREOCUPACIO_CONFLICTE_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "US_CATALA",
+      "type": "dimension"
+    },
+    {
+      "name": "US_CATALA_RETRO",
+      "type": "dimension"
+    },
+    {
+      "name": "US_CATALA_PROS",
+      "type": "dimension"
+    },
+    {
+      "name": "IMPORTANCIA_DEU_VIDA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CREURE_DEU",
+      "type": "dimension"
+    },
+    {
+      "name": "PLANIFICAR_FUTUR_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SATISFACCIO_GLOBAL_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_SALUT",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_FAMILIA",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_SIT_ECO",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_LABORAL",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_PERSONAL",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_BENESTAR_EMOCIONAL",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_MALESTAR",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_PROPOSITS",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_TEMPS",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_CONTEXT",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_HABITATGE",
+      "type": "dimension"
+    },
+    {
+      "name": "MOTIU_SATISFACCIO_SALUT_MENTAL",
+      "type": "dimension"
+    },
+    {
+      "name": "SATISFACCIO_SALUT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SATISFACCIO_REL_SOCIALS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SATISFACCIO_FEINA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SATISFACCIO_FAMILIAR_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_SOCIAL_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "WHO_5_ALEGRE",
+      "type": "dimension"
+    },
+    {
+      "name": "WHO_5_RELAX",
+      "type": "dimension"
+    },
+    {
+      "name": "WHO_5_ACTIU",
+      "type": "dimension"
+    },
+    {
+      "name": "WHO_5_FRESC",
+      "type": "dimension"
+    },
+    {
+      "name": "WHO_5_INTERESSANT",
+      "type": "dimension"
+    },
+    {
+      "name": "TEMPS_PER_MI",
+      "type": "dimension"
+    },
+    {
+      "name": "ESPERA_MASSA",
+      "type": "dimension"
+    },
+    {
+      "name": "DURESA_LLEIS",
+      "type": "dimension"
+    },
+    {
+      "name": "PREOCUPACIO_DELICTE",
+      "type": "dimension"
+    },
+    {
+      "name": "SEGURETAT_FOSC",
+      "type": "dimension"
+    },
+    {
+      "name": "PREOCUPACIO_DADES_COMPRES_INTERNET",
+      "type": "dimension"
+    },
+    {
+      "name": "PREOCUPACIO_DADES_FOTOS_XXSS",
+      "type": "dimension"
+    },
+    {
+      "name": "PREOCUPACIO_DADES_OPINIO_POLITICA",
+      "type": "dimension"
+    },
+    {
+      "name": "PREOCUPACIO_DADES_PUBLIC_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "PREOCUPACIO_DADES_PRIVAT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "PREOCUPACIO_DADES_HACKERS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "TEMA_ECONOMIA",
+      "type": "dimension"
+    },
+    {
+      "name": "TEMA_DESIGUALTATS",
+      "type": "dimension"
+    },
+    {
+      "name": "TEMA_RESPOSTA_CAT_ESP",
+      "type": "dimension"
+    },
+    {
+      "name": "TEMA_SEGURETAT",
+      "type": "dimension"
+    },
+    {
+      "name": "INTERES_POL_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "TECNOCRACIA",
+      "type": "dimension"
+    },
+    {
+      "name": "ELITISME",
+      "type": "dimension"
+    },
+    {
+      "name": "MAJORITARISME",
+      "type": "dimension"
+    },
+    {
+      "name": "LEGALISME2",
+      "type": "dimension"
+    },
+    {
+      "name": "DEMOCRACIA_NIVELLDEVIDA_1_10",
+      "type": "dimension"
+    },
+    {
+      "name": "IDEOL_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SENTIMENT_PERTINENCA",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_PP_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_ERC_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_PSC_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_CUP_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_ECP_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_JUNTS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_VOX_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_AC_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_PARTIT",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_PARTIT_PROPER",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_PARL_CAT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_PARL_ESP_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_PARL_EU_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_JUTGES_TRIBUNALS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "POLARITZACIO_SOCIAL1",
+      "type": "dimension"
+    },
+    {
+      "name": "POLARITZACIO_SOCIAL2",
+      "type": "dimension"
+    },
+    {
+      "name": "POLARITZACIO_SOCIAL3",
+      "type": "dimension"
+    },
+    {
+      "name": "POLARITZACIO_SOCIAL4",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_PRIMERA_1_3",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_PRIMERA_1_3_ALTR",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_PRIMERA_1_3_ALTR_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_IDENTIFICACIO",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_IDENTIFICACIO_ALTR",
+      "type": "dimension"
+    },
+    {
+      "name": "SECTOR",
+      "type": "dimension"
+    },
+    {
+      "name": "JORNADA_LABORAL_2",
+      "type": "dimension"
+    },
+    {
+      "name": "JORNADA_PARCIAL_MOTIU",
+      "type": "dimension"
+    },
+    {
+      "name": "CANVI_FEINA",
+      "type": "dimension"
+    },
+    {
+      "name": "CANVI_FEINA_MOTIU",
+      "type": "dimension"
+    },
+    {
+      "name": "OCUPACIO_CNO11",
+      "type": "dimension"
+    },
+    {
+      "name": "OCUPACIO_CNO11_LIT",
+      "type": "dimension"
+    },
+    {
+      "name": "CNO11_4",
+      "type": "dimension"
+    },
+    {
+      "name": "EGP6",
+      "type": "dimension"
+    },
+    {
+      "name": "EGP10",
+      "type": "dimension"
+    },
+    {
+      "name": "FEINA_SOU",
+      "type": "dimension"
+    },
+    {
+      "name": "FEINA_JORNADA",
+      "type": "dimension"
+    },
+    {
+      "name": "FEINA_ESTABILITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "FEINA_CARREGA",
+      "type": "dimension"
+    },
+    {
+      "name": "BENESTAR_PERMETRE_COTXE_PROPI",
+      "type": "dimension"
+    },
+    {
+      "name": "BENESTAR_VACANCES",
+      "type": "dimension"
+    },
+    {
+      "name": "BENESTAR_SUPORT_LLAR",
+      "type": "dimension"
+    },
+    {
+      "name": "BENESTAR_PROPIETATS",
+      "type": "dimension"
+    },
+    {
+      "name": "BENESTAR_TEMPERATURA_LLAR",
+      "type": "dimension"
+    },
+    {
+      "name": "BENESTAR_FACTURES",
+      "type": "dimension"
+    },
+    {
+      "name": "BENESTAR_ESTALVIS",
+      "type": "dimension"
+    },
+    {
+      "name": "BENESTAR_APAT",
+      "type": "dimension"
+    },
+    {
+      "name": "BENESTAR_LLOGUER_HIPOTECA",
+      "type": "dimension"
+    },
+    {
+      "name": "BENESTAR_ASSEGURANCA",
+      "type": "dimension"
+    },
+    {
+      "name": "INDEX_BENESTAR",
+      "type": "dimension"
+    },
+    {
+      "name": "EDAT_INDEPENDITZARSE_INTERVALS",
+      "type": "dimension"
+    },
+    {
+      "name": "TIPUS_HABITATGE_RESIDENCIA",
+      "type": "dimension"
+    },
+    {
+      "name": "CANVI_HABITATGE_PASSAT",
+      "type": "dimension"
+    },
+    {
+      "name": "CANVI_HABITATGE_FUTUR",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_MARE",
+      "type": "dimension"
+    },
+    {
+      "name": "ESTUDIS_1_4_MARE",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_PARE",
+      "type": "dimension"
+    },
+    {
+      "name": "ESTUDIS_1_4_PARE",
+      "type": "dimension"
+    },
+    {
+      "name": "ESTAT_CIVIL_2",
+      "type": "dimension"
+    },
+    {
+      "name": "PERSONES_LLAR",
+      "type": "dimension"
+    },
+    {
+      "name": "TIPUS_LLAR",
+      "type": "dimension"
+    },
+    {
+      "name": "FILLS",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_5",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_6",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_7",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_8",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_9",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_10",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_11",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_12",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_13",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_14",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_15",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_16",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_RESERVADA_1_5",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_CONFIADA_1_5",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_MANDROSA_1_5",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_ESTRESSADA_1_5",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_ARTISTICA_1_5",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_SOCIABLE_1_5",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_NO_ERRORS_1_5",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_METICULOSA_1_5",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_NERVIOSA_1_5",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_IMAGINATIVA_1_5",
+      "type": "dimension"
+    },
+    {
+      "name": "EXTRAVERSIO",
+      "type": "dimension"
+    },
+    {
+      "name": "AFABILITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "RESPONSABILITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "ESTABILITAT_EMOCIONAL",
+      "type": "dimension"
+    },
+    {
+      "name": "OBERTA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_CCAA",
+      "type": "dimension"
+    },
+    {
+      "name": "CLASSE_SOCIAL_SUBJECTIVA_1_7",
+      "type": "dimension"
+    },
+    {
+      "name": "GRUP_ETNIC",
+      "type": "dimension"
+    },
+    {
+      "name": "DEPENDENT",
+      "type": "dimension"
+    },
+    {
+      "name": "DISCAPACITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "RELIGIO",
+      "type": "dimension"
+    },
+    {
+      "name": "RELIGIO_FREQ",
+      "type": "dimension"
+    },
+    {
+      "name": "TIPUS_DISPOSITIU",
+      "type": "dimension"
+    },
+    {
+      "name": "AJUDA_RESPONDRE",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_INTERES_ENQUESTA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "Q253_2_ALEATORITZACIO_1",
+      "type": "dimension"
+    },
+    {
+      "name": "CIUTADANIA_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ESTUDIS_1_6_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_PRIMERA_1_3_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_PRIMERA_1_3_ALTR_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_PARE_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_MARE_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ESTUDIS_1_4_MARE_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ESTUDIS_1_4_PARE_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "FILLS_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_1_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_2_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_3_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_4_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_5_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_6_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_7_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_8_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_9_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_10_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_NAIXEMENT_FILL_11_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_CCAA_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_MON_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY_ARRIBADA_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "GRUP_ETNIC_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_RESERVADA_1_5_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_CONFIADA_1_5_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_MANDROSA_1_5_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_ESTRESSADA_1_5_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_ARTISTICA_1_5_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_SOCIABLE_1_5_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_NO_ERRORS_1_5_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_METICULOSA_1_5_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_NERVIOSA_1_5_RECUPERADA",
+      "type": "dimension"
+    },
+    {
+      "name": "BFI_IMAGINATIVA_1_5_RECUPERADA",
+      "type": "dimension"
+    }
+  ]
+}

@@ -5,5 +5,26 @@
     "date": "2026-08-26",
     "description": "Enquesta generada automàticament amb dades sintètiques: les respostes són aleatòries, no corresponen a cap persona real i existeixen només perquè es pugui desenvolupar i demostrar l'explorador interactiu.",
     "n": 250
+  },
+  {
+    "id": "REO1167",
+    "title": "Baròmetre d'Opinió Política. 1a onada 2026",
+    "date": "2026-07-09",
+    "description": "Recollir la percepció de la societat catalana sobre política, economia, mitjans de comunicació i comportament electoral, i de la valoració de líders polítics. Mostra 2.000.",
+    "n": 2000
+  },
+  {
+    "id": "REO1151",
+    "title": "Enquesta longitudinal. 3a onada. 2025",
+    "date": "2026-03-05",
+    "description": "Mesurar al llarg dels anys els canvis en les opinions, actituds i comportament dels mateixos individus. Mostra: 6.706.",
+    "n": 6706
+  },
+  {
+    "id": "REO1145",
+    "title": "Baròmetre d'Opinió Política. 3a onada 2025",
+    "date": "2025-11-24",
+    "description": "Recollir la percepció de la societat catalana sobre política, economia, mitjans de comunicació i comportament electoral, i de la valoració de líders polítics. Mostra: 2.000.",
+    "n": 2000
   }
 ]

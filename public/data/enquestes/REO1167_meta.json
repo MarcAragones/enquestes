@@ -1,0 +1,1173 @@
+{
+  "id": "REO1167",
+  "title": "Baròmetre d'Opinió Política. 1a onada 2026",
+  "date": "2026-07-09",
+  "description": "Recollir la percepció de la societat catalana sobre política, economia, mitjans de comunicació i comportament electoral, i de la valoració de líders polítics. Mostra 2.000.",
+  "n": 2000,
+  "kpis": [
+    {
+      "label": "PONDERA",
+      "value": 1.0,
+      "n": 2000
+    },
+    {
+      "label": "REO",
+      "value": 1167.0,
+      "n": 2000
+    },
+    {
+      "label": "ANY",
+      "value": 2026.0,
+      "n": 2000
+    },
+    {
+      "label": "ENQUESTADOR_CODI",
+      "value": 1229.75,
+      "n": 2000
+    },
+    {
+      "label": "ENQUESTADOR_EDAT",
+      "value": 55.49,
+      "n": 2000
+    },
+    {
+      "label": "CLUSTER_24",
+      "value": 3.7,
+      "n": 2000
+    }
+  ],
+  "fields": [
+    {
+      "name": "PONDERA",
+      "type": "measure"
+    },
+    {
+      "name": "ORDRE_REVISADA",
+      "type": "dimension"
+    },
+    {
+      "name": "REO",
+      "type": "measure"
+    },
+    {
+      "name": "METODOLOGIA",
+      "type": "dimension"
+    },
+    {
+      "name": "BOP_NUM",
+      "type": "dimension"
+    },
+    {
+      "name": "ANY",
+      "type": "measure"
+    },
+    {
+      "name": "MES",
+      "type": "dimension"
+    },
+    {
+      "name": "HORA_INI",
+      "type": "dimension"
+    },
+    {
+      "name": "HORA_FIN",
+      "type": "dimension"
+    },
+    {
+      "name": "GRAVACIO",
+      "type": "dimension"
+    },
+    {
+      "name": "TIPUS_GRAV",
+      "type": "dimension"
+    },
+    {
+      "name": "FASE",
+      "type": "dimension"
+    },
+    {
+      "name": "ENQUESTADOR_CODI",
+      "type": "measure"
+    },
+    {
+      "name": "ENQUESTADOR_SEXE",
+      "type": "dimension"
+    },
+    {
+      "name": "ENQUESTADOR_EDAT",
+      "type": "measure"
+    },
+    {
+      "name": "ENQUESTADOR_ESTUDIS",
+      "type": "dimension"
+    },
+    {
+      "name": "ENQUESTADOR_NACIONALITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "NUM_QUEST_CAMP",
+      "type": "dimension"
+    },
+    {
+      "name": "PROVINCIA",
+      "type": "dimension"
+    },
+    {
+      "name": "HABITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "CLUSTER_24",
+      "type": "measure"
+    },
+    {
+      "name": "CONF_SECC",
+      "type": "dimension"
+    },
+    {
+      "name": "DOMICILI_PARTICULAR",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_ENQUESTA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_SISTEMA",
+      "type": "dimension"
+    },
+    {
+      "name": "RESIDENCIA",
+      "type": "dimension"
+    },
+    {
+      "name": "CIUTADANIA",
+      "type": "dimension"
+    },
+    {
+      "name": "GENERE",
+      "type": "dimension"
+    },
+    {
+      "name": "GENERE_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "SEXE",
+      "type": "dimension"
+    },
+    {
+      "name": "EDAT_GR",
+      "type": "dimension"
+    },
+    {
+      "name": "EDAT_CEO",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX",
+      "type": "dimension"
+    },
+    {
+      "name": "HORA_PRIMERA_PREGUNTA",
+      "type": "dimension"
+    },
+    {
+      "name": "PRE_PROBLEMES",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_2",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_3",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_4",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_5",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_6",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_7",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_8",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_9",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_10",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_11",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_R_12",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_E_7",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_E_8",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_E_9",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_E_10",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_E_11",
+      "type": "dimension"
+    },
+    {
+      "name": "PROBLEMES_E_12",
+      "type": "dimension"
+    },
+    {
+      "name": "PARTIT_RESPOSTA_ECONOMIA",
+      "type": "dimension"
+    },
+    {
+      "name": "PARTIT_RESPOSTA_CONVIVENCIA",
+      "type": "dimension"
+    },
+    {
+      "name": "PARTIT_RESPOSTA_DESIGUALTATS",
+      "type": "dimension"
+    },
+    {
+      "name": "PARTIT_RESPOSTA_CAT_ESP",
+      "type": "dimension"
+    },
+    {
+      "name": "PARTIT_RESPOSTA_SEGURETAT",
+      "type": "dimension"
+    },
+    {
+      "name": "PARTIT_RESPOSTA_SERVEIS_PUBLICS",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_ECO_CAT",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_ECO_CAT_RETROSPECTIVA",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_ECO_CAT_PROSPECTIVA",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_ECO_ESP",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_ECO_ESP_PROSPECTIVA",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_ECO_PERSONAL",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_ECO_PERSONAL_PROSPECTIVA",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_POL_CAT",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_POL_CAT_RETROSPECTIVA",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_POL_CAT_PROSPECTIVA",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_POL_ESP",
+      "type": "dimension"
+    },
+    {
+      "name": "INTERES_POL",
+      "type": "dimension"
+    },
+    {
+      "name": "PREFERENCIA_PRESIDENT_CAT",
+      "type": "dimension"
+    },
+    {
+      "name": "PREFERENCIA_PRESIDENT_CAT_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "PREFERENCIA_PRESIDENT_ESP",
+      "type": "dimension"
+    },
+    {
+      "name": "PREFERENCIA_PRESIDENT_ESP_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_GOV_CAT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_GOV_ESP_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "INF_POL_DIARI_FREQ",
+      "type": "dimension"
+    },
+    {
+      "name": "INF_POL_TV_FREQ",
+      "type": "dimension"
+    },
+    {
+      "name": "INF_POL_RADIO_FREQ",
+      "type": "dimension"
+    },
+    {
+      "name": "INF_POL_XARXES_FREQ",
+      "type": "dimension"
+    },
+    {
+      "name": "INF_POL_CONEGUTS_FREQ",
+      "type": "dimension"
+    },
+    {
+      "name": "INTERES_MITJANS_CANVI_CLIMATIC",
+      "type": "dimension"
+    },
+    {
+      "name": "INTERES_MITJANS_HABITATGE",
+      "type": "dimension"
+    },
+    {
+      "name": "INTERES_MITJANS_CAT_ESP",
+      "type": "dimension"
+    },
+    {
+      "name": "INTERES_MITJANS_SEGURETAT",
+      "type": "dimension"
+    },
+    {
+      "name": "INTERES_MITJANS_ECONOMIA",
+      "type": "dimension"
+    },
+    {
+      "name": "INTERES_MITJANS_ESPORTS",
+      "type": "dimension"
+    },
+    {
+      "name": "INTERES_MITJANS_FEMINISME",
+      "type": "dimension"
+    },
+    {
+      "name": "INTERES_MITJANS_GUERRES",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_TRIBUNALS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_PARTITS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_AJUNTAMENT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_GOV_ESP_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_GOV_CAT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_CONGRES_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_PARLAMENT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_UE_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_MONARQUIA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_SINDICATS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_ASS_EMPRESARIALS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONFI_ESGLESIA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "SATIS_DEMOCRACIA",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_PARTIT",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_PARTIT_PROPER",
+      "type": "dimension"
+    },
+    {
+      "name": "IDEOL_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "EU_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CAT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "ESP_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "MONARQUIA_REPUBLICA",
+      "type": "dimension"
+    },
+    {
+      "name": "RELACIONS_CAT_ESP",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_INDEPENDENCIA",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_INDEP_CANVI",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUT_GRUPS_PARL_PRESSIO",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUT_GRUPS_PARL_NEGOCIACIO",
+      "type": "dimension"
+    },
+    {
+      "name": "INT_PARLAMENT_PART_1_4",
+      "type": "dimension"
+    },
+    {
+      "name": "INT_PARLAMENT_VOT",
+      "type": "dimension"
+    },
+    {
+      "name": "INT_PARLAMENT_VOT2",
+      "type": "dimension"
+    },
+    {
+      "name": "INT_PARLAMENT_VOT2_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "INT_PARLAMENT_VOT2_RECORD",
+      "type": "dimension"
+    },
+    {
+      "name": "PART_PARLAMENT",
+      "type": "dimension"
+    },
+    {
+      "name": "REC_PARLAMENT_VOT",
+      "type": "dimension"
+    },
+    {
+      "name": "REC_PARLAMENT_VOT_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "REC_PARLAMENT_VOT_CENS",
+      "type": "dimension"
+    },
+    {
+      "name": "INT_CONGRES_PART_1_4",
+      "type": "dimension"
+    },
+    {
+      "name": "INT_CONGRES_VOT",
+      "type": "dimension"
+    },
+    {
+      "name": "PART_CONGRES",
+      "type": "dimension"
+    },
+    {
+      "name": "REC_CONGRES_VOT",
+      "type": "dimension"
+    },
+    {
+      "name": "REC_CONGRES_VOT_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "REC_CONGRES_VOT_CENS",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_A_FERNANDEZ",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_A_FERNANDEZ_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_C_PUIGDEMONT",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_C_PUIGDEMONT_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_O_JUNQUERAS",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_O_JUNQUERAS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_S_ILLA",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_S_ILLA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_J_ALBIACH",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_J_ALBIACH_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_P_CASTILLEJO",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_P_CASTILLEJO_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_I_GARRIGA",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_I_GARRIGA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_S_ORRIOLS",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_S_ORRIOLS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_P_SANCHEZ",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_P_SANCHEZ_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_A_N_FEIJOO",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_A_N_FEIJOO_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_S_ABASCAL",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_S_ABASCAL_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_G_RUFIAN",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_G_RUFIAN_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_M_NOGUERAS",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_M_NOGUERAS_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_E_URTASUN",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_E_URTASUN_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "INF_POL_MON_FREQ",
+      "type": "dimension"
+    },
+    {
+      "name": "AMENACA_GI_CATALUNYA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_POSICIO_CONFLICTE_ORIENT_MITJA_EEUU_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_POSICIO_CONFLICTE_ORIENT_MITJA_ISRAEL_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_POSICIO_CONFLICTE_ORIENT_MITJA_UE_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_POSICIO_CONFLICTE_ORIENT_MITJA_ALEMANYA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_POSICIO_CONFLICTE_ORIENT_MITJA_FRANCA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_POSICIO_CONFLICTE_ORIENT_MITJA_ESPANYA_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_EEUU_D_TRUMP",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_EEUU_D_TRUMP_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_ALEMANYA_F_MERZ",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_ALEMANYA_F_MERZ_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_RUSSIA_V_PUTIN",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_RUSSIA_V_PUTIN_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_XINA_X_JINPING",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_XINA_X_JINPING_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_FRANCA_E_MACRON",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_FRANCA_E_MACRON_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_ITALIA_G_MELONI",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_ITALIA_G_MELONI_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_P_LLEO_XIV",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_P_LLEO_XIV_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "CONEIX_CUE_U_VONDERLEYEN",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_CUE_U_VONDERLEYEN_0_10",
+      "type": "dimension"
+    },
+    {
+      "name": "VAL_PONTIFICAT_1ERANY_P_LLEO_XIV",
+      "type": "dimension"
+    },
+    {
+      "name": "POSICIONAMENT_OPINIONS_P_LLEO_XIV",
+      "type": "dimension"
+    },
+    {
+      "name": "CONSP_GOV_MITJANS_1_4",
+      "type": "dimension"
+    },
+    {
+      "name": "CONSP_GOV_ELIT_1_4",
+      "type": "dimension"
+    },
+    {
+      "name": "CONSP_GOV_INFORMACIO_1_4",
+      "type": "dimension"
+    },
+    {
+      "name": "CONSP_SALUT_VACUNES_1_4",
+      "type": "dimension"
+    },
+    {
+      "name": "CONSP_TECNO_CLIMA_1_4",
+      "type": "dimension"
+    },
+    {
+      "name": "CORRUPCIO_CIUTADANIA_PAGAR",
+      "type": "dimension"
+    },
+    {
+      "name": "CORRUPCIO_POLITICS",
+      "type": "dimension"
+    },
+    {
+      "name": "IA_FREQ_MES_US_PERSONAL",
+      "type": "dimension"
+    },
+    {
+      "name": "IA_FREQ_ACTUALITAT_POLITICA",
+      "type": "dimension"
+    },
+    {
+      "name": "IA_FREQ_SALUT_FISICA",
+      "type": "dimension"
+    },
+    {
+      "name": "IA_FREQ_SALUT_MENTAL",
+      "type": "dimension"
+    },
+    {
+      "name": "IA_FREQ_JURID_ECONOMIQUES",
+      "type": "dimension"
+    },
+    {
+      "name": "IA_FREQ_IDEOLOGICA",
+      "type": "dimension"
+    },
+    {
+      "name": "IA_FREQ_RELIGIOS",
+      "type": "dimension"
+    },
+    {
+      "name": "IA_FREQ_AFECTIVES",
+      "type": "dimension"
+    },
+    {
+      "name": "IA_VAL_VERACITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "IA_VAL_CONTRASTA_VERACITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_ECONOMIA",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_IMPOSTOS",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_AUTORITAT",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_LLEI",
+      "type": "dimension"
+    },
+    {
+      "name": "ACTITUD_IMMIGRACIO",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_CCAA",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_PARE",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_PARE_JOVE",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_PARE_GRAN",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_MARE",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_MARE_JOVE",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_MARE_GRAN",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_AVIS_CAT",
+      "type": "dimension"
+    },
+    {
+      "name": "LLOC_NAIX_AVIS_ESP",
+      "type": "dimension"
+    },
+    {
+      "name": "RELIGIO",
+      "type": "dimension"
+    },
+    {
+      "name": "RELIGIO_FREQ",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_LAB",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_LAB_NO_ACTIU",
+      "type": "dimension"
+    },
+    {
+      "name": "SIT_LAB_ACTIU",
+      "type": "dimension"
+    },
+    {
+      "name": "SECTOR",
+      "type": "dimension"
+    },
+    {
+      "name": "OCUPACIO_CNO11_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "OCUPACIO_CNO11_1",
+      "type": "dimension"
+    },
+    {
+      "name": "OCUPACIO_CNO11_3",
+      "type": "dimension"
+    },
+    {
+      "name": "ESTUDIS_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "ESTAT_CIVIL_2",
+      "type": "dimension"
+    },
+    {
+      "name": "FILLS",
+      "type": "dimension"
+    },
+    {
+      "name": "RELACIO_HABITATGE",
+      "type": "dimension"
+    },
+    {
+      "name": "HERETAR_HABITATGE_FUTUR",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_FACEBOOK",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_INSTAGRAM",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_TWITTER",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_TELEGRAM",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_TIKTOK",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_BLUESKY",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_YOUTUBE",
+      "type": "dimension"
+    },
+    {
+      "name": "UTILITZA_TWITCH",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_PRIMERA_1_3",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_PRIMERA_ALTRES",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_IDENT_1_3",
+      "type": "dimension"
+    },
+    {
+      "name": "LLENGUA_IDENT_ALTRES",
+      "type": "dimension"
+    },
+    {
+      "name": "SENTIMENT_PERTINENCA",
+      "type": "dimension"
+    },
+    {
+      "name": "PERSONES_LLAR",
+      "type": "dimension"
+    },
+    {
+      "name": "DEPENDENCIA_ECO_PARES_MENORS_40",
+      "type": "dimension"
+    },
+    {
+      "name": "ORIENTACIO_SEXUAL",
+      "type": "dimension"
+    },
+    {
+      "name": "ORIENTACIO_SEXUAL_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "INGRESSOS_1_15",
+      "type": "dimension"
+    },
+    {
+      "name": "CLASSE_SOCIAL_SUBJECTIVA_1_7",
+      "type": "dimension"
+    },
+    {
+      "name": "HORA_ULTIMA_PREGUNTA",
+      "type": "dimension"
+    },
+    {
+      "name": "E2",
+      "type": "dimension"
+    },
+    {
+      "name": "E3_1_4",
+      "type": "dimension"
+    },
+    {
+      "name": "E4_1_4",
+      "type": "dimension"
+    },
+    {
+      "name": "E5_1_4",
+      "type": "dimension"
+    },
+    {
+      "name": "E6",
+      "type": "dimension"
+    },
+    {
+      "name": "E7",
+      "type": "dimension"
+    },
+    {
+      "name": "E81",
+      "type": "dimension"
+    },
+    {
+      "name": "E82",
+      "type": "dimension"
+    },
+    {
+      "name": "E83",
+      "type": "dimension"
+    },
+    {
+      "name": "E84",
+      "type": "dimension"
+    },
+    {
+      "name": "E85",
+      "type": "dimension"
+    },
+    {
+      "name": "E86",
+      "type": "dimension"
+    },
+    {
+      "name": "E898",
+      "type": "dimension"
+    },
+    {
+      "name": "E9",
+      "type": "dimension"
+    },
+    {
+      "name": "E10",
+      "type": "dimension"
+    },
+    {
+      "name": "E11",
+      "type": "dimension"
+    },
+    {
+      "name": "E11_LITERALS",
+      "type": "dimension"
+    },
+    {
+      "name": "FORMAT_ENQUESTA",
+      "type": "dimension"
+    },
+    {
+      "name": "SUPERVISADA",
+      "type": "dimension"
+    },
+    {
+      "name": "SIMPATIA_PARTIT_R",
+      "type": "dimension"
+    },
+    {
+      "name": "INT_PARLAMENT_VOT_R",
+      "type": "dimension"
+    },
+    {
+      "name": "REC_PARLAMENT_VOT_R",
+      "type": "dimension"
+    },
+    {
+      "name": "REC_PARLAMENT_VOT_CENS_R",
+      "type": "dimension"
+    },
+    {
+      "name": "INT_CONGRES_VOT_R",
+      "type": "dimension"
+    },
+    {
+      "name": "REC_CONGRES_VOT_R",
+      "type": "dimension"
+    },
+    {
+      "name": "REC_CONGRES_VOT_CENS_R",
+      "type": "dimension"
+    },
+    {
+      "name": "CIRCUIT_1167_1",
+      "type": "dimension"
+    },
+    {
+      "name": "CIRCUIT_1167_2",
+      "type": "dimension"
+    },
+    {
+      "name": "CIRCUIT_1167_3",
+      "type": "dimension"
+    },
+    {
+      "name": "CIRCUIT_1167_4",
+      "type": "dimension"
+    },
+    {
+      "name": "CIRCUIT_1167_5",
+      "type": "dimension"
+    },
+    {
+      "name": "CIRCUIT_1167_6",
+      "type": "dimension"
+    },
+    {
+      "name": "CIRCUIT_1167_7",
+      "type": "dimension"
+    },
+    {
+      "name": "EGP10",
+      "type": "dimension"
+    },
+    {
+      "name": "EGP6",
+      "type": "dimension"
+    }
+  ]
+}
