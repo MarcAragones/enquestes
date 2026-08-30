@@ -112,8 +112,23 @@ def _read_csv_with_fallback(path: "Path", sep: str) -> tuple:
 
 
 def _read_csv_or_raise(path: "Path", sep: str, encoding: str) -> "pd.DataFrame":
+    """Reads path with pandas, always with low_memory=False.
+
+    A real ~300-column export (REO1151) surfaced pandas' default chunked
+    dtype inference (low_memory=True) silently reading a single numeric-
+    looking column (e.g. birth year) as a MIX of int and str cells across
+    internal read-buffer boundaries once the file is wide/large enough --
+    doubling that column's nunique() count (159 vs the true 81) because
+    int 1963 and str '1963' compare as distinct values. This corrupts the
+    D-01 cardinality filter and the privacy checklist's uniqueness ratio
+    without ever raising or printing anything. low_memory=False forces a
+    single full-file dtype-inference pass, eliminating the inconsistency;
+    it is always applied, not conditionally detected, so no warning is
+    appended -- there is no ambiguous interpretation to disclose here,
+    only an internal pandas footgun to avoid.
+    """
     try:
-        return pd.read_csv(path, sep=sep, encoding=encoding)
+        return pd.read_csv(path, sep=sep, encoding=encoding, low_memory=False)
     except pd.errors.ParserError as exc:
         raise ValueError(
             f"El fitxer CSV té almenys una fila amb un nombre de camps "

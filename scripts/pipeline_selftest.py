@@ -19,6 +19,7 @@ import io
 import json
 import shutil
 import unittest
+import warnings
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -373,6 +374,50 @@ class LoadTableTests(unittest.TestCase):
             with self.assertRaises(ValueError) as ctx:
                 load_mod.load_table(path)
             self.assertIn("línia", str(ctx.exception))
+
+    def test_wide_export_does_not_double_count_distinct_values_across_read_buffer(self):
+        """REO1151 regression: pandas' default low_memory=True chunks a wide
+        file's dtype inference internally; once the file is large enough to
+        span more than one internal read buffer (empirically ~16MB+ in this
+        pandas version), a numeric-looking column with a few blank/no-answer
+        cells near the end gets read back as a MIX of int and str cells --
+        int 1963 and str '1963' then compare as two distinct values, nearly
+        doubling nunique() for that column and corrupting both the D-01
+        cardinality filter and the privacy checklist's uniqueness ratio,
+        entirely silently (pandas' own DtypeWarning is not part of this
+        module's warnings list at all).
+
+        Reproducing the actual buffer-boundary condition needs a file large
+        enough to cross pandas' internal chunk size -- verified empirically
+        via bisection to sit at ~15.7MB for this row/column shape, well
+        above what a few inline text lines can produce. A 3000-row,
+        291-column file is therefore the realistic minimum reproduction,
+        not a toy fixture; it still runs in well under a second.
+        """
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "wide_export.csv"
+            n_rows = 3000
+            n_filler_cols = 290
+            filler_val = "x" * 20
+            distinct_years = list(range(1950, 1980))  # 30 true distinct values
+            header = "any_naixement," + ",".join(f"filler_{i}" for i in range(n_filler_cols))
+            lines = [header]
+            for i in range(n_rows):
+                value = " " if i >= n_rows - 3 else str(distinct_years[i % len(distinct_years)])
+                lines.append(value + "," + ",".join([filler_val] * n_filler_cols))
+            path.write_text("\n".join(lines), encoding="utf-8")
+
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                df, load_warnings = load_mod.load_table(path)
+                dtype_warnings = [
+                    w for w in caught if issubclass(w.category, pd.errors.DtypeWarning)
+                ]
+
+            self.assertEqual(dtype_warnings, [])
+            # 30 distinct years + 1 blank marker = 31, never inflated by a
+            # mixed int/str read of the same underlying values.
+            self.assertEqual(df["any_naixement"].nunique(dropna=True), 31)
 
 
 class EndToEndConversionTests(unittest.TestCase):
