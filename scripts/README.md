@@ -33,9 +33,11 @@ artefactes publicats.
 |------|------------|------------|
 | `input_csv` (posicional) | sí | Camí a l'export CSV |
 | `--id` | sí | Identificador de l'enquesta (`^[A-Za-z0-9._-]{1,64}$`) |
-| `--columns` | sí* | Llista de columnes permeses, separades per comes |
+| `--columns` | no | Llista de columnes permeses, separades per comes. Si s'omet, es conserven totes les columnes carregades abans dels filtres de text lliure (D-02) i cardinalitat (D-01) |
 | `--title` | sí* | Títol de l'enquesta |
 | `--description` | sí* | Descripció de l'enquesta |
+| `--max-cardinality` | no | Llindar de valors distints per sobre del qual una columna es descarta automàticament (D-01); per defecte `20` |
+| `--include-columns` | no | Llista de columnes a mantenir malgrat superar el llindar de cardinalitat, separades per comes (D-04); no evita mai l'exclusió incondicional de text lliure (D-02) |
 | `--date` | no | `YYYY-MM-DD` (per defecte: avui en UTC) |
 | `--out-dir` | no | Directori de sortida (per defecte: `public/data`) |
 | `--sheet` | no | Nom del full a llegir en entrades `.xlsx` (per defecte: el primer full) |
@@ -64,21 +66,41 @@ llegir l'informe primer.
 
 ### Fluxos de treball recomanat per a un export real
 
-1. **Inspecciona les columnes**: `uv run scripts/convert_enquesta.py <csv> --list-columns`
-2. **Tria l'allow-list** de columnes a partir de la sortida anterior
-3. **Executa sense `--confirm-privacy-review`** per veure el checklist de privacitat
-4. **Llegeix el checklist** — revisa cada indici (columnes gairebé úniques, grups petits)
-5. **Torna a executar amb `--confirm-privacy-review`** només un cop revisats els indicis
+1. **Inspecciona les columnes**: `uv run scripts/convert_enquesta.py <csv> --list-columns` — cada línia mostra el marcador de llindar de cardinalitat (D-01) per llegir d'un cop d'ull què es descartaria per defecte
+2. **Executa sense `--columns`**: la selecció automàtica per cardinalitat (D-01) substitueix l'enumeració manual per defecte. Llegeix tant l'informe d'exclusió per cardinalitat com el checklist de privacitat que s'imprimeixen
+3. **Recupera columnes mal excloses** amb `--include-columns nom1,nom2` si el llindar per defecte ha descartat alguna columna que vols mantenir
+4. **Estreny explícitament amb `--columns`** només si vols un allow-list més restrictiu que l'heurística per defecte
+5. **Llegeix el checklist de privacitat** — revisa cada indici (columnes gairebé úniques, grups petits)
+6. **Torna a executar amb `--confirm-privacy-review`** només un cop revisats els indicis
 
 ### Les columnes de text lliure s'exclouen sempre (D-02)
 
 Qualsevol columna detectada com a text lliure (longitud mitjana > 60
 caràcters, o gairebé única amb mitjana > 25 caràcters) es descarta
-**incondicionalment**, encara que estigui explícitament a `--columns`. No hi
-ha cap flag per tornar-la a incloure — és una decisió de disseny (D-02), no
-un valor per defecte modificable: un cop una enquesta s'ha publicat sense
-una columna de text lliure, tornar-la a afegir requereix reprocessar i
-tornar a publicar les seves dades.
+**incondicionalment**, encara que estigui explícitament a `--columns` o a
+`--include-columns`. No hi ha cap flag per tornar-la a incloure — és una
+decisió de disseny (D-02), no un valor per defecte modificable: un cop una
+enquesta s'ha publicat sense una columna de text lliure, tornar-la a afegir
+requereix reprocessar i tornar a publicar les seves dades.
+
+### Les columnes de cardinalitat alta s'exclouen per defecte (D-01)
+
+Qualsevol columna amb més de `--max-cardinality` valors distints (per
+defecte **20**, `MAX_DISTINCT_VALUES`) es descarta **per defecte**. Es
+tracta d'un **recompte absolut** de valors distints, deliberadament **no**
+escalat al nombre de files: un export de 24 files i un de 2000 files
+descarten una columna al mateix recompte de valors distints. `--max-cardinality`
+canvia aquest llindar. Cada columna descartada es reporta pel seu nom i el
+seu recompte de valors distints abans que la baixa faci efecte;
+`--include-columns nom1,nom2` recupera una columna concreta malgrat superar
+el llindar.
+
+Aquest és un **tercer filtre independent** que ni substitueix ni és
+substituït per l'exclusió de text lliure (D-02) ni pel checklist de
+privacitat: una columna pot ser descartada per qualsevol dels tres per
+separat. En particular, **`--include-columns` no pot ni podrà mai** recuperar
+una columna que l'exclusió de text lliure ja ha descartat (D-02 és
+incondicional, vegeu la secció anterior).
 
 ## `generate_mock_parquet.py` — dades sintètiques
 

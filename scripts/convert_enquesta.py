@@ -148,17 +148,29 @@ def main(argv: list | None = None) -> int:
     print(f"Columnes detectades ({len(df.columns)}): {', '.join(str(c) for c in df.columns)}")
     print(f"Files detectades: {len(df)}")
 
-    # 4. --list-columns inspection mode: print and exit without writing.
+    # 4. --list-columns inspection mode: print and exit without writing. Each
+    #    line gets a D-01 threshold marker appended after the existing
+    #    fields, derived from the same `distinct` value already computed
+    #    here and the effective --max-cardinality, so an operator can see
+    #    which columns the cardinality cutoff would drop by default without
+    #    reading the source.
     if args.list_columns:
+        print(f"Llindar de cardinalitat efectiu (--max-cardinality): {args.max_cardinality}")
         for col in df.columns:
             series = df[col]
             non_null = series.dropna()
             distinct = series.nunique(dropna=True)
             ratio = (distinct / len(series)) if len(series) else 0.0
             samples = list(non_null.astype(str).unique()[:3])
+            marker = (
+                f"per sobre del llindar, es descartaria per defecte (>{args.max_cardinality})"
+                if distinct > args.max_cardinality
+                else f"dins del llindar (<={args.max_cardinality})"
+            )
             print(
                 f"- {col}: dtype={series.dtype}, no-nuls={len(non_null)}, "
-                f"distints={distinct}, ratio-unicitat={ratio:.2f}, mostres={samples}"
+                f"distints={distinct}, ratio-unicitat={ratio:.2f}, mostres={samples}, "
+                f"cardinalitat={marker}"
             )
         return 0
 
