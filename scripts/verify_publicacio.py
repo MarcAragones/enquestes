@@ -199,7 +199,9 @@ def main(argv: list | None = None) -> int:
 
         if meta_obj is not None and written_names is not None:
             meta_fields = meta_obj.get("fields")
-            if isinstance(meta_fields, list):
+            if not isinstance(meta_fields, list):
+                failures.append((survey_id, "meta.fields és absent o no és una llista"))
+            else:
                 meta_field_names = {f.get("name") for f in meta_fields if isinstance(f, dict)}
                 if meta_field_names != set(written_names):
                     failures.append(
