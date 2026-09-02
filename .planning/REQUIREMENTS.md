@@ -9,11 +9,11 @@ Requirements for the "Publish Real Survey Data" milestone. Each maps to roadmap 
 
 ### Publicació de dades reals
 
-- [ ] **PUB-01**: Cada una de les 2-5 enquestes reals de l'usuari es converteix correctament (CSV/Excel → `[id]_respostes.parquet` + `[id]_meta.json`) i passa la revisió de privacitat abans de publicar-se
-- [ ] **PUB-02**: Totes les enquestes reals aprovades es publiquen a `public/data/` i apareixen amb la seva entrada corresponent a `enquestes_index.json`
+- [x] **PUB-01**: Cada una de les 2-5 enquestes reals de l'usuari es converteix correctament (CSV/Excel → `[id]_respostes.parquet` + `[id]_meta.json`) i passa la revisió de privacitat abans de publicar-se
+- [x] **PUB-02**: Totes les enquestes reals aprovades es publiquen a `public/data/` i apareixen amb la seva entrada corresponent a `enquestes_index.json`
 - [ ] **PUB-03**: El dataset sintètic (`mostra-sintetica`) es retira del catàleg un cop les enquestes reals estan publicades
 - [ ] **PUB-04**: El catàleg (homepage) i l'explorador funcionen correctament quan hi ha múltiples enquestes reals simultànies (no només una)
-- [ ] **PUB-05**: Qualsevol incompatibilitat del pipeline amb el format/estructura de les exportacions reals (delimitadors, tipus de columna, mides, encoding) es detecta i es corregeix sense trencar el comportament ja validat a v1.0
+- [x] **PUB-05**: Qualsevol incompatibilitat del pipeline amb el format/estructura de les exportacions reals (delimitadors, tipus de columna, mides, encoding) es detecta i es corregeix sense trencar el comportament ja validat a v1.0
 
 ## v2 Requirements
 
@@ -45,11 +45,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PUB-01 | Phase 4 | Pending |
-| PUB-02 | Phase 4 | Pending |
+| PUB-01 | Phase 4 | Complete |
+| PUB-02 | Phase 4 | Complete |
 | PUB-03 | Phase 5 | Pending |
 | PUB-04 | Phase 5 | Pending |
-| PUB-05 | Phase 4 | Pending |
+| PUB-05 | Phase 4 | Complete |
 
 **Coverage:**
 

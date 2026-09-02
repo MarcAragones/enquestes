@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Publish Real Survey Data
-current_phase: 04
-current_phase_name: real-survey-conversion-publication
-status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-08-30T11:47:23.532Z"
-last_activity: 2026-08-30
-last_activity_desc: v1.1 roadmap created (Phases 4-5, PUB-01..PUB-05 mapped)
-state_head: bf92e1a950abda9595ae793d3effd6409f6c6dce
+current_phase: 5
+current_phase_name: Catalog Cutover to Real Data
+status: planning
+stopped_at: Phase 04 complete, ready to plan Phase 5
+last_updated: "2026-09-02T11:58:53.403Z"
+last_activity: 2026-09-02
+last_activity_desc: Phase 04 complete, transitioned to Phase 5
+state_head: d9f6eb44947a273d4d3d6cb06a7a05101aa27c02
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_plans: 3
+  percent: 50
 ---
 
 # Project State
@@ -25,14 +25,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-30)
 
 **Core value:** Qualsevol persona pot explorar interactivament (arrossegar X/Y/Color/Mida/Filtres i crear gràfics propis) les dades d'una enquesta directament al navegador, sense servidor ni cost.
-**Current focus:** Phase 4 — Real Survey Conversion & Publication (v1.1)
+**Current focus:** Phase 04 — Real Survey Conversion & Publication
 
 ## Current Position
 
-Phase: 04 (real-survey-conversion-publication) — READY TO EXECUTE
-Plan: — (not yet planned)
-Status: Ready to execute
-Last activity: 2026-08-30 — v1.1 roadmap created (Phases 4-5, PUB-01..PUB-05 mapped)
+Phase: 5 — Catalog Cutover to Real Data
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-02 — Phase 04 complete, transitioned to Phase 5
 
 Progress: [░░░░░░░░░░] 0% (v1.1)
 
@@ -40,7 +40,7 @@ Progress: [░░░░░░░░░░] 0% (v1.1)
 
 **Velocity:**
 
-- Total plans completed: 14 (all v1.0)
+- Total plans completed: 17 (all v1.0)
 - Average duration: ~16 min/plan (10 measured plans)
 - Total execution time: ~2.6 hours (measured plans only)
 
@@ -51,7 +51,7 @@ Progress: [░░░░░░░░░░] 0% (v1.1)
 | 01 | 3 | 45min | 15min |
 | 02 | 3 | - | - |
 | 03 | 8 | 113min | 16min |
-| 04 | TBD | - | - |
+| 04 | 3 | - | - |
 | 05 | TBD | - | - |
 
 **Recent Trend:**
@@ -98,7 +98,7 @@ Full v1.0 deferred debug-session ledger: `.planning/milestones/` and `.planning/
 ## Session Continuity
 
 Last session: 2026-08-30T11:20:35.144Z
-Stopped at: Phase 4 context gathered
+Stopped at: Phase 04 complete, ready to plan Phase 5
 Resume file: /Users/marcaragones/Github/enquestes/.planning/phases/04-real-survey-conversion-publication/04-CONTEXT.md
 
 ## Operator Next Steps

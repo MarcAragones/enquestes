@@ -33,7 +33,7 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
 
 **Milestone Goal:** The live site publishes 2-5 of the user's real, privacy-reviewed surveys instead of a synthetic demo, with the pipeline hardened against whatever the real exports throw at it.
 
-- [ ] **Phase 4: Real Survey Conversion & Publication** - Convert every real export through the existing pipeline, fixing real-world format gaps, and commit the privacy-approved artifacts to `public/data/`
+- [x] **Phase 4: Real Survey Conversion & Publication** - Convert every real export through the existing pipeline, fixing real-world format gaps, and commit the privacy-approved artifacts to `public/data/` (completed 2026-09-02)
 - [ ] **Phase 5: Catalog Cutover to Real Data** - Retire the synthetic dataset and confirm the catalog and explorer behave correctly with multiple real surveys live at once
 
 ## Phase Details
@@ -55,15 +55,15 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
 Plans:
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — Cardinality-based column auto-selection (D-01..D-04): cutoff, override flag, exclusion report, regression coverage, operator docs
+- [x] 04-01-PLAN.md — Cardinality-based column auto-selection (D-01..D-04): cutoff, override flag, exclusion report, regression coverage, operator docs
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04-02-PLAN.md — Convert every real export to a scratch directory, fix format gaps reactively with a regression test each, resolve every privacy finding with the operator
+- [x] 04-02-PLAN.md — Convert every real export to a scratch directory, fix format gaps reactively with a regression test each, resolve every privacy finding with the operator
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 04-03-PLAN.md — Publish the approved surveys to `public/data/`, add and prove the publication integrity verifier, run the full build and preview gate
+- [x] 04-03-PLAN.md — Publish the approved surveys to `public/data/`, add and prove the publication integrity verifier, run the full build and preview gate
 
 ### Phase 5: Catalog Cutover to Real Data
 
@@ -93,5 +93,5 @@ Phases execute in numeric order: 4 → 5
 | 1. Foundation & Survey Listing | v1.0 | 3/3 | Complete | 2026-08-26 |
 | 2. Offline Data Pipeline | v1.0 | 3/3 | Complete | 2026-08-26 |
 | 3. Interactive Explorer | v1.0 | 8/8 | Complete | 2026-08-29 |
-| 4. Real Survey Conversion & Publication | v1.1 | 0/3 | Planned | - |
+| 4. Real Survey Conversion & Publication | v1.1 | 3/3 | Complete    | 2026-09-02 |
 | 5. Catalog Cutover to Real Data | v1.1 | 0/TBD | Not started | - |

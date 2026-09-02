@@ -38,13 +38,13 @@ The full v1 flow works end-to-end: browse the survey catalog on the homepage, op
 - ✓ Primer dataset real publicat a `public/data/` (`mostra-sintetica`, sintètic i etiquetat com a tal) — Phase 2 (v1.0)
 - ✓ Servei DuckDB-Wasm (Singleton, `src/services/duckdb.ts`) que inicialitza al navegador sense bloquejar la UI i exposa un helper per consultar `.parquet` — Phase 3 (v1.0)
 - ✓ Pàgina d'exploració (`/enquesta/:id`): carrega `[id]_respostes.parquet` via DuckDB-Wasm i el connecta a `<GraphicWalker />` per exploració visual lliure amb drag-and-drop X/Y/Color/Mida/Filtres, diccionari de dades, exportació d'imatge i enllaç compartible de gràfic — Phase 3 (v1.0)
+- ✓ Convertir i publicar 2-5 enquestes reals de l'usuari via el pipeline existent, amb revisió de privacitat — Phase 4 (v1.1): 3 enquestes reals (REO1167, REO1151, REO1145; 2000-6706 respondents cada una) publicades a `public/data/`, amb selecció automàtica de columnes per cardinalitat (D-01/D-02) i revisió de privacitat resolta via decisió explícita de l'operador (veure Key Decisions)
+- ✓ Corregir qualsevol bug del pipeline (format, encoding, tipus de columna) que sorgeixi en processar les exportacions reals — Phase 4 (v1.1): bug real de `pandas low_memory` que duplicava el recompte de valors distints en exports amples corregit; sniffing de delimitador CSV fet conscient de cometes; detecció de capçaleres duplicades corregida; validació de `--date`; escriptures atòmiques
+- ✓ Verificar que el catàleg i l'explorador es comporten correctament amb múltiples enquestes reals simultànies — Phase 4 (v1.1): `scripts/verify_publicacio.py` (nou, 9 tests) prova mecànicament consistència índex/meta/Parquet per a les 4 enquestes publicades; `npm run build`/`verify:pages`/`verify:explorer` verds; targetes de la pàgina principal confirmades per l'operador via UAT
 
 ### Active
 
-- [ ] Convertir i publicar 2-5 enquestes reals de l'usuari via el pipeline existent, amb revisió de privacitat
 - [ ] Retirar el dataset sintètic (`mostra-sintetica`) un cop les enquestes reals estiguin publicades
-- [ ] Corregir bugs del pipeline que sorgeixin en processar les exportacions reals
-- [ ] Verificar catàleg i explorador amb múltiples enquestes reals simultànies
 
 ### Out of Scope
 
@@ -89,6 +89,9 @@ The full v1 flow works end-to-end: browse the survey catalog on the homepage, op
 | Cicle de vida del `<dialog>` natiu del modal resum encapsulat a `openDialogLifecycle` amb un comptador de supressió propietat del cridant | React StrictMode dispara un muntatge/desmuntatge/remuntatge simulat que fa que l'esdeveniment `close` natiu (assíncron) del cicle anterior arribi al nou listener i tanqui el modal real — calien dos intents (G-03-2, G-03-5) per trobar l'arrel del problema | ✓ Implementat a Phase 3 (plan 03-07), amb tests directes per als 3 timings de despatx de l'esdeveniment |
 | Restaurar `margin: auto` a la capa `utilities` de Tailwind (no `base`) per centrar un `<dialog>` natiu | Tailwind v4 Preflight declara `margin: 0` d'origen "author" a `@layer base`, que sempre guanya la regla `margin: auto` d'origen "user-agent" del navegador independentment de l'especificitat — només una regla d'origen "author" a `utilities` (declarada després de `base`) ho pot vèncer | ✓ Implementat a Phase 3 (plan 03-08, gap G-03-7), verificat contra el CSS de producció compilat |
 | Risc acceptat: l'id de l'enquesta de la URL es reflecteix a la capçalera de pàgina fins i tot quan l'enquesta no existeix (`ExplorerHeader`'s `<h1 title={id}>`) | Necessari perquè la capçalera es mantingui visible en tots els estats (EXPL-07); sense XSS (React escapa el valor) i l'id és una entrada coneguda per l'atacant, no un secret | ✓ Acceptat a Phase 3 durant `/gsd-verify-work` (auditoria de seguretat, AR-03-10), documentat a `03-SECURITY.md` |
+| Selecció automàtica de columnes per cardinalitat (`MAX_DISTINCT_VALUES = 20`), independent dels filtres de text lliure i privacitat existents, amb `--include-columns` com a override reversible | Publicar exports reals amb centenars de columnes fa inviable la curació manual de `--columns` que v1.0 requeria; calia un valor per defecte segur sense debilitar cap filtre existent | ✓ Implementat a Phase 4 (plan 04-01), 57 tests |
+| Risc acceptat: les 3 enquestes reals (REO1167, REO1151, REO1145) es van publicar sense executar `privacy.run_privacy_checklist` — l'operador va triar ometre-la completament via un nou flag `--skip-privacy-review`, en comptes del flux original de resolució per indici (drop/accept/narrow) | Font: dades oficials pre-anonimitzades publicades pel govern (Centre d'Estudis d'Opinió, gencat.cat); l'operador va jutjar el risc ja mitigat per l'origen. L'auditoria de seguretat va quantificar el que es va ometre: 7/30/6 columnes amb indicis de quasi-identificador per nom (per REO1167/1151/1145 respectivament, incloent 22 columnes `ANY_NAIXEMENT_FILL_*` a REO1151) i cap escaneig de k-anonimitat de grup petit per a cap de les 3 | ✓ Acceptat explícitament per l'operador a Phase 4 (04-02-SUMMARY.md, confirmat de nou davant les xifres concretes de l'auditoria); documentat a `04-SECURITY.md` (AR-04-04). El flag es manté `False` per defecte, mai inferit, i requereix opt-in explícit a cada execució |
+| `--out-dir` per defecte segueix apuntant a `public/data` sense cap guarda de codi que impedeixi una execució de pre-aprovació d'escriure-hi directament (només disciplina procedimental, verificada per aquesta fase via l'historial de git) | Cap fase encara ha necessitat aquesta guarda; el risc es va acceptar explícitament en comptes d'afegir-la sense un cas d'ús concret | ✓ Acceptat a Phase 4 durant l'auditoria de seguretat, documentat a `04-SECURITY.md` (AR-04-05) |
 
 ## Evolution
 
@@ -108,4 +111,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-30 after starting v1.1 milestone*
+*Last updated: 2026-09-02 after Phase 4*
