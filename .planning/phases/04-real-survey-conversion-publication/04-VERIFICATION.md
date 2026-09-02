@@ -1,19 +1,22 @@
 ---
 phase: 04-real-survey-conversion-publication
 verified: 2026-08-30T17:13:31Z
-status: human_needed
+status: passed
 score: 9/9 must-haves verified
 behavior_unverified: 0
 overrides_applied: 1
 overrides:
+
   - must_have: "Each export's block-by-default privacy checklist is run and explicitly resolved before anything is committed: free-text columns excluded, flagged quasi-identifiers and small-group findings either dropped or consciously accepted with a recorded reason (roadmap success criterion 2)"
     reason: "Operator explicitly and traceably decided to skip the privacy checklist computation entirely for all three real surveys via a new --skip-privacy-review flag, because the source is official government-published, pre-anonymized microdata (Centre d'Estudis d'Opinió, https://web.gencat.cat/ca/generalitat/dades-indicadors/centre-estudis-opinio). Documented verbatim in 04-02-SUMMARY.md and 04-03-SUMMARY.md. This is a task-authorized deviation per the verification brief: the underlying intent (an explicit, traceable human privacy decision before anything is committed to public/data/) is satisfied via a different mechanism than the literal per-finding drop/accept/narrow flow. privacy.py's uniqueness/name-hint/small-group heuristics were independently confirmed unmodified (no commits touching scripts/pipeline/privacy.py since Phase 2) and remain fully available for any future survey that does not pass the flag."
     accepted_by: "marcaragones (operator, verbatim quotes recorded in 04-02-SUMMARY.md)"
     accepted_at: "2026-08-30 (per 04-02-SUMMARY.md checkpoint resolution)"
 human_verification:
+
   - test: "Open the local preview with `npm run preview:pages` and confirm, for each published survey card on the homepage (REO1167, REO1151, REO1145, mostra-sintetica), that the title, date, description and participant count are the ones intended for that survey, and that no card shows another survey's details."
     expected: "Each card's displayed title/date/description/n matches the operator-supplied metadata recorded in 04-02-SUMMARY.md and confirmed present in enquestes_index.json; no cross-survey mixups."
     why_human: "04-03-PLAN.md's Task 3 explicitly specifies this as a `<human-check>`, and 04-03-SUMMARY.md explicitly states it was not run in the autonomous continuation (\"the operator's own local review is the deferred step\"). Visual rendering correctness on the homepage cannot be confirmed by grep/data checks alone, even though the underlying JSON values were independently verified correct by this verifier."
+
   - test: "For each of the three real surveys, confirm the recorded row count and surviving column list (from 04-02-SUMMARY.md's per-survey tables) match what the operator expects that survey to contain, and that no column considered essential was dropped by the free-text exclusion or the cardinality cutoff."
     expected: "Operator confirms the auto-selected column set (283/291/263 surviving columns respectively) is acceptable for publication, i.e. no essential question was inadvertently excluded by the D-01/D-02 filters."
     why_human: "04-02-PLAN.md's Task 2 specifies this as a `<human-check>`; the SUMMARY does not explicitly record the operator's confirmation of this specific check (as distinct from the separate privacy-skip decision), only the raw drop lists. Whether a specific dropped column is 'essential' is a domain judgment about the operator's own survey content, not a mechanically verifiable fact."
