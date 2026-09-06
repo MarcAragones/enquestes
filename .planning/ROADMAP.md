@@ -78,7 +78,17 @@ Plans:
   4. A `?chart=` link copied from one real survey restores that exact chart when reopened, and fails gracefully (rather than erroring or rendering a wrong chart) if pasted onto a different survey
   5. A deep link to a survey id that does not exist still shows the not-found message, unaffected by the removal of the synthetic dataset
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — Build the pipeline's missing survey-removal capability, retire `mostra-sintetica` from `public/data/`, and unhardcode the two gates that named it
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 05-02-PLAN.md — Prove the catalog and explorer behave with three real surveys live: real-data regression suite, explorer no-bleed guard, index-driven serving gate, human walkthrough
+
 **UI hint**: yes
 
 *(Phase 5's UI work is verification and content removal against v1.0's existing homepage/explorer components — no new interface is designed. Skip `/gsd-ui-phase` unless multi-survey verification reveals a real layout gap.)*
@@ -94,4 +104,4 @@ Phases execute in numeric order: 4 → 5
 | 2. Offline Data Pipeline | v1.0 | 3/3 | Complete | 2026-08-26 |
 | 3. Interactive Explorer | v1.0 | 8/8 | Complete | 2026-08-29 |
 | 4. Real Survey Conversion & Publication | v1.1 | 3/3 | Complete    | 2026-09-02 |
-| 5. Catalog Cutover to Real Data | v1.1 | 0/TBD | Not started | - |
+| 5. Catalog Cutover to Real Data | v1.1 | 0/2 | Planned | - |
