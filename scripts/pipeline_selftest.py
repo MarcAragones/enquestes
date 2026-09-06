@@ -26,6 +26,7 @@ from tempfile import TemporaryDirectory
 import pandas as pd
 
 import convert_enquesta
+import retirar_enquesta
 import verify_publicacio
 from pipeline import index as index_mod
 from pipeline import infer, privacy, schema
@@ -912,6 +913,97 @@ class VerifyPublicacioTests(unittest.TestCase):
             with contextlib.redirect_stdout(stdout):
                 verify_publicacio.main(["--data-dir", str(data_dir)])
             self.assertNotIn(sentinel, stdout.getvalue())
+
+
+class ComputeIndexWithoutIdTests(unittest.TestCase):
+    """Fail-first coverage for pipeline.index.compute_index_without_id
+    (plan 05-01): the pure removal function is exercised against the golden
+    fixture before its CLI wrapper is trusted against a real published set.
+    """
+
+    def test_removing_existing_id_leaves_siblings_untouched_and_in_order(self):
+        with TemporaryDirectory() as tmp:
+            index_path = Path(tmp) / "enquestes_index.json"
+            shutil.copy(GOLDEN_INDEX, index_path)
+            original = json.loads(GOLDEN_INDEX.read_text(encoding="utf-8"))
+
+            result = index_mod.compute_index_without_id(index_path, "demo-2024")
+
+            self.assertEqual(len(result), len(original) - 1)
+            self.assertNotIn("demo-2024", [e["id"] for e in result])
+            remaining_original = [e for e in original if e["id"] != "demo-2024"]
+            self.assertEqual(result, remaining_original)
+
+    def test_removing_absent_id_raises_schema_error(self):
+        with TemporaryDirectory() as tmp:
+            index_path = Path(tmp) / "enquestes_index.json"
+            shutil.copy(GOLDEN_INDEX, index_path)
+            with self.assertRaises(schema.SchemaError):
+                index_mod.compute_index_without_id(index_path, "no-existeix")
+
+    def test_missing_index_file_raises_schema_error(self):
+        with TemporaryDirectory() as tmp:
+            index_path = Path(tmp) / "does-not-exist.json"
+            with self.assertRaises(schema.SchemaError):
+                index_mod.compute_index_without_id(index_path, "qualsevol")
+
+    def test_malformed_index_file_raises_schema_error(self):
+        with TemporaryDirectory() as tmp:
+            index_path = Path(tmp) / "enquestes_index.json"
+            index_path.write_text(json.dumps({"not": "an array"}), encoding="utf-8")
+            with self.assertRaises(schema.SchemaError):
+                index_mod.compute_index_without_id(index_path, "qualsevol")
+
+
+class RetirarEnquestaTests(unittest.TestCase):
+    """End-to-end coverage for scripts/retirar_enquesta.py (plan 05-01):
+    builds a two-survey published set inside a TemporaryDirectory(), retires
+    one, and asserts the surviving survey and verify_publicacio.py agree
+    nothing else was touched.
+    """
+
+    def test_retiring_one_of_two_surveys_succeeds_and_leaves_sibling_intact(self):
+        with TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            enquestes_dir = data_dir / "enquestes"
+            writer = VerifyPublicacioTests()
+            df_retired = pd.DataFrame({"segment": ["A", "B"], "valor": [1, 2]})
+            df_survivor = pd.DataFrame({"segment": ["C", "D", "E"], "valor": [3, 4, 5]})
+            entry_retired = writer._write_survey(enquestes_dir, "a-retirar", df_retired)
+            entry_survivor = writer._write_survey(enquestes_dir, "sobreviu", df_survivor)
+            writer._write_index(data_dir, [entry_retired, entry_survivor])
+
+            survivor_parquet = enquestes_dir / "sobreviu_respostes.parquet"
+            survivor_bytes_before = survivor_parquet.read_bytes()
+
+            exit_code = retirar_enquesta.main(["--id", "a-retirar", "--data-dir", str(data_dir)])
+            self.assertEqual(exit_code, 0)
+
+            index_after = json.loads((data_dir / "enquestes_index.json").read_text(encoding="utf-8"))
+            self.assertEqual([e["id"] for e in index_after], ["sobreviu"])
+            self.assertFalse((enquestes_dir / "a-retirar_respostes.parquet").exists())
+            self.assertFalse((enquestes_dir / "a-retirar_meta.json").exists())
+            self.assertEqual(survivor_parquet.read_bytes(), survivor_bytes_before)
+
+            self.assertEqual(verify_publicacio.main(["--data-dir", str(data_dir)]), 0)
+
+    def test_retiring_absent_id_fails_and_changes_nothing(self):
+        with TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            enquestes_dir = data_dir / "enquestes"
+            writer = VerifyPublicacioTests()
+            df = pd.DataFrame({"segment": ["A", "B"], "valor": [1, 2]})
+            entry = writer._write_survey(enquestes_dir, "unica", df)
+            writer._write_index(data_dir, [entry])
+
+            index_bytes_before = (data_dir / "enquestes_index.json").read_bytes()
+            listing_before = sorted(p.name for p in enquestes_dir.iterdir())
+
+            exit_code = retirar_enquesta.main(["--id", "no-existeix", "--data-dir", str(data_dir)])
+            self.assertNotEqual(exit_code, 0)
+
+            self.assertEqual((data_dir / "enquestes_index.json").read_bytes(), index_bytes_before)
+            self.assertEqual(sorted(p.name for p in enquestes_dir.iterdir()), listing_before)
 
 
 def _base_meta(**overrides) -> dict:
