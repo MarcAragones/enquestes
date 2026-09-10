@@ -7,7 +7,11 @@ import {
   decodeShareLink,
 } from './shareLink'
 
-// Real mostra-sintetica field names (public/data/enquestes/mostra-sintetica_meta.json).
+// Illustrative fixture field names, not a pointer to any file on disk — the
+// synthetic dataset these were originally drawn from was retired in plan
+// 05-01. These strings are opaque identifiers for this decoder-contract
+// suite; real published field names are covered separately, grounded in the
+// actually-published survey data, in src/lib/realSurveys.test.ts.
 const KNOWN_FIELDS = ['edat', 'satisfaccio', 'recomanaria', 'segment', 'canal', 'territori']
 
 // GraphicWalker's own internal virtual field ids (node_modules/@kanaries/graphic-walker/dist/constants.js),

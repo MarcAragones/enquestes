@@ -72,6 +72,35 @@ export default function ExplorerPage() {
   const [dataAttempt, setDataAttempt] = useState(0)
   const [engineAttempt, setEngineAttempt] = useState(0)
 
+  // Reset dataState to loading whenever the route id changes, following
+  // React's "adjusting state when a prop changes" pattern (setState during
+  // render, not inside an effect body) — mirroring SurveySummaryModal's
+  // identical WR-03 guard. The project's lint config
+  // (react-hooks/set-state-in-effect) forbids a synchronous setState in an
+  // effect precisely because it costs an extra cascading render; this
+  // render-time bailout discards the previous survey's data before anything
+  // below it reads dataState, in the same render pass the new id arrives in.
+  //
+  // Without this, dataState survives an id change: headerTitle would show
+  // the previous survey's title, DataDictionary would list the previous
+  // survey's fields, GraphicWalker would receive the previous survey's rows
+  // — and, sharpest of all, the decodedChart memo below would validate the
+  // incoming ?chart= payload against the previous survey's field list,
+  // which is exactly the cross-survey acceptance decodeShareLink exists to
+  // prevent (T-05-07).
+  //
+  // This path is currently unreachable through the app's own navigation:
+  // every survey-to-survey move goes via the homepage (ExplorerHeader's
+  // only navigation is <Link to="/">), which unmounts this page and
+  // re-initializes all state naturally. This guard is defence for the day a
+  // direct route-to-route link or programmatic navigate() is added between
+  // two /enquesta/:id routes, not a fix for an observed defect.
+  const [trackedId, setTrackedId] = useState(id)
+  if (id !== trackedId) {
+    setTrackedId(id)
+    setDataState({ status: 'loading' })
+  }
+
   // storeRef, not a change-callback + useState: the current chart spec is
   // read synchronously from this ref only inside the copy-link click
   // handler (D-05's serialize-on-click model). Holding it in state instead
