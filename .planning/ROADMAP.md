@@ -78,7 +78,7 @@ Plans:
   4. A `?chart=` link copied from one real survey restores that exact chart when reopened, and fails gracefully (rather than erroring or rendering a wrong chart) if pasted onto a different survey
   5. A deep link to a survey id that does not exist still shows the not-found message, unaffected by the removal of the synthetic dataset
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans executed
 
 Plans:
 **Wave 1**
@@ -87,7 +87,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 05-02-PLAN.md — Prove the catalog and explorer behave with three real surveys live: real-data regression suite, explorer no-bleed guard, index-driven serving gate, human walkthrough
+- [x] 05-02-PLAN.md — Prove the catalog and explorer behave with three real surveys live: real-data regression suite, explorer no-bleed guard, index-driven serving gate, human walkthrough
 
 **UI hint**: yes
 
@@ -104,4 +104,4 @@ Phases execute in numeric order: 4 → 5
 | 2. Offline Data Pipeline | v1.0 | 3/3 | Complete | 2026-08-26 |
 | 3. Interactive Explorer | v1.0 | 8/8 | Complete | 2026-08-29 |
 | 4. Real Survey Conversion & Publication | v1.1 | 3/3 | Complete    | 2026-09-02 |
-| 5. Catalog Cutover to Real Data | v1.1 | 1/2 | In Progress|  |
+| 5. Catalog Cutover to Real Data | v1.1 | 2/2 | In Progress|  |
