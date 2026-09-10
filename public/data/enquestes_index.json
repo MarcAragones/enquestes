@@ -1,12 +1,5 @@
 [
   {
-    "id": "mostra-sintetica",
-    "title": "Enquesta de mostra (dades sintètiques)",
-    "date": "2026-08-26",
-    "description": "Enquesta generada automàticament amb dades sintètiques: les respostes són aleatòries, no corresponen a cap persona real i existeixen només perquè es pugui desenvolupar i demostrar l'explorador interactiu.",
-    "n": 250
-  },
-  {
     "id": "REO1167",
     "title": "Baròmetre d'Opinió Política. 1a onada 2026",
     "date": "2026-07-09",
