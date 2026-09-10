@@ -101,25 +101,37 @@ async function main() {
       if (body.byteLength === 0) throw new Error(`asset ${asset} served with zero content-length`)
     }
 
-    const parquetRes = await fetch(`${BASE}data/enquestes/mostra-sintetica_respostes.parquet`)
+    const indexRes = await fetch(`${BASE}data/enquestes_index.json`)
+    if (indexRes.status !== 200) {
+      throw new Error(`expected 200 for data/enquestes_index.json, got ${indexRes.status}`)
+    }
+    const index = await indexRes.json()
+    if (!Array.isArray(index) || index.length === 0) {
+      throw new Error(`expected data/enquestes_index.json to parse as a non-empty array, got ${JSON.stringify(index)}`)
+    }
+    const [firstEntry] = index
+    const surveyId = firstEntry.id
+
+    const parquetRes = await fetch(`${BASE}data/enquestes/${surveyId}_respostes.parquet`)
     if (parquetRes.status !== 200) {
-      throw new Error(`expected 200 for the committed Parquet, got ${parquetRes.status}`)
+      throw new Error(`expected 200 for ${surveyId}_respostes.parquet, got ${parquetRes.status}`)
     }
     const parquetBody = await parquetRes.arrayBuffer()
-    if (parquetBody.byteLength !== 5597) {
-      throw new Error(
-        `expected mostra-sintetica_respostes.parquet to be exactly 5597 bytes, got ${parquetBody.byteLength}`,
-      )
+    if (parquetBody.byteLength === 0) {
+      throw new Error(`expected ${surveyId}_respostes.parquet to be served with non-zero content-length`)
     }
 
-    const metaRes = await fetch(`${BASE}data/enquestes/mostra-sintetica_meta.json`)
+    const metaRes = await fetch(`${BASE}data/enquestes/${surveyId}_meta.json`)
     if (metaRes.status !== 200) {
-      throw new Error(`expected 200 for mostra-sintetica_meta.json, got ${metaRes.status}`)
+      throw new Error(`expected 200 for ${surveyId}_meta.json, got ${metaRes.status}`)
     }
     const meta = await metaRes.json()
-    if (!Array.isArray(meta.fields) || meta.fields.length !== 6) {
+    if (meta.id !== surveyId) {
+      throw new Error(`expected ${surveyId}_meta.json 'id' to equal '${surveyId}', got ${meta.id}`)
+    }
+    if (!Array.isArray(meta.fields) || meta.fields.length === 0) {
       throw new Error(
-        `expected mostra-sintetica_meta.json fields[] to have 6 entries, got ${meta.fields?.length}`,
+        `expected ${surveyId}_meta.json fields[] to be a non-empty array, got ${meta.fields?.length}`,
       )
     }
 

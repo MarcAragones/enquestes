@@ -43,7 +43,15 @@ def _parse_args(argv: list) -> argparse.Namespace:
     parser.add_argument("--id", default="mostra-sintetica", help="Identificador de l'enquesta")
     parser.add_argument("--n", type=int, default=250, help="Nombre de respostes sintètiques a generar")
     parser.add_argument("--seed", type=int, default=42, help="Llavor per al generador determinista")
-    parser.add_argument("--out-dir", default=Path("public/data"), type=Path, help="Directori de sortida")
+    parser.add_argument(
+        "--out-dir",
+        required=True,
+        type=Path,
+        help=(
+            "Directori de sortida (obligatori, sense valor per defecte: cal indicar-lo "
+            "explícitament perquè apuntar-lo a public/data publica dades sintètiques al lloc en producció)"
+        ),
+    )
     return parser.parse_args(argv)
 
 

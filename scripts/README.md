@@ -119,12 +119,36 @@ confirmació — no hi ha cap respondent real a protegir.
 | `--id` | Identificador de l'enquesta (per defecte: `mostra-sintetica`) |
 | `--n` | Nombre de respostes a generar (per defecte: `250`; `--n 0` genera un Parquet vàlid de zero files amb l'esquema complet de sis columnes) |
 | `--seed` | Llavor per al generador determinista (per defecte: `42`; la mateixa llavor produeix sortida byte-idèntica) |
-| `--out-dir` | Directori de sortida (per defecte: `public/data`) |
+| `--out-dir` | Directori de sortida (**obligatori, sense valor per defecte**: cal indicar-lo explícitament perquè apuntar-lo a `public/data` publica dades sintètiques al lloc en producció) |
 
 Reutilitza `pipeline.infer.build_fields`/`build_kpis` i
 `pipeline.index.compute_upserted_index`, així que la forma de la sortida sintètica
 és idèntica a la de la conversió real (mateixa regla D-03 de tipatge de
 columnes, mateix upsert d'índex).
+
+## `retirar_enquesta.py` — retirar una enquesta publicada
+
+Retira una enquesta ja publicada: elimina la seva entrada de
+`enquestes_index.json` i els seus dos fitxers d'artefactes sota
+`--data-dir/enquestes/`.
+
+```bash
+uv run scripts/retirar_enquesta.py --id <id> --data-dir public/data
+```
+
+### Flags
+
+| Flag | Descripció |
+|------|------------|
+| `--id` | Identificador de l'enquesta a retirar (obligatori) |
+| `--data-dir` | Directori que conté `enquestes_index.json` i el subdirectori `enquestes/` (per defecte: `public/data`) |
+
+Escriu l'índex (validat i de manera atòmica) **abans** d'esborrar els dos
+fitxers d'artefactes, així que una interrupció a mig camí només pot deixar
+un fitxer orfe (detectat per `verify_publicacio.py`), mai una entrada
+d'índex que apunti a fitxers que ja no existeixen. Executa `uv run
+scripts/verify_publicacio.py` després de qualsevol retirada per confirmar
+que el conjunt restant és consistent.
 
 ## `pipeline_selftest.py` — suite de proves
 
@@ -183,12 +207,15 @@ Els tres scripts anteriors escriuen (o llegeixen) dins de:
 - `<out-dir>/enquestes_index.json` (upsertat per `id`, mai sobreescrit sencer)
 
 Per defecte, `<out-dir>` és `public/data/`. **Tot el que es comet sota
-`public/data/` és permanent: forma part de l'historial públic de git i es
-serveix a qualsevol visitant del lloc de GitHub Pages des del següent
-desplegament.** No hi ha manera de "retirar" un fitxer publicat sense
-reescriure l'historial de git — tracta cada conversió cap a `public/data/`
-com una publicació irreversible. Executa `uv run scripts/verify_publicacio.py`
-per confirmar que el conjunt publicat és consistent abans que aquest commit
+`public/data/` és permanent: forma part de l'historial públic de git.**
+`scripts/retirar_enquesta.py` permet aturar la publicació d'una enquesta —
+elimina la seva entrada de l'índex i els seus dos fitxers d'artefactes, de
+manera que deixa de servir-se a qualsevol visitant del lloc de GitHub Pages
+des del següent desplegament — però **els blobs continuen sent accessibles
+a l'historial de git**. És a dir: una retirada atura la publicació, però no
+és una esborrada; per a això caldria reescriure l'historial de git.
+Executa `uv run scripts/verify_publicacio.py` per confirmar que el conjunt
+publicat és consistent abans que qualsevol commit (conversió o retirada)
 esdevingui permanent.
 
 ## Visualitzar el resultat localment
