@@ -2,13 +2,21 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Copy } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
+import type { CopyLinkOutcome } from '../lib/copyLink'
 
 export interface ExplorerHeaderProps {
   title: string
-  onCopyLink?: () => void | Promise<void>
+  onCopyLink?: () => Promise<CopyLinkOutcome>
 }
 
 const COPIED_LABEL_DURATION_MS = 2000
+// Failure messages need more time to read than the one-word success
+// confirmation — the visitor has to actually read and act on the reason
+// (simplify the chart, retry, etc.), not just glance at a checkmark.
+const COPY_FAILURE_DURATION_MS = 6000
+
+/** Owned entirely by this component — no toast/snackbar. */
+type CopyFeedback = { kind: 'success' } | { kind: 'failure'; message: string } | null
 
 /**
  * The explorer route's single compact header row: back-link, survey title,
@@ -19,11 +27,13 @@ const COPIED_LABEL_DURATION_MS = 2000
  *
  * When `onCopyLink` is supplied, renders a "Copia l'enllaç" button beside
  * `<ThemeToggle />` (D-06 — this control lives in the app-shell header, never
- * inside or beside GraphicWalker's own toolbar). The confirmation state
- * ("Copiat!" for two seconds) is owned entirely here — no toast/snackbar.
+ * inside or beside GraphicWalker's own toolbar). A successful copy shows
+ * "Copiat!" for two seconds; a failed copy (G-05-4) never shows the success
+ * label — instead an `aria-live="polite"` `role="status"` message next to
+ * the button explains why, for a longer duration.
  */
 export function ExplorerHeader({ title, onCopyLink }: ExplorerHeaderProps) {
-  const [copied, setCopied] = useState(false)
+  const [feedback, setFeedback] = useState<CopyFeedback>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -34,10 +44,19 @@ export function ExplorerHeader({ title, onCopyLink }: ExplorerHeaderProps) {
 
   const handleClick = async () => {
     if (!onCopyLink) return
-    await onCopyLink()
-    setCopied(true)
+    // Reset before each new attempt so two clicks in a row can never leave
+    // a stale message from the previous attempt on screen.
     if (timerRef.current !== null) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => setCopied(false), COPIED_LABEL_DURATION_MS)
+    setFeedback(null)
+
+    const outcome = await onCopyLink()
+    if (outcome.ok) {
+      setFeedback({ kind: 'success' })
+      timerRef.current = setTimeout(() => setFeedback(null), COPIED_LABEL_DURATION_MS)
+    } else {
+      setFeedback({ kind: 'failure', message: outcome.message })
+      timerRef.current = setTimeout(() => setFeedback(null), COPY_FAILURE_DURATION_MS)
+    }
   }
 
   return (
@@ -55,14 +74,21 @@ export function ExplorerHeader({ title, onCopyLink }: ExplorerHeaderProps) {
       </div>
       <div className="flex shrink-0 items-center gap-4">
         {onCopyLink && (
-          <button
-            type="button"
-            onClick={handleClick}
-            className="flex items-center gap-1 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            <Copy className="h-4 w-4" aria-hidden="true" />
-            {copied ? 'Copiat!' : "Copia l'enllaç"}
-          </button>
+          <div className="flex items-center gap-3">
+            {feedback?.kind === 'failure' && (
+              <span role="status" aria-live="polite" className="max-w-xs text-sm text-red-600 dark:text-red-400">
+                {feedback.message}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={handleClick}
+              className="flex items-center gap-1 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              <Copy className="h-4 w-4" aria-hidden="true" />
+              {feedback?.kind === 'success' ? 'Copiat!' : "Copia l'enllaç"}
+            </button>
+          </div>
         )}
         <ThemeToggle />
       </div>

@@ -33,28 +33,88 @@ function fromBase64Url(base64url: string): string {
 }
 
 /**
+ * Removes exactly `encodings.dimensions`/`encodings.measures` — the field
+ * CATALOGUE, i.e. every field available in the sharer's dataset — from a
+ * chart-like value, leaving every shelf channel and every other key
+ * untouched. Shallow and total: never recurses into arbitrary nesting,
+ * never throws (an unexpected shape is returned as-is, and any error from
+ * a later step — e.g. a cyclic value — is caught by the JSON.stringify in
+ * `encodeShareLinkResult`, not by this helper).
+ *
+ * Why strip at all (G-05-4): GraphicWalker's `VizSpecStore.exportCode()`
+ * always embeds the ENTIRE field catalogue in `encodings.dimensions`/
+ * `.measures`, so an encoded payload's size scaled with the survey's field
+ * count (283/291/263 fields for the three published surveys) rather than
+ * with chart complexity — a 291-field survey's chart serialised to a
+ * ~57,357-character `chart=` param, well past what browsers/servers accept
+ * (Node's default 16 KB header limit rejected it with HTTP 431 before any
+ * app code ran). The catalogue is never needed on the wire: `decodeShareLink`
+ * only ever inspects shelf channels (`SHELF_CHANNEL_KEYS`) against the
+ * currently-loaded survey's own field list, and `shareChartCatalogue.ts`
+ * rebuilds a correct catalogue from that same list on decode.
+ */
+function stripFieldCatalogue(spec: unknown): unknown {
+  if (Array.isArray(spec)) {
+    return spec.map(stripOneChartsCatalogue)
+  }
+  return stripOneChartsCatalogue(spec)
+}
+
+/** Strips the field catalogue off a single chart-like element, if it has one. */
+function stripOneChartsCatalogue(value: unknown): unknown {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return value
+  }
+  const candidate = value as Record<string, unknown>
+  const encodings = candidate.encodings
+  if (encodings === null || typeof encodings !== 'object' || Array.isArray(encodings)) {
+    return value
+  }
+  const restEncodings: Record<string, unknown> = { ...(encodings as Record<string, unknown>) }
+  delete restEncodings.dimensions
+  delete restEncodings.measures
+  return { ...candidate, encodings: restEncodings }
+}
+
+/**
+ * Discriminated outcome of an encode attempt. `encodeShareLink` (below) is a
+ * thin wrapper over this that collapses both failure reasons to `null`, for
+ * every existing call site that only needs the null-contract; callers that
+ * need to tell a visitor WHY an encode failed (the "Copia l'enllaç" click
+ * handler, `src/lib/copyLink.ts`) use this richer result directly.
+ */
+export type EncodeShareLinkResult =
+  | { ok: true; param: string }
+  | { ok: false; reason: 'too-long'; length: number }
+  | { ok: false; reason: 'unserializable' }
+
+/**
  * Encodes a GraphicWalker chart spec (or spec collection) into a versioned,
- * UTF-8-safe, URL-safe string suitable for a query-param value. Returns
- * `null` — never throws — when the value cannot be JSON-serialised; the
- * caller (the "Copia l'enllaç" click handler) treats `null` as "do not
- * write anything to the clipboard", per D-07's silent-fallback posture.
+ * UTF-8-safe, URL-safe string suitable for a query-param value — after
+ * stripping the field catalogue (see `stripFieldCatalogue` above) and
+ * enforcing `MAX_SHARE_PARAM_LENGTH` on the assembled param, the SAME
+ * constant `decodeShareLink` enforces on the way in. Sharing one constant
+ * for both directions is the invariant "the encoder never emits what the
+ * decoder would refuse" — a second constant would let the two sides drift.
  *
  * A direct `btoa(JSON.stringify(spec))` throws on any character outside
  * Latin-1, and this survey's dimension/filter values carry accented
  * Catalan text — so the payload is routed through TextEncoder first to get
  * UTF-8 bytes, then converted to a binary string btoa can safely consume.
  */
-export function encodeShareLink(spec: unknown): string | null {
+export function encodeShareLinkResult(spec: unknown): EncodeShareLinkResult {
+  const stripped = stripFieldCatalogue(spec)
+
   let json: string
   try {
-    json = JSON.stringify(spec)
+    json = JSON.stringify(stripped)
   } catch {
-    return null
+    return { ok: false, reason: 'unserializable' }
   }
   if (json === undefined) {
     // JSON.stringify returns the *value* undefined (not a string) for
     // inputs like `undefined` or a bare function — treat as unencodable.
-    return null
+    return { ok: false, reason: 'unserializable' }
   }
 
   try {
@@ -64,10 +124,26 @@ export function encodeShareLink(spec: unknown): string | null {
       binary += String.fromCharCode(byte)
     }
     const base64 = btoa(binary)
-    return `${SHARE_VERSION}${SEPARATOR}${toBase64Url(base64)}`
+    const param = `${SHARE_VERSION}${SEPARATOR}${toBase64Url(base64)}`
+    if (param.length > MAX_SHARE_PARAM_LENGTH) {
+      return { ok: false, reason: 'too-long', length: param.length }
+    }
+    return { ok: true, param }
   } catch {
-    return null
+    return { ok: false, reason: 'unserializable' }
   }
+}
+
+/**
+ * Thin wrapper over `encodeShareLinkResult`, returning `null` — never
+ * throwing — for either failure reason. The caller (the "Copia l'enllaç"
+ * click handler, `src/lib/copyLink.ts`) uses `encodeShareLinkResult`
+ * directly when it needs to tell the visitor WHY an encode failed; every
+ * other existing call site keeps this narrower null-contract unchanged.
+ */
+export function encodeShareLink(spec: unknown): string | null {
+  const result = encodeShareLinkResult(spec)
+  return result.ok ? result.param : null
 }
 
 /**
@@ -132,11 +208,29 @@ const GRAPHIC_WALKER_VIRTUAL_FIDS = new Set(['gw_count_fid', 'gw_mea_key_fid', '
  * `DraggableFieldState` keys that represent shelf assignments — what a
  * chart actually uses — as opposed to `dimensions`/`measures`, which
  * enumerate every field available in the sharer's dataset (the field
- * CATALOGUE, not shelf content). GraphicWalker rebuilds that catalogue from
- * the `rawFields` prop at mount time, so a stale catalogue entry can never
- * express a reference that survives into a rendered chart — only shelf
- * channels can. Excluding `dimensions`/`measures` here is a deliberate
- * narrowing of the schema-drift check (T-03-11), not an oversight.
+ * CATALOGUE, not shelf content).
+ *
+ * Corrected mechanism (G-05-4; this replaces an earlier, inaccurate claim
+ * that GraphicWalker rebuilds the catalogue from the `rawFields` prop at
+ * mount time — it does not). Confirmed against the installed
+ * @kanaries/graphic-walker@0.5.2 source: `ISpecProps.chart` flows through
+ * `App.js` -> `vizStore.importCode(chart)` -> `fromSnapshot` -> `fillChart`
+ * (`dist/models/visSpecHistory.js`), which merges the spec's OWN
+ * `encodings` over `emptyEncodings` (whose `dimensions`/`measures` are both
+ * `[]`) — never over `rawFields`. `VizSpecStore`'s `get dimensions()` /
+ * `get measures()` getters then read `currentEncodings.dimensions` /
+ * `.measures` directly, so the field panel renders whatever catalogue the
+ * SPEC carried, not the `rawFields` prop.
+ *
+ * The shelf-only narrowing here (T-03-11, G-03-4) is still correct under
+ * this accurate model, for a different reason than originally stated: a
+ * catalogue entry can only ever appear as a draggable pill in the field
+ * panel, never as a rendered mark on a shelf — and after this plan's change
+ * (`src/lib/shareChartCatalogue.ts`), the panel's catalogue is unconditionally
+ * rebuilt from the currently-loaded survey's own fields on decode anyway, so
+ * a stale or foreign catalogue entry in a shared payload can never reach the
+ * panel either. Excluding `dimensions`/`measures` here remains a deliberate
+ * narrowing of the schema-drift check, not an oversight.
  */
 const SHELF_CHANNEL_KEYS = [
   'rows',

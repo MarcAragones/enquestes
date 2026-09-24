@@ -2,7 +2,13 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { MIN_KPI_SAMPLE, parseEnquestaMeta, parseEnquestesIndex } from './enquestes'
-import { decodeShareLink, encodeShareLink } from './shareLink'
+import { decodeShareLink, encodeShareLink, encodeShareLinkResult, MAX_SHARE_PARAM_LENGTH } from './shareLink'
+import { withFieldCatalogue } from './shareChartCatalogue'
+import { toGraphicWalkerFields } from './graphicWalkerFields'
+// Test-only: the library subpath resolves under vitest's `environment: 'node'`
+// via the package's `./*` export map. Production code must never import it —
+// see the bundle-size note in src/lib/shareChartCatalogue.ts.
+import { newChart } from '@kanaries/graphic-walker/models/visSpecHistory'
 import type { EnquestaMeta } from '../types/enquesta'
 
 /**
@@ -180,4 +186,119 @@ describe('share-link cross-survey behaviour (SC-4)', () => {
     expect(() => decodeShareLink(corrupted, ownFields)).not.toThrow()
     expect(decodeShareLink(corrupted, ownFields)).toBeUndefined()
   })
+})
+
+describe('wide-survey share links (G-05-4)', () => {
+  // A conservative browser-safe URL length budget — well under the ~64k+
+  // most modern browsers actually accept, but a long-standing round-number
+  // "safe" web convention for URLs shared across email/chat/proxies.
+  const BROWSER_SAFE_URL_LENGTH = 8192
+  // Node's built-in http server (used by both `vite preview` and
+  // scripts/gh-pages-preview.mjs) enforces a default 16 KB total
+  // header-size limit at the raw HTTP parser level — the exact limit that
+  // produced the observed HTTP 431 in G-05-4 (see 05-UAT.md).
+  const NODE_HEADER_LIMIT = 16384
+
+  // Mirrors shareLink.ts's private SHELF_CHANNEL_KEYS — the channels that
+  // represent shelf assignments, as opposed to the dimensions/measures
+  // catalogue this plan strips before encoding.
+  const SHELF_CHANNEL_KEYS = [
+    'rows',
+    'columns',
+    'color',
+    'opacity',
+    'size',
+    'shape',
+    'theta',
+    'radius',
+    'longitude',
+    'latitude',
+    'geoId',
+    'details',
+    'filters',
+    'text',
+  ] as const
+
+  function shelfOnly(chart: { encodings: object }): Record<string, unknown> {
+    const encodings = chart.encodings as Record<string, unknown>
+    const shelves: Record<string, unknown> = {}
+    for (const key of SHELF_CHANNEL_KEYS) shelves[key] = encodings[key]
+    return shelves
+  }
+
+  /**
+   * The shape `VizSpecStore.exportCode()` actually returns after two drags:
+   * a fresh chart from `newChart` (own field catalogue included, exactly as
+   * GraphicWalker builds it when the explorer first mounts) with the first
+   * catalogue dimension assigned to `columns` and the first catalogue
+   * measure assigned to `rows`.
+   */
+  function buildRealisticChart(entry: (typeof index)[number]) {
+    const meta = metaById.get(entry.id)!
+    const fields = meta.fields ?? []
+    const gwFields = toGraphicWalkerFields(fields)
+    const chart = newChart(gwFields, 'Chart 1', 'gw_g054')
+    const firstDimension = chart.encodings.dimensions.find((f) => !f.fid.startsWith('gw_'))
+    const firstMeasure = chart.encodings.measures.find((f) => !f.fid.startsWith('gw_'))
+    if (firstDimension) chart.encodings.columns = [firstDimension]
+    if (firstMeasure) chart.encodings.rows = [firstMeasure]
+    return { chart, fields, gwFields }
+  }
+
+  it('the widest published survey has at least 200 fields, so this suite cannot pass vacuously if the published set ever shrinks', () => {
+    const counts = index.map((entry) => (metaById.get(entry.id)!.fields ?? []).length)
+    expect(Math.max(...counts)).toBeGreaterThanOrEqual(200)
+  })
+
+  it.each(index)(
+    '$id: the OLD behaviour was genuinely broken — the unstripped exportCode()-shaped chart exceeds 30,000 characters of JSON',
+    (entry) => {
+      const { chart } = buildRealisticChart(entry)
+      expect(JSON.stringify(chart).length).toBeGreaterThan(30000)
+    },
+  )
+
+  it.each(index)(
+    '$id: the NEW stripped, capped encoded param fits MAX_SHARE_PARAM_LENGTH and both URL-length thresholds',
+    (entry) => {
+      const { chart } = buildRealisticChart(entry)
+      const result = encodeShareLinkResult([chart])
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.param.length).toBeLessThanOrEqual(MAX_SHARE_PARAM_LENGTH)
+      const url = `https://example.github.io/enquestes/enquesta/${entry.id}?chart=${result.param}`
+      expect(url.length).toBeLessThan(BROWSER_SAFE_URL_LENGTH)
+      expect(url.length).toBeLessThan(NODE_HEADER_LIMIT)
+    },
+  )
+
+  it.each(index)('$id: decoding restores the identical chart on every one of the fourteen shelf channels', (entry) => {
+    const { chart, fields } = buildRealisticChart(entry)
+    const result = encodeShareLinkResult([chart])
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const names = fields.map((f) => f.name)
+    const decoded = decodeShareLink(result.param, names) as { encodings: Record<string, unknown> }[] | undefined
+    expect(decoded).toBeDefined()
+    expect(shelfOnly(decoded![0])).toEqual(shelfOnly(chart))
+  })
+
+  it.each(index)(
+    "$id: withFieldCatalogue restores a field panel deep-equal to the library's own newChart catalogue for the same survey",
+    (entry) => {
+      const { chart, fields, gwFields } = buildRealisticChart(entry)
+      const result = encodeShareLinkResult([chart])
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const names = fields.map((f) => f.name)
+      const decoded = decodeShareLink(result.param, names) as unknown[] | undefined
+      expect(decoded).toBeDefined()
+      const rehydrated = withFieldCatalogue(decoded!, gwFields) as {
+        encodings: { dimensions: unknown; measures: unknown }
+      }[]
+      const expectedCatalogue = newChart(gwFields, 'Chart 1', 'gw_g054').encodings
+      expect(rehydrated[0].encodings.dimensions).toEqual(expectedCatalogue.dimensions)
+      expect(rehydrated[0].encodings.measures).toEqual(expectedCatalogue.measures)
+    },
+  )
 })
