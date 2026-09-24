@@ -233,6 +233,26 @@ All three new param lengths are under `MAX_SHARE_PARAM_LENGTH` (4096) and both U
 - Outstanding before treating the phase as fully closed: a genuine browser pass of UAT test 4 (Task 3's `<human-check>`), which this environment could not perform — see above.
 - No blockers for merging this plan; the stray port-4173 process noted under Issues Encountered is an unrelated environmental artifact, not something this plan introduced or needs to fix.
 
+## Self-Check: PASSED
+
+- FOUND: `src/lib/shareChartCatalogue.ts`
+- FOUND: `src/lib/shareChartCatalogue.test.ts`
+- FOUND: `src/lib/copyLink.ts`
+- FOUND: `src/lib/copyLink.test.ts`
+- FOUND: modified `src/lib/shareLink.ts` (encoder strips catalogue, `encodeShareLinkResult` present — `grep -c` returns 2)
+- FOUND: modified `src/lib/shareLink.test.ts`
+- FOUND: modified `src/lib/realSurveys.test.ts` (`wide-survey share links (G-05-4)` block present)
+- FOUND: modified `src/pages/ExplorerPage.tsx` (`withFieldCatalogue` present — `grep -c` returns 2)
+- FOUND: modified `src/components/ExplorerHeader.tsx` (`aria-live` present — `grep -c` returns 1)
+- FOUND commit `96b5d0f` (Task 1 test/RED)
+- FOUND commit `377d861` (Task 1 feat/GREEN)
+- FOUND commit `646a099` (Task 2 test/RED)
+- FOUND commit `412eb70` (Task 2 feat/GREEN)
+- FOUND commit `45a748b` (Task 3 test)
+- FOUND commit `62cf22e` (plan metadata / SUMMARY.md)
+- `npm run test` (105/105), `npx tsc -b`, `npm run lint`, `npm run build`, `npm run verify:explorer` all exit 0; `verify:pages`'s check logic passed when manually re-run against this worktree's own build (see Issues Encountered)
+- `git diff --stat 7d7793d..HEAD -- src/ package.json` touches exactly the 9 files in the plan's `files_modified`; `package.json`/`package-lock.json` untouched
+
 ---
 *Phase: 05-catalog-cutover-to-real-data*
 *Completed: 2026-09-24*
