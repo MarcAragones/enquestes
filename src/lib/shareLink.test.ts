@@ -4,6 +4,7 @@ import {
   SHARE_VERSION,
   MAX_SHARE_PARAM_LENGTH,
   encodeShareLink,
+  encodeShareLinkResult,
   decodeShareLink,
 } from './shareLink'
 
@@ -102,6 +103,21 @@ describe('shareLink module constants', () => {
   })
 })
 
+/**
+ * `makeSpec()`'s shape with `encodings.dimensions`/`measures` removed — the
+ * contract `decodeShareLink` returns after Task 1's encode-side catalogue
+ * strip (G-05-4). Every other key (shelf channels, `visId`, `name`,
+ * `config`, `layout`) round-trips unchanged.
+ */
+function withoutCatalogue(spec: ReturnType<typeof makeSpec>): unknown {
+  return spec.map((chart) => {
+    const restEncodings: Record<string, unknown> = { ...chart.encodings }
+    delete restEncodings.dimensions
+    delete restEncodings.measures
+    return { ...chart, encodings: restEncodings }
+  })
+}
+
 describe('encodeShareLink', () => {
   it('starts with the version tag followed by a separator', () => {
     const encoded = encodeShareLink(makeSpec())
@@ -115,22 +131,79 @@ describe('encodeShareLink', () => {
     expect(() => encodeShareLink(cyclic)).not.toThrow()
     expect(encodeShareLink(cyclic)).toBeNull()
   })
+
+  it('strips the field catalogue so a huge-catalogue/small-shelf spec still fits the cap', () => {
+    const spec = makeSpec()
+    // Blow up the catalogue arrays only — shelves stay exactly as makeSpec built them.
+    for (let i = 0; i < 2000; i++) {
+      spec[0].encodings.dimensions.push({
+        fid: `camp_catalogat_${i}`,
+        name: `Camp catalogat ${i}`,
+        semanticType: 'nominal',
+        analyticType: 'dimension',
+      })
+    }
+    const rawJsonLength = JSON.stringify(spec).length
+    expect(rawJsonLength).toBeGreaterThan(MAX_SHARE_PARAM_LENGTH)
+    const result = encodeShareLinkResult(spec)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.param.length).toBeLessThanOrEqual(MAX_SHARE_PARAM_LENGTH)
+    }
+  })
+})
+
+describe('encodeShareLinkResult', () => {
+  it('returns { ok: false, reason: "too-long", length } when the SHELF content alone exceeds the cap', () => {
+    const spec = makeSpec()
+    spec[0].encodings.filters[0].rule = {
+      type: 'one of',
+      value: Array.from({ length: 5000 }, (_, i) => `valor_de_filtre_molt_llarg_${i}`),
+    }
+    const result = encodeShareLinkResult(spec)
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.reason).toBe('too-long')
+      if (result.reason === 'too-long') {
+        expect(result.length).toBeGreaterThan(MAX_SHARE_PARAM_LENGTH)
+      }
+    }
+    expect(encodeShareLink(spec)).toBeNull()
+  })
+
+  it('returns { ok: false, reason: "unserializable" } for a cyclic value', () => {
+    const cyclic: Record<string, unknown> = {}
+    cyclic.self = cyclic
+    const result = encodeShareLinkResult(cyclic)
+    expect(result).toEqual({ ok: false, reason: 'unserializable' })
+    expect(encodeShareLink(cyclic)).toBeNull()
+  })
+
+  it('returns { ok: true, param } for a small chart', () => {
+    const result = encodeShareLinkResult(makeSpec())
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.param.startsWith(`${SHARE_VERSION}.`)).toBe(true)
+    }
+  })
 })
 
 describe('decodeShareLink round trip', () => {
-  it('round-trips a representative spec (fields, mark, filter) losslessly', () => {
+  it('round-trips a representative spec (fields, mark, filter) losslessly, minus the stripped field catalogue', () => {
     const spec = makeSpec()
     const encoded = encodeShareLink(spec)
     expect(encoded).not.toBeNull()
     const decoded = decodeShareLink(encoded, KNOWN_FIELDS)
-    expect(decoded).toEqual(spec)
+    expect(decoded).toEqual(withoutCatalogue(spec))
   })
 
   it('round-trips accented Catalan filter text byte-identically (UTF-8 safety)', () => {
     const spec = makeSpec({ territoriValue: 'Baix Llobregat, àèìòù çÇ ñÑ' })
     const encoded = encodeShareLink(spec)
-    const decoded = decodeShareLink(encoded, KNOWN_FIELDS) as ReturnType<typeof makeSpec>
-    expect(decoded).toEqual(spec)
+    const decoded = decodeShareLink(encoded, KNOWN_FIELDS) as ReturnType<typeof withoutCatalogue> as ReturnType<
+      typeof makeSpec
+    >
+    expect(decoded).toEqual(withoutCatalogue(spec))
     expect((decoded[0].encodings.filters[0].rule as { value: string[] }).value[0]).toBe(
       'Baix Llobregat, àèìòù çÇ ñÑ'
     )
@@ -146,13 +219,16 @@ describe('decodeShareLink round trip', () => {
     const encoded = encodeShareLink(spec)
     expect(encoded).not.toBeNull()
     const decoded = decodeShareLink(encoded, KNOWN_FIELDS)
-    expect(decoded).toEqual(spec)
+    expect(decoded).toEqual(withoutCatalogue(spec))
   })
 
   it('accepts a spec whose catalogue lists a stale field absent from knownFieldNames, as long as every shelf holds only known fields', () => {
     const spec = makeSpec()
     // A field the current survey has since dropped, still listed in the
     // catalogue from when the sharer's dataset had it — but never shelved.
+    // The catalogue never reaches the encoded payload at all (it is
+    // stripped before encoding), so this only proves the stale entry never
+    // blocks the round trip.
     spec[0].encodings.dimensions.push({
       fid: 'antiga_columna_eliminada',
       name: 'antiga_columna_eliminada',
@@ -162,7 +238,52 @@ describe('decodeShareLink round trip', () => {
     const encoded = encodeShareLink(spec)
     expect(encoded).not.toBeNull()
     const decoded = decodeShareLink(encoded, KNOWN_FIELDS)
-    expect(decoded).toEqual(spec)
+    expect(decoded).toEqual(withoutCatalogue(spec))
+  })
+
+  it('back-compat: a hand-built under-cap v1 payload carrying a full foreign catalogue still decodes (decoder untouched)', () => {
+    // Bypasses encodeShareLink deliberately — the new encoder can no longer
+    // produce a payload that carries dimensions/measures, but a legacy link
+    // shared before this change could. Proves decodeShareLink's validation
+    // (steps 1-7) was not weakened by the encode-side change.
+    const legacySpec = [
+      {
+        visId: 'gw_legacy',
+        name: 'Legacy chart',
+        encodings: {
+          dimensions: [
+            { fid: 'un_camp_foraster', name: 'un_camp_foraster', semanticType: 'nominal', analyticType: 'dimension' },
+          ],
+          measures: [],
+          rows: [],
+          columns: [{ fid: 'segment', name: 'segment', semanticType: 'nominal', analyticType: 'dimension' }],
+          color: [],
+          opacity: [],
+          size: [],
+          shape: [],
+          theta: [],
+          radius: [],
+          longitude: [],
+          latitude: [],
+          geoId: [],
+          details: [],
+          filters: [],
+          text: [],
+        },
+        config: {},
+        layout: {},
+      },
+    ]
+    const json = JSON.stringify(legacySpec)
+    const bytes = new TextEncoder().encode(json)
+    let binary = ''
+    for (const byte of bytes) binary += String.fromCharCode(byte)
+    const base64url = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    const payload = `v1.${base64url}`
+    expect(payload.length).toBeLessThanOrEqual(MAX_SHARE_PARAM_LENGTH)
+    const decoded = decodeShareLink(payload, KNOWN_FIELDS)
+    expect(decoded).toBeDefined()
+    expect(decoded).toEqual(legacySpec)
   })
 })
 
