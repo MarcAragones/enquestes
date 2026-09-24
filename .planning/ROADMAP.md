@@ -78,7 +78,7 @@ Plans:
   4. A `?chart=` link copied from one real survey restores that exact chart when reopened, and fails gracefully (rather than erroring or rendering a wrong chart) if pasted onto a different survey
   5. A deep link to a survey id that does not exist still shows the not-found message, unaffected by the removal of the synthetic dataset
 
-**Plans**: 2/2 plans executed
+**Plans**: 3 plans (2/3 executed — 05-03 is gap closure for UAT gap G-05-4)
 
 Plans:
 **Wave 1**
@@ -88,6 +88,10 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 05-02-PLAN.md — Prove the catalog and explorer behave with three real surveys live: real-data regression suite, explorer no-bleed guard, index-driven serving gate, human walkthrough
+
+**Gap closure** *(from UAT: G-05-4, SC-4 share links fail with HTTP 431 on every real survey)*
+
+- [ ] 05-03-PLAN.md — Cap and shrink the encoded `?chart=` payload (strip the field catalogue, rebuild it from the loaded survey on restore) and fail the copy-link action visibly instead of silently
 
 **UI hint**: yes
 
