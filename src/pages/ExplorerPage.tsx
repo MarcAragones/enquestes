@@ -5,7 +5,9 @@ import type { IChart, VizSpecStore } from '@kanaries/graphic-walker'
 import '@kanaries/graphic-walker/dist/style.css'
 import { isValidEnquestaId, metaUrl, parseEnquestaMeta } from '../lib/enquestes'
 import { toGraphicWalkerFields } from '../lib/graphicWalkerFields'
-import { SHARE_PARAM, decodeShareLink, encodeShareLink } from '../lib/shareLink'
+import { SHARE_PARAM, decodeShareLink } from '../lib/shareLink'
+import { withFieldCatalogue } from '../lib/shareChartCatalogue'
+import { buildShareUrl, CLIPBOARD_FAILED_MESSAGE, SHARE_ENCODE_FAILED_MESSAGE, type CopyLinkOutcome } from '../lib/copyLink'
 import { getDb, queryParquet, resetDb } from '../services/duckdb'
 import { ErrorState } from '../components/ErrorState'
 import { ChartErrorBoundary } from '../components/ChartErrorBoundary'
@@ -119,22 +121,28 @@ export default function ExplorerPage() {
   // list while meta.json is still loading (schema-drift guard, D-07).
   const decodedChart = useMemo(() => {
     if (dataState.status !== 'success') return undefined
-    const knownFieldNames = dataState.data.meta.fields?.map((f) => f.name) ?? []
-    return decodeShareLink(rawChartParam, knownFieldNames) as IChart[] | undefined
+    const fields = dataState.data.meta.fields ?? []
+    const knownFieldNames = fields.map((f) => f.name)
+    const decoded = decodeShareLink(rawChartParam, knownFieldNames)
+    if (decoded === undefined) return undefined
+    return withFieldCatalogue(decoded as unknown[], toGraphicWalkerFields(fields)) as IChart[]
   }, [rawChartParam, dataState])
 
-  const onCopyLink = async () => {
+  // Narrows D-07's silent-fallback posture on purpose (G-05-4): D-07 governs
+  // decoding a stale INBOUND link, where the visitor did not ask for
+  // anything and an error would be noise. This is an action the visitor
+  // explicitly clicked — silence here is indistinguishable from success,
+  // which is exactly what let a 57 KB unopenable link reach a real user.
+  const onCopyLink = async (): Promise<CopyLinkOutcome> => {
     const chart = vizStoreRef.current?.exportCode()
-    if (!chart) return
-    const encoded = encodeShareLink(chart)
-    if (encoded === null) return
-    const url = new URL(window.location.href)
-    url.searchParams.set(SHARE_PARAM, encoded)
+    if (!chart) return { ok: false, message: SHARE_ENCODE_FAILED_MESSAGE }
+    const outcome = buildShareUrl(window.location.href, chart)
+    if (!outcome.ok) return outcome
     try {
-      await navigator.clipboard.writeText(url.toString())
+      await navigator.clipboard.writeText(outcome.url)
+      return { ok: true, url: outcome.url }
     } catch {
-      // A clipboard-write failure (permissions, insecure context) is not
-      // surfaced to the visitor — same silent-fallback posture as D-07.
+      return { ok: false, message: CLIPBOARD_FAILED_MESSAGE }
     }
   }
 
@@ -226,7 +234,7 @@ export default function ExplorerPage() {
   // string, never a disappearing/reappearing header), then the real title
   // takes over once the phase-2 load succeeds.
   let headerTitle = id ?? 'Enquesta'
-  let headerCopyLink: (() => Promise<void>) | undefined
+  let headerCopyLink: (() => Promise<CopyLinkOutcome>) | undefined
   let content
   if (!valid) {
     // A malformed id and a non-existent id present identically to a
